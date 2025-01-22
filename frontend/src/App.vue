@@ -2,7 +2,6 @@
   <div class="app">
     <h1>Billboard Hot 100</h1>
 
-    <p>Hello</p>
     <div v-if="isLoading">Loading...</div>
     <div v-if="error" class="error">Error: {{ error.message }}</div>
 
@@ -30,48 +29,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useChartStore } from "./store";
 
 const chartStore = useChartStore();
 
-const isLoading = ref(chartStore.isLoading);
-const chartData = ref(chartStore.chartData);
-const error = ref(chartStore.error);
+const isLoading = chartStore.isLoading;
+const chartData = chartStore.chartData;
+const error = chartStore.error;
 
 onMounted(() => {
-  chartStore.fetchChartData();
+  chartStore.fetchChartData(); // Ensure this is called
 });
 </script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-}
-
-h1 {
-  text-align: center;
-  margin-top: 20px;
-}
-
-table {
-  width: 80%;
-  margin: 20px auto;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 8px;
-  border: 1px solid #ddd;
-}
-
-th {
-  background-color: #f4f4f4;
-}
-
-.error {
-  color: red;
-  text-align: center;
-}
+/* Add your styles here */
 </style>
