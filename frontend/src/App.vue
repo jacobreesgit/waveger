@@ -2,10 +2,12 @@
   <div class="app">
     <h1>Billboard Hot 100</h1>
 
-    <div v-if="isLoading">Loading...</div>
-    <div v-if="error" class="error">Error: {{ error.message }}</div>
+    <div v-if="chartStore.isLoading">Loading...</div>
+    <div v-if="chartStore.error" class="error">
+      Error: {{ chartStore.error.message }}
+    </div>
 
-    <table v-if="!isLoading && chartData.length > 0">
+    <table v-if="!chartStore.isLoading && chartStore.chartData.length > 0">
       <thead>
         <tr>
           <th>Rank</th>
@@ -15,7 +17,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="song in chartData" :key="song.rank">
+        <tr v-for="song in chartStore.chartData" :key="song.rank">
           <td>{{ song.rank }}</td>
           <td>{{ song.title }}</td>
           <td>{{ song.artist }}</td>
@@ -27,17 +29,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useChartStore } from "./store";
 
+// Accessing the Pinia store
 const chartStore = useChartStore();
 
-const isLoading = ref(chartStore.isLoading);
-const chartData = ref(chartStore.chartData);
-const error = ref(chartStore.error);
-
 onMounted(() => {
-  chartStore.fetchChartData();
+  chartStore.fetchChartData(); // Fetch data when the component is mounted
 });
 </script>
 

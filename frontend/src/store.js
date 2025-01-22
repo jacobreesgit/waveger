@@ -12,7 +12,6 @@ export const useChartStore = defineStore("chart", {
       this.isLoading = true;
       try {
         const response = await axios.get("https://wavegerpython.onrender.com/");
-        console.log(response.data); // Add logging to check if data is fetched
         this.chartData = response.data;
       } catch (error) {
         this.error = error;
