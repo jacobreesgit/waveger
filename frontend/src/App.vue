@@ -29,20 +29,48 @@
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted } from "vue";
 import { useChartStore } from "./store";
 
 const chartStore = useChartStore();
 
-const isLoading = chartStore.isLoading;
-const chartData = chartStore.chartData;
-const error = chartStore.error;
+const isLoading = ref(chartStore.isLoading);
+const chartData = ref(chartStore.chartData);
+const error = ref(chartStore.error);
 
 onMounted(() => {
-  chartStore.fetchChartData(); // Ensure this is called
+  chartStore.fetchChartData();
 });
 </script>
 
 <style>
-/* Add your styles here */
+body {
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  text-align: center;
+  margin-top: 20px;
+}
+
+table {
+  width: 80%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+th {
+  background-color: #f4f4f4;
+}
+
+.error {
+  color: red;
+  text-align: center;
+}
 </style>
