@@ -12,7 +12,6 @@
           <th>Title</th>
           <th>Artist</th>
           <th>Weeks on Chart</th>
-          <th>Last Updated</th>
         </tr>
       </thead>
       <tbody>
@@ -21,7 +20,6 @@
           <td>{{ song.title }}</td>
           <td>{{ song.artist }}</td>
           <td>{{ song.weeks_on_chart }}</td>
-          <td>{{ song.last_updated }}</td>
         </tr>
       </tbody>
     </table>
