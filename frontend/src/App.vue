@@ -1,6 +1,8 @@
 <template>
   <div class="app">
-    <h1>Billboard Hot 100</h1>
+    <div class="bg-blue-500 text-white p-4">
+      <h1 class="text-xl">Billboard Hot 100</h1>
+    </div>
 
     <div v-if="chartStore.isLoading">Loading...</div>
     <div v-if="chartStore.error" class="error">
