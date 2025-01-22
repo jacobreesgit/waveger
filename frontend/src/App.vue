@@ -2,6 +2,7 @@
   <div class="app">
     <h1>Billboard Hot 100</h1>
 
+    {{ chartStore }}
     <div v-if="isLoading">Loading...</div>
     <div v-if="error" class="error">Error: {{ error.message }}</div>
 
