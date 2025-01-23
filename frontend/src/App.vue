@@ -1,8 +1,6 @@
 <template>
-  <div class="app">
-    <div class="bg-blue-500 text-white p-4">
-      <h1 class="text-xl">Billboard Hot 100</h1>
-    </div>
+  <div class="min-h-screen py-10 flex items-center flex-col">
+    <h1 class="text-3xl font-bold text-center">Billboard Hot 100</h1>
 
     <div v-if="chartStore.isLoading">Loading...</div>
     <div v-if="chartStore.error" class="error">
@@ -43,15 +41,6 @@ onMounted(() => {
 </script>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-}
-
-h1 {
-  text-align: center;
-  margin-top: 20px;
-}
-
 table {
   width: 80%;
   margin: 20px auto;

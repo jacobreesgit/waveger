@@ -15,7 +15,7 @@ export const useChartStore = defineStore("chart", {
         this.chartData = response.data;
       } catch (error) {
         this.error = error;
-        console.error(error); // Log any errors
+        console.error(error);
       } finally {
         this.isLoading = false;
       }
