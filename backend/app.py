@@ -1,86 +1,102 @@
 import os
 import psycopg2
 import billboard
-from flask import Flask, jsonify
-from datetime import datetime, timedelta
+from flask import Flask, jsonify, request
+from datetime import datetime
+import traceback
 from flask_cors import CORS  # Import CORS
 
-app = Flask(__name__)
 
+
+app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
 def get_db_connection():
-    DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase")
+    DATABASE_URL = os.environ.get(
+        "DATABASE_URL",
+        "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase"
+    )
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-@app.route('/')
+def create_week_table(conn, cursor, week_id):
+    """Create a table for the specified week if it doesn't exist."""
+    table_name = f"hot_100_{week_id}"
+    try:
+        cursor.execute(f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                rank INT PRIMARY KEY,
+                title TEXT,
+                artist TEXT,
+                weeks_on_chart INT
+            );
+        """)
+        conn.commit()  # Commit the table creation immediately
+        print(f"Table '{table_name}' ensured.")
+    except Exception as e:
+        conn.rollback()
+        print(f"Error ensuring table '{table_name}': {e}")
+        raise e
+
+@app.route('/hot-100', methods=['GET'])
 def get_hot_100():
+    week = request.args.get('week', 'current')
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Check if the table is empty
-    cursor.execute("SELECT COUNT(*) FROM hot_100;")
-    count = cursor.fetchone()[0]
-
-    # If the table is empty, fetch data from Billboard and populate the table
-    if count == 0:
-        print("Fetching new data from Billboard...")  # Print message to console
+    if week == 'current':
+        # Fetch current chart data
         chart = billboard.ChartData('hot-100')
-        for song in chart:
-            cursor.execute("""
-            INSERT INTO hot_100 (rank, title, artist, weeks_on_chart, last_updated)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (rank) DO UPDATE
-            SET title = %s, artist = %s, weeks_on_chart = %s, last_updated = CURRENT_TIMESTAMP;
-            """, (song.rank, song.title, song.artist, song.weeks, song.title, song.artist, song.weeks))
-        conn.commit()
-        print("New data has been fetched and inserted into the database.")
+        week = chart.date  # Use the chart's published date as the week identifier
     else:
-        print("Data is already in the database. Fetching data from the database...")  # Print message if no insertion is done
+        try:
+            datetime.strptime(week, '%Y-%m-%d')  # Validate week format
+        except ValueError:
+            return jsonify({"error": "Invalid week format. Use YYYY-MM-DD."}), 400
 
-    # Fetch the data from the database (regardless of whether it was updated)
-    cursor.execute("SELECT * FROM hot_100 ORDER BY rank;")
-    rows = cursor.fetchall()
+    # Create or fetch the table for the specified week
+    table_name = f"hot_100_{week.replace('-', '_')}"
+    create_week_table(conn, cursor, week.replace('-', '_'))
 
-    result = [{
-        'rank': row[0],
-        'title': row[1],
-        'artist': row[2],
-        'weeks_on_chart': row[3],
-        'last_updated': row[4].strftime('%B %d, %Y at %I:%M %p')  # Format datetime
-    } for row in rows]
+    try:
+        # Check if the table is already populated
+        cursor.execute(f"SELECT COUNT(*) FROM {table_name};")
+        count = cursor.fetchone()[0]
 
-    cursor.close()
-    conn.close()
+        if count == 0:
+            # Fetch Billboard data and populate the table
+            chart = billboard.ChartData('hot-100', date=week)
+            for song in chart:
+                cursor.execute(f"""
+                    INSERT INTO {table_name} (rank, title, artist, weeks_on_chart)
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (rank) DO UPDATE
+                    SET title = %s, artist = %s, weeks_on_chart = %s;
+                """, (song.rank, song.title, song.artist, song.weeks, song.title, song.artist, song.weeks))
+            conn.commit()
+
+        # Fetch the data for the specified week from the database
+        cursor.execute(f"SELECT * FROM {table_name} ORDER BY rank;")
+        rows = cursor.fetchall()
+
+        result = [{
+            'rank': row[0],
+            'title': row[1],
+            'artist': row[2],
+            'weeks_on_chart': row[3]
+        } for row in rows]
+
+    except Exception as e:
+        conn.rollback()
+        print(f"Unexpected error: {e}")
+        traceback.print_exc()  # Log the full error stack trace
+        return jsonify({"error": "An unexpected error occurred.", "details": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
     return jsonify(result)
 
-@app.route('/update-chart')
-def update_chart():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    # Fetch new Billboard Hot 100 data and update the table
-    print("Fetching new data from Billboard...")  # Print message to console
-    chart = billboard.ChartData('hot-100')
-    for song in chart:
-        cursor.execute("""
-        INSERT INTO hot_100 (rank, title, artist, weeks_on_chart, last_updated)
-        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-        ON CONFLICT (rank) DO UPDATE
-        SET title = %s, artist = %s, weeks_on_chart = %s, last_updated = CURRENT_TIMESTAMP;
-        """, (song.rank, song.title, song.artist, song.weeks, song.title, song.artist, song.weeks))
-    conn.commit()
-
-    print("New data has been fetched and updated in the database.")  # Print message to console
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({"message": "Billboard Hot 100 data has been updated successfully!"})
-
 if __name__ == "__main__":
-    # Set the port to 5002
     app.run(debug=True, host='0.0.0.0', port=5002)
