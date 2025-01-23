@@ -1,86 +1,121 @@
-import os
-import psycopg2
+from flask import Flask, request, jsonify
 import billboard
-from flask import Flask, jsonify
+import psycopg2
+from psycopg2 import sql
 from datetime import datetime, timedelta
-from flask_cors import CORS  # Import CORS
 
 app = Flask(__name__)
 
-# Enable CORS for all routes
-CORS(app)
+# Database connection configuration
+DB_CONNECTION = "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase"
+
 
 def get_db_connection():
-    DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase")
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
-    return conn
+    """Establish a connection to the PostgreSQL database."""
+    return psycopg2.connect(DB_CONNECTION)
 
-@app.route('/')
-def get_hot_100():
-    conn = get_db_connection()
-    cursor = conn.cursor()
 
-    # Check if the table is empty
-    cursor.execute("SELECT COUNT(*) FROM hot_100;")
-    count = cursor.fetchone()[0]
+def normalize_week_date(week):
+    """Adjust non-Tuesday dates to the nearest Tuesday."""
+    date = datetime.strptime(week, "%Y-%m-%d")
+    offset = (1 - date.weekday()) % 7  # Tuesday is weekday 1
+    return (date + timedelta(days=offset)).strftime("%Y-%m-%d")
 
-    # If the table is empty, fetch data from Billboard and populate the table
-    if count == 0:
-        print("Fetching new data from Billboard...")  # Print message to console
-        chart = billboard.ChartData('hot-100')
-        for song in chart:
-            cursor.execute("""
-            INSERT INTO hot_100 (rank, title, artist, weeks_on_chart, last_updated)
-            VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-            ON CONFLICT (rank) DO UPDATE
-            SET title = %s, artist = %s, weeks_on_chart = %s, last_updated = CURRENT_TIMESTAMP;
-            """, (song.rank, song.title, song.artist, song.weeks, song.title, song.artist, song.weeks))
-        conn.commit()
-        print("New data has been fetched and inserted into the database.")
+
+@app.route("/fetch-chart", methods=["GET"])
+def fetch_chart():
+    week = request.args.get("week", None)
+    if week:
+        try:
+            week = normalize_week_date(week)
+        except ValueError:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
     else:
-        print("Data is already in the database. Fetching data from the database...")  # Print message if no insertion is done
+        week = billboard.ChartData("hot-100").date
 
-    # Fetch the data from the database (regardless of whether it was updated)
-    cursor.execute("SELECT * FROM hot_100 ORDER BY rank;")
-    rows = cursor.fetchall()
+    try:
+        chart = billboard.ChartData("hot-100", date=week)
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        table_name = f"hot_100_{week.replace('-', '_')}"
+        create_table_query = sql.SQL("""
+            CREATE TABLE IF NOT EXISTS {table} (
+                rank INTEGER PRIMARY KEY,
+                title TEXT NOT NULL,
+                artist TEXT NOT NULL,
+                last_week INTEGER,
+                peak_pos INTEGER,
+                weeks_on_chart INTEGER
+            )
+        """).format(table=sql.Identifier(table_name))
+        cur.execute(create_table_query)
 
-    result = [{
-        'rank': row[0],
-        'title': row[1],
-        'artist': row[2],
-        'weeks_on_chart': row[3],
-        'last_updated': row[4].strftime('%B %d, %Y at %I:%M %p')  # Format datetime
-    } for row in rows]
+        for entry in chart:
+            insert_query = sql.SQL("""
+                INSERT INTO {table} (rank, title, artist, last_week, peak_pos, weeks_on_chart)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                ON CONFLICT (rank) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    artist = EXCLUDED.artist,
+                    last_week = EXCLUDED.last_week,
+                    peak_pos = EXCLUDED.peak_pos,
+                    weeks_on_chart = EXCLUDED.weeks_on_chart
+            """).format(table=sql.Identifier(table_name))
+            cur.execute(insert_query, (
+                entry.rank, entry.title, entry.artist,
+                entry.lastWeek, entry.peakPos, entry.weeks
+            ))
 
-    cursor.close()
-    conn.close()
+        conn.commit()
+        cur.close()
+        conn.close()
+        return jsonify({
+            "message": "Chart data fetched and stored successfully.",
+            "chart_week": chart.date
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    return jsonify(result)
 
-@app.route('/update-chart')
-def update_chart():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+@app.route("/list-chart-tables", methods=["GET"])
+def list_chart_tables():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_name LIKE 'hot_100_%' ORDER BY table_name DESC")
+        tables = [row[0] for row in cur.fetchall()]
+        cur.close()
+        conn.close()
+        return jsonify({"tables": tables})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # Fetch new Billboard Hot 100 data and update the table
-    print("Fetching new data from Billboard...")  # Print message to console
-    chart = billboard.ChartData('hot-100')
-    for song in chart:
-        cursor.execute("""
-        INSERT INTO hot_100 (rank, title, artist, weeks_on_chart, last_updated)
-        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
-        ON CONFLICT (rank) DO UPDATE
-        SET title = %s, artist = %s, weeks_on_chart = %s, last_updated = CURRENT_TIMESTAMP;
-        """, (song.rank, song.title, song.artist, song.weeks, song.title, song.artist, song.weeks))
-    conn.commit()
 
-    print("New data has been fetched and updated in the database.")  # Print message to console
+@app.route("/get-chart/<week>", methods=["GET"])
+def get_chart(week):
+    try:
+        week = normalize_week_date(week)
+        table_name = f"hot_100_{week.replace('-', '_')}"
 
-    cursor.close()
-    conn.close()
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute(sql.SQL("SELECT * FROM {table}").format(table=sql.Identifier(table_name)))
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
 
-    return jsonify({"message": "Billboard Hot 100 data has been updated successfully!"})
+        if not rows:
+            return jsonify({"error": f"No data found for week {week}."}), 404
+
+        chart_data = [
+            {"rank": row[0], "title": row[1], "artist": row[2], "last_week": row[3], "peak_pos": row[4], "weeks_on_chart": row[5]}
+            for row in rows
+        ]
+        return jsonify({"chart_week": week, "data": chart_data})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
-    # Set the port to 5002
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    app.run(host="0.0.0.0", port=5002)
