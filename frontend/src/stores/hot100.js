@@ -15,16 +15,16 @@ export const useHot100Store = defineStore("hot100", {
 
       try {
         const response = await axios.get(
-          `https://wavegerpython.onrender.com/hot-100`,
-          {
-            params: { date, range },
-          }
+          "https://wavegerpython.onrender.com/hot-100",
+          { params: { date, range } }
         );
-        console.log("API Response:", response.data); // Debugging
-        this.hot100Data = response.data.data; // Ensure correct key
-        console.log("Updated hot100Data:", this.hot100Data); // Debugging
+
+        // Extract content and info directly
+        this.hot100Data = {
+          content: response.data.data.content,
+          info: response.data.data.info,
+        };
       } catch (err) {
-        console.error("Error fetching Hot 100:", err); // Debugging
         this.error = err.response?.data?.error || "An error occurred";
       } finally {
         this.loading = false;

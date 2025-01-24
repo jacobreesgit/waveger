@@ -3,6 +3,7 @@
     <!-- Metadata -->
     <div class="text-center mb-6">
       <h1 class="text-2xl font-bold">HOT 100 (Billboard)</h1>
+      <!-- Display the aligned date -->
       <p v-if="!hot100Store.loading" class="text-gray-600">
         Date: {{ hot100Store.hot100Data?.info?.date }}
       </p>
@@ -138,14 +139,3 @@ onMounted(() => {
   fetchDataForDate(selectedDate.value); // Use today's date by default
 });
 </script>
-
-<style scoped>
-.error {
-  color: red;
-  font-weight: bold;
-}
-table th,
-table td {
-  text-align: center;
-}
-</style>
