@@ -3,9 +3,9 @@ import axios from "axios";
 
 export const useHot100Store = defineStore("hot100", {
   state: () => ({
-    hot100: null, // Data from the API
-    loading: false, // Loading state
-    error: null, // Error state
+    hot100Data: null,
+    loading: false,
+    error: null,
   }),
 
   actions: {
@@ -14,19 +14,20 @@ export const useHot100Store = defineStore("hot100", {
       this.error = null;
 
       try {
-        // Make the API request
         const response = await axios.get(
-          "https://wavegerpython.onrender.com/hot-100",
+          `https://wavegerpython.onrender.com/hot-100`,
           {
             params: { date, range },
           }
         );
-
-        this.hot100 = response.data; // Save the API response to state
+        console.log("API Response:", response.data); // Debugging
+        this.hot100Data = response.data.data; // Ensure correct key
+        console.log("Updated hot100Data:", this.hot100Data); // Debugging
       } catch (err) {
-        this.error = err.message || "Failed to fetch data"; // Save the error
+        console.error("Error fetching Hot 100:", err); // Debugging
+        this.error = err.response?.data?.error || "An error occurred";
       } finally {
-        this.loading = false; // Reset the loading state
+        this.loading = false;
       }
     },
   },

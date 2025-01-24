@@ -70,7 +70,18 @@ def get_hot_100():
 
         if db_result:
             # Data exists in the database
-            return jsonify({"source": "database", "data": db_result["data"]})
+            return jsonify({
+                "source": "database",
+                "data": {
+                    "content": db_result["data"],
+                    "info": {
+                        "category": "Billboard",
+                        "chart": "HOT 100",
+                        "date": aligned_tuesday,  # Use aligned_tuesday in the info section
+                        "source": "database"
+                    }
+                }
+            })
 
         # Data not in database, fetch from API
         headers = {
@@ -93,7 +104,18 @@ def get_hot_100():
         )
         conn.commit()
 
-        return jsonify({"source": "api", "data": api_data})
+        return jsonify({
+            "source": "api",
+            "data": {
+                "content": api_data,
+                "info": {
+                    "category": "Billboard",
+                    "chart": "HOT 100",
+                    "date": aligned_tuesday,  # Use aligned_tuesday in the info section
+                    "source": "api"
+                }
+            }
+        })
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
     except Exception as e:
