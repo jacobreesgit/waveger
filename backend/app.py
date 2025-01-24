@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import Flask-CORS
+from flask_cors import CORS
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -42,9 +42,12 @@ def home():
 
 @app.route('/hot-100', methods=['GET'])
 def get_hot_100():
-    # Parse user-provided date or use today's date as default
+    # Parse user-provided date; use today's date if not provided or empty
     today_date = datetime.today().strftime('%Y-%m-%d')
-    requested_date = request.args.get("date", today_date)  # Default to today's date
+    requested_date = request.args.get("date", "").strip()  # Handle empty or missing 'date'
+    if not requested_date:
+        requested_date = today_date
+
     range_param = request.args.get("range", "1-10")  # Default range
 
     # Get the most recent Tuesday for the requested date
