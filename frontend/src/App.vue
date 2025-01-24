@@ -1,9 +1,10 @@
 <template>
   <div>
-    <Hot100 />
+    <PrimeMenu></PrimeMenu>
+    <router-view />
   </div>
 </template>
 
 <script setup>
-import Hot100 from "./components/Hot100.vue";
+import PrimeMenu from "./components/PrimeMenu.vue";
 </script>
