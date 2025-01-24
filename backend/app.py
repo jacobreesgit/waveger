@@ -69,10 +69,11 @@ def get_hot_100():
         db_result = cursor.fetchone()
 
         if db_result:
-            # Data exists in the database
+            # Extract content only from the stored data
+            content = db_result["data"]["content"]
             return jsonify({
                 "source": "database",
-                "content": db_result["data"],
+                "content": content,
                 "info": {
                     "category": "Billboard",
                     "chart": "HOT 100",
@@ -92,7 +93,7 @@ def get_hot_100():
         response.raise_for_status()  # Raise an error for HTTP issues
         api_data = response.json()
 
-        # Store the API data in the database
+        # Store only the "content" field in the database
         cursor.execute(
             """
             INSERT INTO hot_100_data (date, range, data)
@@ -102,9 +103,11 @@ def get_hot_100():
         )
         conn.commit()
 
+        # Extract content for the response
+        content = api_data["content"]
         return jsonify({
             "source": "api",
-            "content": api_data,
+            "content": content,
             "info": {
                 "category": "Billboard",
                 "chart": "HOT 100",
