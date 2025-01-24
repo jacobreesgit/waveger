@@ -11,6 +11,7 @@
         }}</span>
       </p>
     </div>
+
     <!-- DatePicker to select a new date -->
     <div class="mb-6 flex items-center justify-center space-x-4">
       <label for="datePicker" class="text-gray-700 text-sm font-medium"
@@ -26,12 +27,10 @@
       />
     </div>
 
-    <!-- Loading State -->
-    <ProgressSpinner
-      v-if="hot100Store.loading"
-      style="width: 50px; height: 50px"
-      strokeWidth="8"
-    />
+    <!-- Loading State with PrimeVue ProgressSpinner -->
+    <div v-if="hot100Store.loading" class="flex justify-center items-center">
+      <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" />
+    </div>
 
     <!-- Error State -->
     <div v-if="hot100Store.error" class="text-red-500">
@@ -39,25 +38,45 @@
     </div>
 
     <!-- Data Table -->
-    <div v-if="hot100Store.hot100Data?.content && !hot100Store.loading">
+    <div v-if="hot100Store.hot100Data?.content">
       <table
-        class="table-auto w-full border-collapse border border-gray-300 min-w-full"
+        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300"
       >
         <thead>
           <tr class="bg-gray-200">
-            <th class="border border-gray-300 px-4 py-2 text-left">#</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Title</th>
-            <th class="border border-gray-300 px-4 py-2 text-left">Artist</th>
-            <th class="border border-gray-300 px-4 py-2 text-center">
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
+              #
+            </th>
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
+              Title
+            </th>
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
+              Artist
+            </th>
+            <th
+              class="border border-gray-300 px-2 py-1 text-center text-xs sm:text-sm"
+            >
               Movement
             </th>
-            <th class="border border-gray-300 px-4 py-2 text-left">
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
               Last Week
             </th>
-            <th class="border border-gray-300 px-4 py-2 text-left">
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
               Peak Position
             </th>
-            <th class="border border-gray-300 px-4 py-2 text-left">
+            <th
+              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+            >
               Weeks on Chart
             </th>
           </tr>
@@ -68,10 +87,18 @@
             :key="rank"
             class="hover:bg-gray-100"
           >
-            <td class="border border-gray-300 px-4 py-2">{{ rank }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ item.title }}</td>
-            <td class="border border-gray-300 px-4 py-2">{{ item.artist }}</td>
-            <td class="border border-gray-300 px-4 py-2 text-center">
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+              {{ rank }}
+            </td>
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+              {{ item.title }}
+            </td>
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+              {{ item.artist }}
+            </td>
+            <td
+              class="border border-gray-300 px-2 py-1 text-center text-xs sm:text-sm"
+            >
               <i
                 v-if="item.detail === 'up'"
                 class="pi pi-arrow-up text-green-500"
@@ -85,13 +112,13 @@
                 class="pi pi-minus text-gray-500"
               ></i>
             </td>
-            <td class="border border-gray-300 px-4 py-2">
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
               {{ item["last week"] }}
             </td>
-            <td class="border border-gray-300 px-4 py-2">
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
               {{ item["peak position"] }}
             </td>
-            <td class="border border-gray-300 px-4 py-2">
+            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
               {{ item["weeks on chart"] }}
             </td>
           </tr>
@@ -108,6 +135,7 @@ import { useSelectedDateStore } from "../stores/selectedDate";
 import DatePicker from "primevue/datepicker";
 import ProgressSpinner from "primevue/progressspinner";
 
+// Access the stores
 const hot100Store = useHot100Store();
 const selectedDateStore = useSelectedDateStore();
 
@@ -125,7 +153,7 @@ const formatDate = (date) => {
 
 // Watch for changes in selectedDate and refetch data
 watch(selectedDate, (newDate) => {
-  const formattedDate = formatDate(newDate);
+  const formattedDate = formatDate(newDate); // Ensure the date is in 'yyyy-mm-dd' format
   hot100Store.fetchHot100(formattedDate, "1-10");
 });
 </script>
