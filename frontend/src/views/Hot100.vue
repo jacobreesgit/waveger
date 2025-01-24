@@ -31,10 +31,15 @@
       />
     </div>
 
+    <!-- Error State -->
+    <div v-if="hot100Store.error" class="text-red-500">
+      {{ hot100Store.error }}
+    </div>
+
     <!-- Loading State with PrimeVue Skeleton -->
-    <div v-if="hot100Store.loading" class="overflow-x-auto w-full md:w-auto">
+    <div v-if="hot100Store.loading" class="overflow-x-auto w-full">
       <table
-        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full md:w-auto"
+        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full"
       >
         <thead>
           <tr class="bg-gray-200">
@@ -108,18 +113,13 @@
       </table>
     </div>
 
-    <!-- Error State -->
-    <div v-if="hot100Store.error" class="text-red-500">
-      {{ hot100Store.error }}
-    </div>
-
     <!-- Data Table with Real Data -->
     <div
       v-if="!hot100Store.loading && hot100Store.hot100Data?.content"
-      class="overflow-x-auto w-full md:w-auto"
+      class="overflow-x-auto w-full"
     >
       <table
-        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full md:w-auto"
+        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full"
       >
         <thead>
           <tr class="bg-gray-200">
@@ -166,7 +166,7 @@
             :key="rank"
           >
             <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
-              {{ rank + 1 }}
+              {{ rank }}
             </td>
             <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item.title }}
