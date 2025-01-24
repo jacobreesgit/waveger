@@ -72,14 +72,12 @@ def get_hot_100():
             # Data exists in the database
             return jsonify({
                 "source": "database",
-                "data": {
-                    "content": db_result["data"],
-                    "info": {
-                        "category": "Billboard",
-                        "chart": "HOT 100",
-                        "date": aligned_tuesday,  # Use aligned_tuesday in the info section
-                        "source": "database"
-                    }
+                "content": db_result["data"],
+                "info": {
+                    "category": "Billboard",
+                    "chart": "HOT 100",
+                    "date": aligned_tuesday,
+                    "source": "database"
                 }
             })
 
@@ -106,7 +104,13 @@ def get_hot_100():
 
         return jsonify({
             "source": "api",
-            "data": db_result["data"]
+            "content": api_data,
+            "info": {
+                "category": "Billboard",
+                "chart": "HOT 100",
+                "date": aligned_tuesday,
+                "source": "api"
+            }
         })
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
