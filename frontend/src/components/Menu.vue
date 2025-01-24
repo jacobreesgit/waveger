@@ -1,10 +1,51 @@
 <template>
-  <Menubar :model="menuItems" />
+  <Toolbar style="border-radius: 3rem; padding: 1rem 1rem 1rem 1.5rem">
+    <template #start>
+      <div class="flex items-center gap-2">
+        <Image
+          src="../assets/logo.svg
+        "
+        />
+      </div>
+    </template>
+
+    <template #center>
+      <div class="flex gap-2">
+        <Button
+          v-for="item in menuItems"
+          :key="item.label"
+          :label="item.label"
+          :icon="item.icon"
+          :class="item.class"
+          @click="item.command"
+          severity="secondary"
+          size="small"
+        />
+      </div>
+    </template>
+
+    <template #end>
+      <div class="flex items-center gap-2">
+        <Button label="Share" severity="contrast" size="small" />
+        <Avatar
+          class="mr-2"
+          size="large"
+          shape="circle"
+          image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
+        />
+      </div>
+    </template>
+  </Toolbar>
 </template>
+
+<script setup></script>
 
 <script setup>
 import { computed } from "vue";
-import Menubar from "primevue/menubar";
+import Toolbar from "primevue/toolbar";
+import Button from "primevue/button";
+import Avatar from "primevue/avatar";
+import Image from "primevue/image";
 import { useRouter } from "vue-router";
 
 const router = useRouter();

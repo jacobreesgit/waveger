@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
-.p-highlight .p-menubar-item-content {
+/* .p-highlight .p-menubar-item-content {
   color: var(--p-menubar-item-focus-color);
   background: var(--p-menubar-item-focus-background);
-}
+} */
 
-.p-highlight .p-menubar-item-content .p-menubar-item-icon,
+/* .p-highlight .p-menubar-item-content .p-menubar-item-icon,
 .p-highlight.p-menubar-item:not(.p-disabled)
   > .p-menubar-item-content:hover
   .p-menubar-item-icon {
   color: #1e293b !important;
-}
+} */
