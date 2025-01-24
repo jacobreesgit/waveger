@@ -31,9 +31,81 @@
       />
     </div>
 
-    <!-- Loading State with PrimeVue ProgressSpinner -->
-    <div v-if="hot100Store.loading" class="flex justify-center items-center">
-      <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="8" />
+    <!-- Loading State with PrimeVue Skeleton -->
+    <div v-if="hot100Store.loading" class="overflow-x-auto w-full md:w-auto">
+      <table
+        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full md:w-auto"
+      >
+        <thead>
+          <tr class="bg-gray-200">
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              #
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              Title
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              Artist
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-center text-sm md:text-base"
+            >
+              Movement
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              Last Week
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              Peak Position
+            </th>
+            <th
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
+            >
+              Weeks on Chart
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(item, index) in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+            :key="index"
+          >
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="30px" height="20px"></Skeleton>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="150px" height="20px"></Skeleton>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="120px" height="20px"></Skeleton>
+            </td>
+            <td
+              class="border border-gray-300 px-4 py-2 text-center text-sm md:text-base"
+            >
+              <Skeleton width="40px" height="20px"></Skeleton>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="40px" height="20px"></Skeleton>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="40px" height="20px"></Skeleton>
+            </td>
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
+              <Skeleton width="40px" height="20px"></Skeleton>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- Error State -->
@@ -41,9 +113,9 @@
       {{ hot100Store.error }}
     </div>
 
-    <!-- Data Table with Responsive Scroll -->
+    <!-- Data Table with Real Data -->
     <div
-      v-if="hot100Store.hot100Data?.content"
+      v-if="!hot100Store.loading && hot100Store.hot100Data?.content"
       class="overflow-x-auto w-full md:w-auto"
     >
       <table
@@ -92,10 +164,9 @@
           <tr
             v-for="(item, rank) in hot100Store.hot100Data.content"
             :key="rank"
-            class="hover:bg-gray-100"
           >
             <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
-              {{ rank }}
+              {{ rank + 1 }}
             </td>
             <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item.title }}
@@ -140,7 +211,7 @@ import { ref, watch } from "vue";
 import { useHot100Store } from "../stores/hot100";
 import { useSelectedDateStore } from "../stores/selectedDate";
 import DatePicker from "primevue/datepicker";
-import ProgressSpinner from "primevue/progressspinner";
+import Skeleton from "primevue/skeleton";
 
 // Access the stores
 const hot100Store = useHot100Store();
