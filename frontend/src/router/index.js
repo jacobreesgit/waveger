@@ -15,12 +15,6 @@ const routes = [
     component: Hot100,
     meta: { label: "Hot 100", icon: "pi pi-chart-line" },
   },
-  //   {
-  //     path: "/about",
-  //     name: "About",
-  //     component: () => import("../views/About.vue"), // Lazy-loaded route
-  //     meta: { label: "About", icon: "pi pi-info-circle" },
-  //   },
 ];
 
 const router = createRouter({

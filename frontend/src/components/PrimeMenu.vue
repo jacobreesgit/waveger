@@ -1,5 +1,5 @@
 <template>
-  <Menubar :model="menuItems" class="m-4" />
+  <Menubar :model="menuItems" />
 </template>
 
 <script setup>
@@ -12,11 +12,9 @@ const router = useRouter();
 // Dynamically generate Menubar items from Vue Router
 const menuItems = computed(() =>
   router.getRoutes().map((route) => ({
-    label: route.meta?.label || route.name, // Use meta.label or fallback to route name
-    icon: route.meta?.icon || "pi pi-circle", // Default icon if none is defined
-    command: () => router.push(route.path), // Navigate to the route
+    label: route.meta?.label || route.name,
+    icon: route.meta?.icon || "pi pi-circle",
+    command: () => router.push(route.path),
   }))
 );
 </script>
-
-<style scoped lang="scss"></style>

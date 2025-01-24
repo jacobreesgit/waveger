@@ -1,15 +1,17 @@
 <template>
-  <div class="container mx-auto p-4">
+  <div>
     <!-- Metadata -->
     <div class="text-center mb-6">
       <h1 class="text-2xl font-bold">HOT 100 (Billboard)</h1>
       <!-- Display the aligned date -->
-      <p v-if="!hot100Store.loading" class="text-gray-600">
-        Date: {{ hot100Store.hot100Data?.info?.date }}
+      <p class="text-gray-600">
+        Date:
+        <span v-if="!hot100Store.loading">{{
+          hot100Store.hot100Data?.info?.date
+        }}</span>
       </p>
     </div>
-
-    <!-- DatePicker -->
+    <!-- DatePicker to select a new date -->
     <div class="mb-6 flex items-center justify-center space-x-4">
       <label for="datePicker" class="text-gray-700 text-sm font-medium"
         >Choose Chart Date:</label
@@ -24,26 +26,30 @@
       />
     </div>
 
-    <!-- Loading state -->
-    <div v-if="hot100Store.loading" class="text-center">
-      <p class="text-blue-500 font-semibold">Loading...</p>
+    <!-- Loading State -->
+    <ProgressSpinner
+      v-if="hot100Store.loading"
+      style="width: 50px; height: 50px"
+      strokeWidth="8"
+    />
+
+    <!-- Error State -->
+    <div v-if="hot100Store.error" class="text-red-500">
+      {{ hot100Store.error }}
     </div>
 
-    <!-- Error state -->
-    <div v-if="hot100Store.error" class="text-center text-red-500">
-      <p>{{ hot100Store.error }}</p>
-    </div>
-
-    <!-- Data table -->
-    <div v-if="hot100Store.hot100Data?.content" class="overflow-x-auto">
-      <table class="table-auto w-full border-collapse border border-gray-300">
+    <!-- Data Table -->
+    <div v-if="hot100Store.hot100Data?.content && !hot100Store.loading">
+      <table
+        class="table-auto w-full border-collapse border border-gray-300 min-w-full"
+      >
         <thead>
           <tr class="bg-gray-200">
             <th class="border border-gray-300 px-4 py-2 text-left">#</th>
             <th class="border border-gray-300 px-4 py-2 text-left">Title</th>
             <th class="border border-gray-300 px-4 py-2 text-left">Artist</th>
             <th class="border border-gray-300 px-4 py-2 text-center">
-              Chart Movement
+              Movement
             </th>
             <th class="border border-gray-300 px-4 py-2 text-left">
               Last Week
@@ -69,17 +75,14 @@
               <i
                 v-if="item.detail === 'up'"
                 class="pi pi-arrow-up text-green-500"
-                title="Moved up on the chart"
               ></i>
               <i
                 v-else-if="item.detail === 'down'"
                 class="pi pi-arrow-down text-red-500"
-                title="Moved down on the chart"
               ></i>
               <i
                 v-else-if="item.detail === 'same'"
                 class="pi pi-minus text-gray-500"
-                title="Stayed the same on the chart"
               ></i>
             </td>
             <td class="border border-gray-300 px-4 py-2">
@@ -100,42 +103,29 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { onMounted } from "vue";
 import { useHot100Store } from "../stores/hot100";
+import { useSelectedDateStore } from "../stores/selectedDate";
 import DatePicker from "primevue/datepicker";
+import ProgressSpinner from "primevue/progressspinner";
 
-// Store
 const hot100Store = useHot100Store();
+const selectedDateStore = useSelectedDateStore();
 
-// Utility: Format a JavaScript Date object as 'yyyy-MM-dd'
+// Sync the selectedDate with the global store
+const selectedDate = ref(selectedDateStore.selectedDate);
+
+// Function to format date as 'yyyy-mm-dd'
 const formatDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
-// Utility: Get today's date formatted as 'yyyy-MM-dd'
-const getTodayDate = () => {
-  return formatDate(new Date());
-};
-
-// State
-const selectedDate = ref(getTodayDate()); // Default to today's date
-
-// Fetch data for a specific date
-const fetchDataForDate = (date) => {
-  const formattedDate = formatDate(new Date(date)); // Ensure the date is formatted correctly
-  hot100Store.fetchHot100(formattedDate, "1-10");
-};
-
-// Watch the selectedDate and fetch data whenever it changes
+// Watch for changes in selectedDate and refetch data
 watch(selectedDate, (newDate) => {
-  fetchDataForDate(newDate);
-});
-
-// Fetch data on component mount
-onMounted(() => {
-  fetchDataForDate(selectedDate.value); // Use today's date by default
+  const formattedDate = formatDate(newDate);
+  hot100Store.fetchHot100(formattedDate, "1-10");
 });
 </script>
