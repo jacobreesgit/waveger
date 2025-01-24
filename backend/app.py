@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # Import Flask-CORS
 import requests
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -7,6 +8,9 @@ import os
 
 app = Flask(__name__)
 
+# Enable CORS for all routes
+CORS(app)
+
 # API Configuration
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "billboard-api2.p.rapidapi.com"
@@ -14,7 +18,6 @@ BASE_URL = f"https://{RAPIDAPI_HOST}/hot-100"
 
 # Database Configuration
 DATABASE_URL = "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase"
-
 
 def get_db_connection():
     """Establishes a connection to the database."""
@@ -25,7 +28,6 @@ def get_db_connection():
         print(f"Database connection failed: {e}")
         raise
 
-
 def get_most_recent_tuesday(input_date):
     """Returns the most recent Tuesday on or before the given input date."""
     # Parse the input date
@@ -34,11 +36,9 @@ def get_most_recent_tuesday(input_date):
     last_tuesday = input_date - timedelta(days=days_since_tuesday)
     return last_tuesday.strftime('%Y-%m-%d')
 
-
 @app.route('/')
 def home():
     return "Welcome to the Billboard Hot 100 API Proxy!"
-
 
 @app.route('/hot-100', methods=['GET'])
 def get_hot_100():
@@ -99,7 +99,6 @@ def get_hot_100():
         if conn:
             cursor.close()
             conn.close()
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
