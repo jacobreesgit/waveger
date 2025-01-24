@@ -13,8 +13,12 @@
     </div>
 
     <!-- DatePicker to select a new date -->
-    <div class="mb-6 flex items-center justify-center space-x-4">
-      <label for="datePicker" class="text-gray-700 text-sm font-medium"
+    <div
+      class="mb-6 flex-col md:flex-row justify-center flex align-center items-center gap-1"
+    >
+      <label
+        for="datePicker"
+        class="text-gray-700 text-sm font-medium text-center items-center flex"
         >Choose Chart Date:</label
       >
       <DatePicker
@@ -37,45 +41,48 @@
       {{ hot100Store.error }}
     </div>
 
-    <!-- Data Table -->
-    <div v-if="hot100Store.hot100Data?.content">
+    <!-- Data Table with Responsive Scroll -->
+    <div
+      v-if="hot100Store.hot100Data?.content"
+      class="overflow-x-auto w-full md:w-auto"
+    >
       <table
-        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300"
+        class="table-auto w-full table-layout-fixed border-collapse border border-gray-300 w-full md:w-auto"
       >
         <thead>
           <tr class="bg-gray-200">
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               #
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               Title
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               Artist
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-center text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-center text-sm md:text-base"
             >
               Movement
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               Last Week
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               Peak Position
             </th>
             <th
-              class="border border-gray-300 px-2 py-1 text-left text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-left text-sm md:text-base"
             >
               Weeks on Chart
             </th>
@@ -87,17 +94,17 @@
             :key="rank"
             class="hover:bg-gray-100"
           >
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ rank }}
             </td>
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item.title }}
             </td>
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item.artist }}
             </td>
             <td
-              class="border border-gray-300 px-2 py-1 text-center text-xs sm:text-sm"
+              class="border border-gray-300 px-4 py-2 text-center text-sm md:text-base"
             >
               <i
                 v-if="item.detail === 'up'"
@@ -112,13 +119,13 @@
                 class="pi pi-minus text-gray-500"
               ></i>
             </td>
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item["last week"] }}
             </td>
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item["peak position"] }}
             </td>
-            <td class="border border-gray-300 px-2 py-1 text-xs sm:text-sm">
+            <td class="border border-gray-300 px-4 py-2 text-sm md:text-base">
               {{ item["weeks on chart"] }}
             </td>
           </tr>
