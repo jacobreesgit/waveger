@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/Home.vue";
 import Hot100 from "../views/Hot100.vue";
 import NotFound from "../views/NotFound.vue";
+import FAQ from "../views/FAQ.vue";
 
 const routes = [
   {
@@ -15,6 +16,12 @@ const routes = [
     name: "Hot100",
     component: Hot100,
     meta: { label: "Hot 100", icon: "pi pi-chart-line" },
+  },
+  {
+    path: "/faq",
+    name: "FAQ",
+    component: FAQ,
+    meta: { label: "FAQ", icon: "pi pi-question-circle" },
   },
   {
     path: "/:pathMatch(.*)*",
