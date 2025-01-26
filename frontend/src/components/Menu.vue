@@ -1,7 +1,7 @@
 <template>
   <Toolbar>
     <template #start>
-      <Image src="../assets/logo.png"></Image>
+      <Image src="../assets/cropped.svg"></Image>
     </template>
 
     <template #center>
