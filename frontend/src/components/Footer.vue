@@ -6,11 +6,3 @@
     </p>
   </footer>
 </template>
-
-<style scoped>
-footer {
-  position: relative;
-  bottom: 0;
-  width: 100%;
-}
-</style>

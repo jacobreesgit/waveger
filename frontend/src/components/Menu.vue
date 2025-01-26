@@ -1,12 +1,7 @@
 <template>
-  <Toolbar style="border-radius: 3rem; padding: 1rem 1rem 1rem 1.5rem">
+  <Toolbar>
     <template #start>
-      <div class="flex items-center gap-2">
-        <Image
-          src="../assets/logo.svg
-        "
-        />
-      </div>
+      <Image src="../assets/logo.png"></Image>
     </template>
 
     <template #center>
@@ -67,3 +62,10 @@ const menuItems = computed(() => {
     }));
 });
 </script>
+
+<style lang="css" scoped>
+.p-toolbar {
+  padding: 0.5rem;
+  border-radius: 3rem;
+}
+</style>
