@@ -12,6 +12,16 @@ export const useUserStore = defineStore('user', {
   }),
 
   actions: {
+    async registerUser(userData) {
+      try {
+        const response = await axios.post(`${API_BASE_URL}/users`, userData)
+        return response.data
+      } catch (err) {
+        this.error = err.message
+        throw err
+      }
+    },
+
     async loginUser(credentials) {
       try {
         const response = await axios.post(`${API_BASE_URL}/login`, credentials)
@@ -20,15 +30,6 @@ export const useUserStore = defineStore('user', {
       } catch (err) {
         this.error = err.message
         throw err
-      }
-    },
-
-    async fetchUser(userId) {
-      try {
-        const response = await axios.get(`${API_BASE_URL}/users/${userId}`)
-        this.currentUser = response.data
-      } catch (err) {
-        this.error = err.message
       }
     },
 

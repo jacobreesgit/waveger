@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
+  <div>
     <h2 class="text-2xl font-bold mb-4">
       <span v-if="user">
         ✅ Logged in as <span class="text-green-600">{{ user.username }}</span>

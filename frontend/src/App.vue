@@ -9,7 +9,9 @@
 
     <!-- Content -->
     <main class="flex-1 container mx-auto px-4 py-8 flex flex-col">
-      <router-view class="flex items-center flex-col" />
+      <router-view
+        class="flex items-center flex-col mx-auto p-6 bg-white shadow-md rounded-lg"
+      />
     </main>
   </div>
 </template>
