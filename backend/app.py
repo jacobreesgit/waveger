@@ -17,8 +17,9 @@ RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "billboard-api2.p.rapidapi.com"
 BASE_URL = f"https://{RAPIDAPI_HOST}/hot-100"
 
+
 # Database Configuration
-DATABASE_URL = "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
     """Establishes a connection to the database."""
