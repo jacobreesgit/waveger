@@ -6,6 +6,7 @@ from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 import os
 import json
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -171,5 +172,84 @@ def get_hot_100():
         if conn:
             conn.close()
 
+# Register a new user
+@app.route("/api/users", methods=["POST"])
+def register_user():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        hashed_password = generate_password_hash(data["password"])
+
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
+            (data["username"], data["email"], hashed_password),
+        )
+        user_id = cursor.fetchone()["id"]
+        conn.commit()
+
+        return jsonify({"message": "User registered successfully", "id": user_id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# Log in an existing user
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT * FROM users WHERE username = %s", (data["username"],))
+        user = cursor.fetchone()
+
+        if user and check_password_hash(user["password_hash"], data["password"]):
+            return jsonify({"message": "Login successful", "user": {"id": user["id"], "username": user["username"]}})
+        
+        return jsonify({"error": "Invalid credentials"}), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# Fetch all users (Admin use case)
+@app.route("/api/users", methods=["GET"])
+def get_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id, username, email FROM users")
+        users = cursor.fetchall()
+        return jsonify(users)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+# Fetch user by ID
+@app.route("/api/users/<int:user_id>", methods=["GET"])
+def get_user(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id, username, email FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if user:
+            return jsonify(user)
+        return jsonify({"error": "User not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+        
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
