@@ -204,18 +204,26 @@ def login():
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT * FROM users WHERE username = %s", (data["username"],))
+        cursor.execute("SELECT id, username, email, password_hash FROM users WHERE username = %s", (data["username"],))
         user = cursor.fetchone()
 
         if user and check_password_hash(user["password_hash"], data["password"]):
-            return jsonify({"message": "Login successful", "user": {"id": user["id"], "username": user["username"]}})
-        
+            return jsonify({
+                "message": "Login successful",
+                "user": {
+                    "id": user["id"],
+                    "username": user["username"],
+                    "email": user["email"]  # 🔥 Now includes email
+                }
+            })
+
         return jsonify({"error": "Invalid credentials"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
         conn.close()
+
 
 # Fetch all users (Admin use case)
 @app.route("/api/users", methods=["GET"])

@@ -1,10 +1,26 @@
 <template>
   <div class="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
     <h2 class="text-2xl font-bold mb-4">
-      {{ isSignUp ? 'Sign Up' : 'Login' }}
+      <span v-if="user">
+        ✅ Logged in as <span class="text-green-600">{{ user.username }}</span>
+      </span>
+      <span v-else>
+        {{ isSignUp ? 'Sign Up' : 'Login' }}
+      </span>
     </h2>
 
+    <div
+      v-if="user"
+      class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded"
+    >
+      <p>
+        Welcome, <strong>{{ user.email }}</strong
+        >! You are successfully logged in.
+      </p>
+    </div>
+
     <form
+      v-if="!user"
       @submit.prevent="isSignUp ? registerUser() : loginUser()"
       class="space-y-4"
     >
@@ -37,11 +53,10 @@
       >
         {{ isLoading ? 'Processing...' : isSignUp ? 'Sign Up' : 'Login' }}
       </button>
-      <p class="text-red-500" v-if="error">{{ error }}</p>
+      <p class="text-red-500 text-center" v-if="error">{{ error }}</p>
     </form>
 
-    <div v-if="user" class="mt-4">
-      <p><strong>Email:</strong> {{ user.email }}</p>
+    <div v-if="user" class="mt-4 text-center">
       <button
         @click="logoutUser"
         class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600"
@@ -50,7 +65,7 @@
       </button>
     </div>
 
-    <p class="mt-4 text-center">
+    <p v-if="!user" class="mt-4 text-center">
       <button @click="toggleMode" class="text-blue-600 hover:underline">
         {{
           isSignUp
@@ -85,7 +100,7 @@ const registerUser = async () => {
       email: email.value,
       password: password.value,
     })
-    isSignUp.value = false // Switch to login after successful registration
+    isSignUp.value = false
   } catch (err) {
     error.value = 'Registration failed. Username or email may already be taken.'
   } finally {
