@@ -37,7 +37,6 @@ export const useFavouriteStore = defineStore('favourites', {
           user_id: userId,
           title: song.title,
           artist: song.artist,
-          rank: song.rank,
         })
         this.favourites.push({ id: response.data.id, ...song })
       } catch (err) {

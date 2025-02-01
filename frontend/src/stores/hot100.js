@@ -1,7 +1,9 @@
-import { defineStore } from "pinia";
-import axios from "axios";
+import { defineStore } from 'pinia'
+import axios from 'axios'
 
-export const useHot100Store = defineStore("hot100", {
+const API_BASE_URL = 'https://wavegerpython.onrender.com/api'
+
+export const useHot100Store = defineStore('hot100', {
   state: () => ({
     hot100Data: null,
     loading: false,
@@ -9,27 +11,25 @@ export const useHot100Store = defineStore("hot100", {
   }),
 
   actions: {
-    async fetchHot100(date = "", range = "1-10") {
-      this.loading = true;
-      this.error = null;
+    async fetchHot100(date = '', range = '1-10') {
+      this.loading = true
+      this.error = null
 
       try {
-        const response = await axios.get(
-          "https://wavegerpython.onrender.com/hot-100",
-          { params: { date, range } }
-        );
-
-        console.log("Fetched Hot 100 Data:", response.data);
+        const response = await axios.post(`${API_BASE_URL}/hot-100`, {
+          params: { date, range },
+        })
+        console.log('Fetched Hot 100 Data:', response.data)
 
         this.hot100Data = {
           content: response.data.content,
           info: response.data.info,
-        };
+        }
       } catch (err) {
-        this.error = err.response?.data?.error || "An error occurred";
+        this.error = err.response?.data?.error || 'An error occurred'
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
   },
-});
+})
