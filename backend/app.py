@@ -18,7 +18,6 @@ RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "billboard-api2.p.rapidapi.com"
 BASE_URL = f"https://{RAPIDAPI_HOST}/hot-100"
 
-
 # Database Configuration
 DATABASE_URL = os.getenv("DATABASE_URL")
 
