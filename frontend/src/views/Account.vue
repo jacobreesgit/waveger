@@ -43,7 +43,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useUserStore } from '@/stores/users'
+import { useUserStore } from '../stores/users'
 
 const store = useUserStore()
 const username = ref('')
