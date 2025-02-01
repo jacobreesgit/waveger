@@ -38,7 +38,22 @@ def get_most_recent_tuesday(input_date):
 
 @app.route('/')
 def home():
-    return "Welcome to the Billboard Hot 100 API Proxy!"
+    """Provides a detailed explanation of the API usage."""
+    explanation = (
+        "Welcome to the Billboard Hot 100 API Proxy!\n\n"
+        "Usage:\n"
+        "  /hot-100?date=YYYY-MM-DD&range=1-10\n\n"
+        "Parameters:\n"
+        "  date  - The date for which you wish to retrieve the chart data. "
+        "If omitted, today’s date is used.\n"
+        "  range - The range of chart positions to retrieve, for example, '1-10'. "
+        "If omitted, the default range '1-10' is used.\n\n"
+        "How it works:\n"
+        "  The proxy aligns the provided date to the most recent Tuesday and retrieves "
+        "the corresponding Billboard Hot 100 data. The data is then cached in a PostgreSQL "
+        "database to enhance performance for subsequent requests."
+    )
+    return explanation
 
 @app.route('/hot-100', methods=['GET'])
 def get_hot_100():
