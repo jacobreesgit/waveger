@@ -258,6 +258,44 @@ def get_user(user_id):
     finally:
         cursor.close()
         conn.close()
+
+@app.route("/api/favourites", methods=["POST"])
+def add_favourite():
+    """Add a song to the user's favourites."""
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            "INSERT INTO favourites (user_id, title, artist, rank) VALUES (%s, %s, %s, %s) RETURNING id",
+            (data["user_id"], data["title"], data["artist"], data["rank"]),
+        )
+        favourite_id = cursor.fetchone()["id"]
+        conn.commit()
+        return jsonify({"message": "Song added to favourites!", "id": favourite_id}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route("/api/favourites/<int:user_id>", methods=["GET"])
+def get_favourites(user_id):
+    """Retrieve a user's favourite songs."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id, title, artist, rank FROM favourites WHERE user_id = %s", (user_id,))
+        favourites = cursor.fetchall()
+        return jsonify(favourites)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
         
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)

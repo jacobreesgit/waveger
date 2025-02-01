@@ -5,78 +5,74 @@
       <h1 class="text-2xl font-bold">HOT 100 (Billboard)</h1>
     </div>
 
-    <!-- DatePicker to select a new date -->
+    <!-- Date Picker -->
     <div
-      class="mb-6 flex-col md:flex-row justify-center flex align-center items-center gap-1"
+      class="mb-6 flex flex-col md:flex-row justify-center items-center gap-2"
     >
-      <label for="datePicker" class="font-medium text-center items-center flex">
-        Choose Chart Date:
-      </label>
+      <label for="datePicker" class="font-medium">Choose Chart Date:</label>
       <DatePicker
         id="datePicker"
         v-model="selectedDate"
         :show-icon="true"
         date-format="yy-mm-dd"
         placeholder="Pick a date"
-        class="p-inputtext-sm p-datepicker w-64"
+        class="p-inputtext-sm w-64"
       />
     </div>
 
-    <!-- Error State -->
-    <div v-if="hot100Store.error" class="text-red-500">
+    <!-- Error Message -->
+    <div
+      v-if="hot100Store.error"
+      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-center"
+    >
       {{ hot100Store.error }}
     </div>
 
-    <!-- Single Table with conditional Skeleton or Data -->
+    <!-- Data Table -->
     <DataTable
-      :value="loading ? Array.from({ length: 10 }) : chartDataArray"
+      :value="loading ? skeletonData : chartDataArray"
       class="p-datatable-striped p-datatable-gridlines"
       responsiveLayout="scroll"
     >
-      <!-- Rank Column -->
+      <!-- Rank -->
       <Column header="#" style="width: 4rem">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="30px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data.rank }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="30px" height="20px"
+          /></template>
+          <template v-else>{{ slotProps.data.rank }}</template>
         </template>
       </Column>
 
-      <!-- Title Column -->
+      <!-- Title -->
       <Column header="Title">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="150px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data.title }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="150px" height="20px"
+          /></template>
+          <template v-else class="font-bold">{{
+            slotProps.data.title
+          }}</template>
         </template>
       </Column>
 
-      <!-- Artist Column -->
+      <!-- Artist -->
       <Column header="Artist">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="120px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data.artist }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="120px" height="20px"
+          /></template>
+          <template v-else>{{ slotProps.data.artist }}</template>
         </template>
       </Column>
 
-      <!-- Movement Column -->
+      <!-- Movement -->
       <Column header="Movement" class="text-center">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="40px" height="20px" />
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="40px" height="20px"
+          /></template>
           <template v-else>
-            <!-- Show movement icon if data is loaded -->
             <i
               v-if="slotProps.data.detail === 'up'"
               class="pi pi-arrow-up text-green-500"
@@ -93,39 +89,48 @@
         </template>
       </Column>
 
-      <!-- Last Week Column -->
+      <!-- Last Week -->
       <Column header="Last Week">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="40px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data['last week'] }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="40px" height="20px"
+          /></template>
+          <template v-else>{{ slotProps.data['last week'] || '-' }}</template>
         </template>
       </Column>
 
-      <!-- Peak Position Column -->
+      <!-- Peak Position -->
       <Column header="Peak Position">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="40px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data['peak position'] }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="40px" height="20px"
+          /></template>
+          <template v-else>{{
+            slotProps.data['peak position'] || '-'
+          }}</template>
         </template>
       </Column>
 
-      <!-- Weeks on Chart Column -->
+      <!-- Weeks on Chart -->
       <Column header="Weeks on Chart">
         <template #body="slotProps">
-          <template v-if="loading">
-            <Skeleton width="40px" height="20px" />
-          </template>
-          <template v-else>
-            {{ slotProps.data['weeks on chart'] }}
-          </template>
+          <template v-if="loading"
+            ><Skeleton width="40px" height="20px"
+          /></template>
+          <template v-else>{{
+            slotProps.data['weeks on chart'] || '-'
+          }}</template>
+        </template>
+      </Column>
+
+      <Column header="Favourite">
+        <template #body="slotProps">
+          <button
+            @click="favouriteSong(slotProps.data)"
+            class="p-button p-button-sm p-button-rounded p-button-text"
+          >
+            <i class="pi pi-star text-yellow-500"></i>
+          </button>
         </template>
       </Column>
     </DataTable>
@@ -136,14 +141,16 @@
 import { ref, watch, computed } from 'vue'
 import { useHot100Store } from '../stores/hot100'
 import { useSelectedDateStore } from '../stores/selectedDate'
+import { useUserStore } from '../stores/users'
 import DatePicker from 'primevue/datepicker'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Skeleton from 'primevue/skeleton'
 
-// Access the Pinia stores
+// Stores
 const hot100Store = useHot100Store()
 const selectedDateStore = useSelectedDateStore()
+const userStore = useUserStore()
 
 // Track loading state
 const loading = computed(() => hot100Store.loading)
@@ -151,32 +158,55 @@ const loading = computed(() => hot100Store.loading)
 // Sync the selectedDate with the global store
 const selectedDate = ref(selectedDateStore.selectedDate)
 
-// Function to format date as 'yyyy-mm-dd'
+// Ensure valid date format (yyyy-mm-dd)
 const formatDate = (date) => {
+  if (!date) return null
   const d = new Date(date)
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return d.toISOString().split('T')[0]
 }
 
 // Watch for changes in selectedDate and refetch data
 watch(selectedDate, (newDate) => {
-  const formattedDate = formatDate(newDate) // Ensure the date is in 'yyyy-mm-dd' format
-  hot100Store.fetchHot100(formattedDate, '1-10')
+  const formattedDate = formatDate(newDate)
+  if (formattedDate) {
+    hot100Store.fetchHot100(formattedDate, '1-10')
+  }
 })
 
-// Convert the object { "1": {...}, "2": {...}, ... } into an array of items
+// Placeholder Skeleton Data
+const skeletonData = computed(() => Array.from({ length: 10 }).map(() => ({})))
+
+// Convert object to array for DataTable
 const chartDataArray = computed(() => {
   const content = hot100Store.hot100Data?.content || {}
   return Object.values(content)
 })
+
+// Favourite a Song
+const favouriteSong = async (song) => {
+  if (!userStore.currentUser) {
+    alert('You must be logged in to favourite a song.')
+    return
+  }
+  try {
+    await axios.post('https://wavegerpython.onrender.com/api/favourites', {
+      user_id: userStore.currentUser.id,
+      title: song.title,
+      artist: song.artist,
+      rank: song.rank,
+    })
+    alert(`"${song.title}" added to favourites!`)
+  } catch (error) {
+    console.error('Error adding to favourites:', error)
+    alert('Failed to add song to favourites.')
+  }
+}
 </script>
 
 <style lang="scss" scoped>
 @media only screen and (max-width: 768px) {
   .p-datatable {
-    width: -webkit-fill-available;
+    width: 100%;
   }
 }
 </style>
