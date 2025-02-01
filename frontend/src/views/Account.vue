@@ -56,19 +56,6 @@
       <p class="text-red-500" v-if="error">{{ error }}</p>
     </form>
 
-    <div
-      v-if="user"
-      class="mt-4 bg-gray-100 p-4 rounded-lg text-center shadow-inner"
-    >
-      <p><strong>Email:</strong> {{ user.email }}</p>
-      <button
-        @click="logoutUser"
-        class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mt-4"
-      >
-        Logout
-      </button>
-    </div>
-
     <!-- Favourite Songs Section -->
     <div
       v-if="user && favourites.length"
@@ -101,7 +88,7 @@
       No favourites added yet.
     </p>
 
-    <p class="mt-4 text-center">
+    <p v-if="!user" class="mt-4 text-center">
       <button @click="toggleMode" class="text-blue-600 hover:underline">
         {{
           isSignUp
@@ -110,6 +97,16 @@
         }}
       </button>
     </p>
+
+    <div v-if="user" class="p-4 rounded-lg text-center rounded-lg shadow">
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <button
+        @click="logoutUser"
+        class="w-full bg-red-500 text-white p-2 rounded hover:bg-red-600 mt-4"
+      >
+        Logout
+      </button>
+    </div>
   </div>
 </template>
 
