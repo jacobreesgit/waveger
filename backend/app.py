@@ -38,22 +38,42 @@ def get_most_recent_tuesday(input_date):
 
 @app.route('/')
 def home():
-    """Provides a detailed explanation of the API usage."""
-    explanation = (
-        "Welcome to the Billboard Hot 100 API Proxy!\n\n"
-        "Usage:\n"
-        "  /hot-100?date=YYYY-MM-DD&range=1-10\n\n"
-        "Parameters:\n"
-        "  date  - The date for which you wish to retrieve the chart data. "
-        "If omitted, today’s date is used.\n"
-        "  range - The range of chart positions to retrieve, for example, '1-10'. "
-        "If omitted, the default range '1-10' is used.\n\n"
-        "How it works:\n"
-        "  The proxy aligns the provided date to the most recent Tuesday and retrieves "
-        "the corresponding Billboard Hot 100 data. The data is then cached in a PostgreSQL "
-        "database to enhance performance for subsequent requests."
-    )
-    return explanation
+    """Provides a detailed HTML explanation of the API usage."""
+    html = """
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Billboard Hot 100 API Proxy</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+          h1 { colour: #2c3e50; }
+          ul { list-style-type: square; }
+          li { margin-bottom: 10px; }
+        </style>
+      </head>
+      <body>
+        <h1>Welcome to the Billboard Hot 100 API Proxy!</h1>
+        <p>This API proxy allows you to retrieve Billboard Hot 100 data based on a specified date and range.</p>
+        <h2>Usage</h2>
+        <ul>
+          <li><strong>/hot-100</strong> - Endpoint to retrieve chart data.</li>
+        </ul>
+        <h2>Parameters</h2>
+        <ul>
+          <li><strong>date</strong>: The date (in YYYY-MM-DD format) for which you wish to retrieve chart data. If omitted, today’s date is used.</li>
+          <li><strong>range</strong>: The range of chart positions to retrieve (for example, "1-10"). If omitted, the default range "1-10" is used.</li>
+        </ul>
+        <h2>How it works</h2>
+        <ul>
+          <li>The provided date is aligned to the most recent Tuesday.</li>
+          <li>If the data for that date and range is already cached in our PostgreSQL database, it is returned directly.</li>
+          <li>If not, the data is fetched from the Billboard API and then stored in the database for future requests.</li>
+        </ul>
+      </body>
+    </html>
+    """
+    return html
 
 @app.route('/hot-100', methods=['GET'])
 def get_hot_100():
