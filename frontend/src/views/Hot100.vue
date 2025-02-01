@@ -146,6 +146,7 @@ import DatePicker from 'primevue/datepicker'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Skeleton from 'primevue/skeleton'
+import axios from 'axios'
 
 // Stores
 const hot100Store = useHot100Store()
