@@ -1,6 +1,6 @@
 <template>
   <div class="container mx-auto text-center">
-    <h1 class="text-3xl font-bold mb-6">Welcome to Waveger!</h1>
+    <h1 class="text-2xl font-bold mb-6">Welcome to Waveger!</h1>
     <div class="p-4 w-full">
       <!-- Accordion for FAQs -->
       <Accordion :value="['0']" multiple>
@@ -54,8 +54,8 @@
 </template>
 
 <script setup>
-import Accordion from "primevue/accordion";
-import AccordionPanel from "primevue/accordionpanel";
-import AccordionHeader from "primevue/accordionheader";
-import AccordionContent from "primevue/accordioncontent";
+import Accordion from 'primevue/accordion'
+import AccordionPanel from 'primevue/accordionpanel'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionContent from 'primevue/accordioncontent'
 </script>

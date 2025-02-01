@@ -100,7 +100,7 @@
             <Skeleton width="40px" height="20px" />
           </template>
           <template v-else>
-            {{ slotProps.data["last week"] }}
+            {{ slotProps.data['last week'] }}
           </template>
         </template>
       </Column>
@@ -112,7 +112,7 @@
             <Skeleton width="40px" height="20px" />
           </template>
           <template v-else>
-            {{ slotProps.data["peak position"] }}
+            {{ slotProps.data['peak position'] }}
           </template>
         </template>
       </Column>
@@ -124,7 +124,7 @@
             <Skeleton width="40px" height="20px" />
           </template>
           <template v-else>
-            {{ slotProps.data["weeks on chart"] }}
+            {{ slotProps.data['weeks on chart'] }}
           </template>
         </template>
       </Column>
@@ -133,42 +133,50 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
-import { useHot100Store } from "../stores/hot100";
-import { useSelectedDateStore } from "../stores/selectedDate";
-import DatePicker from "primevue/datepicker";
-import DataTable from "primevue/datatable";
-import Column from "primevue/column";
-import Skeleton from "primevue/skeleton";
+import { ref, watch, computed } from 'vue'
+import { useHot100Store } from '../stores/hot100'
+import { useSelectedDateStore } from '../stores/selectedDate'
+import DatePicker from 'primevue/datepicker'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Skeleton from 'primevue/skeleton'
 
 // Access the Pinia stores
-const hot100Store = useHot100Store();
-const selectedDateStore = useSelectedDateStore();
+const hot100Store = useHot100Store()
+const selectedDateStore = useSelectedDateStore()
 
 // Track loading state
-const loading = computed(() => hot100Store.loading);
+const loading = computed(() => hot100Store.loading)
 
 // Sync the selectedDate with the global store
-const selectedDate = ref(selectedDateStore.selectedDate);
+const selectedDate = ref(selectedDateStore.selectedDate)
 
 // Function to format date as 'yyyy-mm-dd'
 const formatDate = (date) => {
-  const d = new Date(date);
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
+  const d = new Date(date)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 // Watch for changes in selectedDate and refetch data
 watch(selectedDate, (newDate) => {
-  const formattedDate = formatDate(newDate); // Ensure the date is in 'yyyy-mm-dd' format
-  hot100Store.fetchHot100(formattedDate, "1-10");
-});
+  const formattedDate = formatDate(newDate) // Ensure the date is in 'yyyy-mm-dd' format
+  hot100Store.fetchHot100(formattedDate, '1-10')
+})
 
 // Convert the object { "1": {...}, "2": {...}, ... } into an array of items
 const chartDataArray = computed(() => {
-  const content = hot100Store.hot100Data?.content || {};
-  return Object.values(content);
-});
+  const content = hot100Store.hot100Data?.content || {}
+  return Object.values(content)
+})
 </script>
+
+<style lang="scss" scoped>
+@media only screen and (max-width: 768px) {
+  .p-datatable {
+    width: -webkit-fill-available;
+  }
+}
+</style>

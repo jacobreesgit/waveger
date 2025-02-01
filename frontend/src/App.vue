@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col min-h-screen">
+  <div class="app flex flex-col min-h-screen">
     <!-- Menubar -->
     <header class="p-4 pb-0">
       <div class="container mx-auto">
@@ -8,39 +8,33 @@
     </header>
 
     <!-- Content -->
-    <main
-      :class="{
-        'flex-1 container mx-auto px-4 py-8': true,
-        flex: route.name == 'NotFound',
-      }"
-    >
-      <router-view class="flex items-center flex-col justify-center" />
+    <main class="flex-1 container mx-auto px-4 py-8 flex flex-col">
+      <router-view class="flex-grow flex items-center flex-col" />
     </main>
-
-    <!-- Footer -->
-    <!-- <Footer /> -->
   </div>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
-import { useHot100Store } from "./stores/hot100";
-import { useSelectedDateStore } from "./stores/selectedDate";
-import { useRoute } from "vue-router"; // Import useRoute for checking the current route
-import Menu from "./components/Menu.vue";
-import Footer from "./components/Footer.vue";
+import { onMounted } from 'vue'
+import { useHot100Store } from './stores/hot100'
+import { useSelectedDateStore } from './stores/selectedDate'
+import Menu from './components/Menu.vue'
 
 // Use Pinia Store
-const hot100Store = useHot100Store();
-const selectedDateStore = useSelectedDateStore();
-
-// Use Route
-const route = useRoute();
+const hot100Store = useHot100Store()
+const selectedDateStore = useSelectedDateStore()
 
 // Fetch today's data on initial load
 onMounted(() => {
-  const today = new Date().toISOString().split("T")[0];
-  selectedDateStore.setSelectedDate(today);
-  hot100Store.fetchHot100(today, "1-10");
-});
+  const today = new Date().toISOString().split('T')[0]
+  selectedDateStore.setSelectedDate(today)
+  hot100Store.fetchHot100(today, '1-10')
+})
 </script>
+
+<style lang="scss" scoped>
+.app {
+  background-image: url('/src/assets/midjourney/u7353449871_A_tranquil_fusion_of_audio_waves_and_sea_waves_at_d_5c571763-cbc2-48e3-98c9-faa374c1051b.png');
+  background-size: cover;
+}
+</style>
