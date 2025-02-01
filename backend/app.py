@@ -296,6 +296,25 @@ def get_favourites(user_id):
         cursor.close()
         conn.close()
 
+@app.route("/api/favourites/<int:fav_id>", methods=["DELETE"])
+def remove_favourite(fav_id):
+    """Remove a favourite song by ID."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        cursor.execute("DELETE FROM favourites WHERE id = %s RETURNING id", (fav_id,))
+        deleted_id = cursor.fetchone()
+        
+        if deleted_id:
+            conn.commit()
+            return jsonify({"message": "Favourite removed"}), 200
+        return jsonify({"error": "Favourite not found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
         
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
