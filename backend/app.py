@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, timedelta
 import os
+import json
 
 app = Flask(__name__)
 
@@ -30,7 +31,6 @@ def get_db_connection():
 
 def get_most_recent_tuesday(input_date):
     """Returns the most recent Tuesday on or before the given input date."""
-    # Parse the input date
     input_date = datetime.strptime(input_date, '%Y-%m-%d')
     days_since_tuesday = (input_date.weekday() - 1) % 7  # Tuesday is weekday 1
     last_tuesday = input_date - timedelta(days=days_since_tuesday)
@@ -44,16 +44,24 @@ def home():
 def get_hot_100():
     # Parse user-provided date; use today's date if not provided or empty
     today_date = datetime.today().strftime('%Y-%m-%d')
-    requested_date = request.args.get("date", "").strip()  # Handle empty or missing 'date'
+    requested_date = request.args.get("date", "").strip()
     if not requested_date:
         requested_date = today_date
 
     range_param = request.args.get("range", "1-10")  # Default range
 
+    # Validate date format
+    try:
+        datetime.strptime(requested_date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
+
     # Get the most recent Tuesday for the requested date
     aligned_tuesday = get_most_recent_tuesday(requested_date)
 
-    # Check if the data for the aligned Tuesday is already in the database
+    conn = None
+    cursor = None
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -69,8 +77,11 @@ def get_hot_100():
         db_result = cursor.fetchone()
 
         if db_result:
-            # Extract content only from the stored data
-            content = db_result["data"]["content"]
+            stored_data = db_result["data"]
+            # If stored_data is a string, parse it as JSON
+            if isinstance(stored_data, str):
+                stored_data = json.loads(stored_data)
+            content = stored_data["content"]
             return jsonify({
                 "source": "database",
                 "content": content,
@@ -93,17 +104,16 @@ def get_hot_100():
         response.raise_for_status()  # Raise an error for HTTP issues
         api_data = response.json()
 
-        # Store only the "content" field in the database
+        # Store the data in the database using json.dumps for serialisation
         cursor.execute(
             """
             INSERT INTO hot_100_data (date, range, data)
             VALUES (%s, %s, %s)
             """,
-            (aligned_tuesday, range_param, jsonify(api_data).data.decode()),
+            (aligned_tuesday, range_param, json.dumps(api_data)),
         )
         conn.commit()
 
-        # Extract content for the response
         content = api_data["content"]
         return jsonify({
             "source": "api",
@@ -120,8 +130,9 @@ def get_hot_100():
     except Exception as e:
         return jsonify({"error": f"Database or server error: {e}"}), 500
     finally:
-        if conn:
+        if cursor:
             cursor.close()
+        if conn:
             conn.close()
 
 if __name__ == '__main__':
