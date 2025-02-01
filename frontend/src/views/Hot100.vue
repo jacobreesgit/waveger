@@ -123,13 +123,20 @@
         </template>
       </Column>
 
+      <!-- Favourite Button -->
       <Column header="Favourite">
         <template #body="slotProps">
           <button
-            @click="favouriteSong(slotProps.data)"
+            @click="toggleFavourite(slotProps.data)"
             class="p-button p-button-sm p-button-rounded p-button-text"
           >
-            <i class="pi pi-star text-yellow-500"></i>
+            <i
+              :class="
+                isFavourite(slotProps.data)
+                  ? 'pi pi-star-fill text-yellow-500'
+                  : 'pi pi-star text-gray-400'
+              "
+            ></i>
           </button>
         </template>
       </Column>
@@ -138,20 +145,21 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { useHot100Store } from '../stores/hot100'
 import { useSelectedDateStore } from '../stores/selectedDate'
 import { useUserStore } from '../stores/users'
+import { useFavouriteStore } from '../stores/favourites'
 import DatePicker from 'primevue/datepicker'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Skeleton from 'primevue/skeleton'
-import axios from 'axios'
 
 // Stores
 const hot100Store = useHot100Store()
 const selectedDateStore = useSelectedDateStore()
 const userStore = useUserStore()
+const favouriteStore = useFavouriteStore()
 
 // Track loading state
 const loading = computed(() => hot100Store.loading)
@@ -174,6 +182,13 @@ watch(selectedDate, (newDate) => {
   }
 })
 
+// Fetch user favourites on load
+onMounted(() => {
+  if (userStore.currentUser) {
+    favouriteStore.fetchFavourites(userStore.currentUser.id)
+  }
+})
+
 // Placeholder Skeleton Data
 const skeletonData = computed(() => Array.from({ length: 10 }).map(() => ({})))
 
@@ -183,24 +198,20 @@ const chartDataArray = computed(() => {
   return Object.values(content)
 })
 
-// Favourite a Song
-const favouriteSong = async (song) => {
+// Check if song is already favourited
+const isFavourite = (song) => {
+  return favouriteStore.favourites.some(
+    (fav) => fav.title === song.title && fav.artist === song.artist
+  )
+}
+
+// Toggle favourite
+const toggleFavourite = async (song) => {
   if (!userStore.currentUser) {
     alert('You must be logged in to favourite a song.')
     return
   }
-  try {
-    await axios.post('https://wavegerpython.onrender.com/api/favourites', {
-      user_id: userStore.currentUser.id,
-      title: song.title,
-      artist: song.artist,
-      rank: song.rank,
-    })
-    alert(`"${song.title}" added to favourites!`)
-  } catch (error) {
-    console.error('Error adding to favourites:', error)
-    alert('Failed to add song to favourites.')
-  }
+  await favouriteStore.toggleFavourite(userStore.currentUser.id, song)
 }
 </script>
 
