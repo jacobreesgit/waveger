@@ -6,7 +6,7 @@
     <!-- Content -->
     <main class="flex-1 container mx-auto flex flex-col">
       <router-view
-        class="flex items-center flex-col mx-auto p-8 bg-white glassmorphism gap-4 w-full"
+        class="flex items-center flex-col mx-auto p-8 bg-white glassmorphism gap-4 w-5/6"
       />
     </main>
   </div>
