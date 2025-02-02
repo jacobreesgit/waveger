@@ -56,9 +56,16 @@ export const useUserStore = defineStore('user', {
           headers: { Authorization: `Bearer ${storedToken}` },
         })
         .then((response) => {
-          console.log('Token is valid:', response.data)
+          // ✅ Extract only necessary data
+          const userData = response.data.user
+          console.log('Token is valid:', {
+            id: userData.id,
+            username: userData.username,
+            email: userData.email,
+          }) // ✅ Avoid circular structure
+
           this.token = storedToken
-          this.currentUser = response.data.user
+          this.currentUser = userData
           this.consentGiven = true
           axios.defaults.headers.common['Authorization'] =
             `Bearer ${storedToken}`
