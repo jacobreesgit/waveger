@@ -62,7 +62,7 @@
             text
             rounded
             @click="toggleFavourite(track.title, track.artist)"
-          />
+          ></Button>
         </template>
         <template #title>
           <h3 class="text-lg font-bold">

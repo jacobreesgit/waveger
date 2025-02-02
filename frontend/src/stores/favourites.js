@@ -13,9 +13,18 @@ export const useFavouritesStore = defineStore('favourites', {
   actions: {
     async fetchFavourites() {
       this.loading = true
+      this.error = null
+
+      const token = localStorage.getItem('token') // Ensure token is retrieved
+      if (!token) {
+        this.error = 'Authentication required'
+        this.loading = false
+        return
+      }
+
       try {
         const response = await axios.get(`${BACKEND_API_URL}/`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${token}` }, // Ensure token is included
         })
         this.favourites = response.data
       } catch (err) {
@@ -26,15 +35,17 @@ export const useFavouritesStore = defineStore('favourites', {
     },
 
     async addFavourite(title, artist) {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        this.error = 'Authentication required'
+        return
+      }
+
       try {
         const response = await axios.post(
           `${BACKEND_API_URL}/`,
           { title, artist },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${token}` } }
         )
         this.favourites.push({ id: response.data.id, title, artist })
       } catch (err) {
@@ -43,9 +54,15 @@ export const useFavouritesStore = defineStore('favourites', {
     },
 
     async removeFavourite(songId) {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        this.error = 'Authentication required'
+        return
+      }
+
       try {
         await axios.delete(`${BACKEND_API_URL}/${songId}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${token}` },
         })
         this.favourites = this.favourites.filter((song) => song.id !== songId)
       } catch (err) {

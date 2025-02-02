@@ -10,19 +10,23 @@ CORS(favourites_bp)
 @jwt_required()
 def get_favourites():
     """Fetch all favourite songs for the logged-in user."""
-    user_id = get_jwt_identity()
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
     try:
+        user_id = get_jwt_identity()
+        if not user_id:
+            return jsonify({"error": "Unauthorized access"}), 401  # Explicitly return 401
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
         cursor.execute("SELECT id, title, artist FROM favourites WHERE user_id = %s", (user_id,))
         favourites = cursor.fetchall()
-        return jsonify(favourites)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
+
         cursor.close()
         conn.close()
+
+        return jsonify(favourites)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500  # Return a proper error message
 
 @favourites_bp.route("/", methods=["POST"])
 @jwt_required()
