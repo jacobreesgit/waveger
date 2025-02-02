@@ -10,7 +10,7 @@
     <!-- Content -->
     <main class="flex-1 container mx-auto px-4 py-8 flex flex-col">
       <router-view
-        class="flex items-center flex-col mx-auto p-6 bg-white shadow-md rounded-lg"
+        class="flex items-center flex-col mx-auto p-6 bg-white glassmorphism"
       />
     </main>
   </div>
@@ -36,7 +36,8 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .app {
-  background-image: url('/src/assets/midjourney/u7353449871_A_tranquil_fusion_of_audio_waves_and_sea_waves_at_d_5c571763-cbc2-48e3-98c9-faa374c1051b.png');
+  background-image: url('/src/assets/background.jpeg');
   background-size: cover;
+  filter: contrast(80%) brightness(110%);
 }
 </style>

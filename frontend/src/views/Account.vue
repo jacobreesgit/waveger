@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
+  <div>
     <h2 class="text-2xl font-bold mb-4">
       <span v-if="user">
         ✅ Logged in as <span class="text-green-600">{{ user.username }}</span>
@@ -9,15 +9,10 @@
       </span>
     </h2>
 
-    <div
-      v-if="user"
-      class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded"
+    <Message v-if="user" severity="success"
+      >Welcome, <strong>{{ user.username }}</strong
+      >! You are successfully logged in.</Message
     >
-      <p>
-        Welcome, <strong>{{ user.username }}</strong
-        >! You are successfully logged in.
-      </p>
-    </div>
 
     <form
       v-if="!user"
@@ -114,6 +109,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '../stores/users'
 import { useFavouriteStore } from '../stores/favourites'
+import Message from 'primevue/message'
 
 const userStore = useUserStore()
 const favouriteStore = useFavouriteStore()

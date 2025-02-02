@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto text-center">
+  <div>
     <!-- Title -->
     <h1 class="text-2xl font-bold text-gray-800 mb-2">Oops! Page Not Found</h1>
 

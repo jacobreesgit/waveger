@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Toolbar v-if="!isMobile">
+    <Toolbar v-if="!isMobile" class="glassmorphism">
       <!-- Desktop version: PrimeVue Toolbar -->
       <template #start>
         <div class="flex gap-4">
@@ -23,17 +23,19 @@
       </template>
       <template #end>
         <div class="flex items-center gap-2">
-          <Avatar
-            class="mr-2"
-            size="large"
-            shape="circle"
-            image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
-          />
+          <router-link to="/account">
+            <Avatar
+              class="mr-2"
+              size="large"
+              shape="circle"
+              image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
+            />
+          </router-link>
         </div>
       </template>
     </Toolbar>
 
-    <Menubar v-else :model="menuItems">
+    <Menubar v-else :model="menuItems" class="glassmorphism">
       <!-- Mobile version: PrimeVue Menubar -->
     </Menubar>
   </div>
@@ -53,7 +55,12 @@ const router = useRouter()
 const menuItems = computed(() => {
   const routes = router.getRoutes()
   return routes
-    .filter((routeItem) => routeItem.name !== 'NotFound')
+    .filter(
+      (routeItem) =>
+        routeItem.name !== 'NotFound' &&
+        routeItem.name !== 'Home' &&
+        routeItem.name !== 'Account'
+    )
     .map((routeItem) => ({
       label: routeItem.meta?.label || routeItem.name,
       icon: routeItem.meta?.icon || 'pi pi-circle',

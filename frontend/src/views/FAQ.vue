@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto text-center">
+  <div>
     <h1 class="text-2xl font-bold mb-6">Welcome to Waveger!</h1>
     <div class="p-4 w-full">
       <!-- Accordion for FAQs -->

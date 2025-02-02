@@ -21,12 +21,7 @@
     </div>
 
     <!-- Error Message -->
-    <div
-      v-if="hot100Store.error"
-      class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 text-center"
-    >
-      {{ hot100Store.error }}
-    </div>
+    <Message class="mb-4" severity="error">{{ hot100Store.error }}</Message>
 
     <!-- Data Table -->
     <DataTable
@@ -154,6 +149,7 @@ import DatePicker from 'primevue/datepicker'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Skeleton from 'primevue/skeleton'
+import Message from 'primevue/message'
 
 // Stores
 const hot100Store = useHot100Store()
