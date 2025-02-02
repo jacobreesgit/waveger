@@ -28,3 +28,26 @@
 .p-card {
   overflow: auto;
 }
+
+.p-card-body {
+  padding: 0 !important;
+}
+
+.p-card-caption {
+  padding: var(--p-card-body-padding);
+}
+
+.p-card-header {
+  position: relative;
+}
+
+.p-card-header .favourite-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background-color: white;
+}
+
+.p-card-header .favourite-button:hover {
+  background-color: white !important;
+}

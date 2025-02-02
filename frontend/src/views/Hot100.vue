@@ -34,7 +34,7 @@
     <!-- Billboard Hot 100 Cards -->
     <div
       v-if="hot100Store.hot100Data && !loading"
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full md:w-4/5"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full md:w-5/7"
     >
       <Card
         v-for="(track, index) in hot100Store.hot100Data"
@@ -47,6 +47,22 @@
             alt="Album Cover"
             class="w-full h-40 object-cover"
           />
+          <Button
+            class="favourite-button"
+            :icon="
+              isFavourite(track.title, track.artist)
+                ? 'pi pi-heart-fill'
+                : 'pi pi-heart'
+            "
+            :class="
+              isFavourite(track.title, track.artist)
+                ? 'p-button-danger'
+                : 'p-button-outlined'
+            "
+            text
+            rounded
+            @click="toggleFavourite(track.title, track.artist)"
+          />
         </template>
         <template #title>
           <h3 class="text-lg font-bold">
@@ -57,16 +73,7 @@
           <p class="text-sm text-gray-600">{{ track.artist }}</p>
         </template>
         <template #content>
-          <div class="flex flex-col items-center gap-2">
-            <a
-              v-if="getAppleMusicUrl(index)"
-              :href="getAppleMusicUrl(index)"
-              target="_blank"
-              class="p-button p-button-sm p-button-outlined"
-            >
-              Listen on Apple Music
-            </a>
-
+          <div class="flex flex-col gap-2">
             <media-player
               v-if="getPreviewUrl(index)"
               :title="track.title"
@@ -86,16 +93,19 @@
 <script setup>
 import { watch, computed, onMounted, ref } from 'vue'
 import { useHot100Store } from '../stores/hot100'
+import { useFavouritesStore } from '../stores/favourites'
 import { useSelectedDateStore } from '../stores/selectedDate'
 import DatePicker from 'primevue/datepicker'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Card from 'primevue/card'
+import Button from 'primevue/button'
 import Heading from '../components/Heading.vue'
 import 'vidstack/bundle'
 
 // Stores
 const hot100Store = useHot100Store()
+const favouritesStore = useFavouritesStore()
 const selectedDateStore = useSelectedDateStore()
 const lastFetchedDate = ref(null)
 
@@ -121,14 +131,28 @@ const getAlbumArt = (index) => {
   )
 }
 
-// Get Apple Music URL
-const getAppleMusicUrl = (index) => {
-  return hot100Store.appleMusicTracks[index]?.appleMusicUrl || null
-}
-
 // Get Preview URL
 const getPreviewUrl = (index) => {
   return hot100Store.appleMusicTracks[index]?.previewUrl || null
+}
+
+// Check if a song is in favourites
+const isFavourite = (title, artist) => {
+  return favouritesStore.favourites.some(
+    (fav) => fav.title === title && fav.artist === artist
+  )
+}
+
+// Toggle favourite status
+const toggleFavourite = async (title, artist) => {
+  if (isFavourite(title, artist)) {
+    const fav = favouritesStore.favourites.find(
+      (fav) => fav.title === title && fav.artist === artist
+    )
+    await favouritesStore.removeFavourite(fav.id)
+  } else {
+    await favouritesStore.addFavourite(title, artist)
+  }
 }
 
 // Watch selectedDate for changes
@@ -142,10 +166,11 @@ watch(selectedDate, async (newDate) => {
 })
 
 // Fetch data on mount
-onMounted(() => {
+onMounted(async () => {
   if (selectedDate.value) {
     lastFetchedDate.value = formatDate(selectedDate.value)
     hot100Store.fetchHot100(selectedDate.value, '1-10')
   }
+  await favouritesStore.fetchFavourites()
 })
 </script>
