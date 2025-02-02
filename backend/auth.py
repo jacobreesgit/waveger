@@ -8,12 +8,13 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/register", methods=["POST"])
 def register_user():
+    """Registers a new user with hashed password"""
     data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        hashed_password = generate_password_hash(data["password"])
+        hashed_password = generate_password_hash(data["password"])  # Hash password
         cursor.execute(
             "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
             (data["username"], data["email"], hashed_password),
@@ -29,19 +30,37 @@ def register_user():
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
+    """Logs in a user and returns an access token"""
     data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute("SELECT id, username, password_hash FROM users WHERE username = %s", (data["username"],))
+        # Fetch user from DB
+        cursor.execute("SELECT id, username, email, password_hash FROM users WHERE username = %s", (data["username"],))
         user = cursor.fetchone()
 
-        if user and check_password_hash(user["password_hash"], data["password"]):
-            access_token = create_access_token(identity=user["id"], expires_delta=timedelta(days=7))
-            return jsonify({"message": "Login successful", "access_token": access_token})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-        return jsonify({"error": "Invalid credentials"}), 401
+        # Ensure password is checked correctly
+        if not check_password_hash(user["password_hash"], data["password"]):
+            return jsonify({"error": "Invalid credentials"}), 401
+
+        # Create JWT token
+        access_token = create_access_token(identity=user["id"], expires_delta=timedelta(days=7))
+
+        # Return user details & token
+        return jsonify({
+            "message": "Login successful",
+            "user": {
+                "id": user["id"],
+                "username": user["username"],
+                "email": user["email"]
+            },
+            "access_token": access_token
+        }), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
