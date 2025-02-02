@@ -35,8 +35,22 @@ def get_hot_100():
         db_result = cursor.fetchone()
 
         if db_result:
-            return jsonify({"source": "database", "content": json.loads(db_result["data"])})
+            stored_data = db_result["data"]
+            if isinstance(stored_data, str):  # Ensure it's a string before parsing
+                stored_data = json.loads(stored_data)
 
+            return jsonify({
+                "source": "database",
+                "content": stored_data.get("content", []),  # Avoid KeyError if "content" is missing
+                "info": {
+                    "category": "Billboard",
+                    "chart": "HOT 100",
+                    "date": aligned_tuesday,
+                    "source": "database"
+                }
+            })
+
+        # If not found in the database, fetch from API
         headers = {"x-rapidapi-key": RAPIDAPI_KEY, "x-rapidapi-host": RAPIDAPI_HOST}
         response = requests.get(BASE_URL, headers=headers, params={"date": aligned_tuesday, "range": range_param})
         response.raise_for_status()
@@ -45,7 +59,16 @@ def get_hot_100():
         cursor.execute("INSERT INTO hot_100_data (date, range, data) VALUES (%s, %s, %s)", (aligned_tuesday, range_param, json.dumps(api_data)))
         conn.commit()
 
-        return jsonify({"source": "api", "content": api_data})
+        return jsonify({
+            "source": "api",
+            "content": api_data.get("content", []),
+            "info": {
+                "category": "Billboard",
+                "chart": "HOT 100",
+                "date": aligned_tuesday,
+                "source": "api"
+            }
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
