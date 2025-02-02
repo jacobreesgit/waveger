@@ -50,7 +50,7 @@ def login():
             return jsonify({"error": "Invalid credentials"}), 401
 
         # Create JWT token
-        access_token = create_access_token(identity=user["id"], expires_delta=timedelta(days=7))
+        access_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(days=7))
 
         # Return user details & token
         return jsonify({
