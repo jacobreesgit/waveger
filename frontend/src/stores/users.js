@@ -43,6 +43,8 @@ export const useUserStore = defineStore('user', {
 
       const storedToken =
         localStorage.getItem('token') || sessionStorage.getItem('token')
+      console.log('Retrieved token:', storedToken) // ✅ Debugging
+
       if (!storedToken) {
         console.log('No stored token found.')
         return
@@ -61,7 +63,11 @@ export const useUserStore = defineStore('user', {
           axios.defaults.headers.common['Authorization'] =
             `Bearer ${storedToken}`
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error(
+            'Error validating token:',
+            error.response?.data || error.message
+          ) // ✅ Log detailed error
           console.log('Invalid token, logging out...')
           this.logoutUser()
         })
