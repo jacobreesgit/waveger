@@ -23,7 +23,7 @@
       </template>
       <template #end>
         <div class="flex items-center gap-2">
-          <router-link to="/account">
+          <router-link to="/account" class="flex">
             <Avatar
               v-if="!userStore.currentUser"
               icon="pi pi-user"
@@ -33,7 +33,6 @@
             />
             <Avatar
               v-else
-              class="mr-2"
               size="medium"
               shape="circle"
               image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"

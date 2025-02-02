@@ -7,7 +7,6 @@
 <script setup>
 import { computed } from 'vue'
 
-// Props
 const props = defineProps({
   type: {
     type: String,

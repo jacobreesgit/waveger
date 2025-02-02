@@ -14,10 +14,9 @@ export const useFavouritesStore = defineStore('favourites', {
     async fetchFavourites() {
       this.loading = true
       this.error = null
-      console.log('Fetching favourites...')
 
-      const token = localStorage.getItem('token')
-      console.log('Retrieved token:', token) // Debugging
+      const token =
+        localStorage.getItem('token') || sessionStorage.getItem('token')
 
       if (!token) {
         console.error('No token found. User must be logged in.')
@@ -30,7 +29,6 @@ export const useFavouritesStore = defineStore('favourites', {
         const response = await axios.get(`${BACKEND_API_URL}/`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        console.log('Favourites fetched successfully:', response.data)
         this.favourites = response.data
       } catch (err) {
         console.error('Error fetching favourites:', err.response || err.message)
@@ -41,9 +39,8 @@ export const useFavouritesStore = defineStore('favourites', {
     },
 
     async addFavourite(title, artist) {
-      console.log(`Adding favourite: ${title} by ${artist}`)
-      const token = localStorage.getItem('token')
-      console.log('Retrieved token for addFavourite:', token) // Debugging
+      const token =
+        localStorage.getItem('token') || sessionStorage.getItem('token')
 
       if (!token) {
         console.error('No token found. User must be logged in.')
@@ -57,7 +54,6 @@ export const useFavouritesStore = defineStore('favourites', {
           { title, artist },
           { headers: { Authorization: `Bearer ${token}` } }
         )
-        console.log('Favourite added successfully:', response.data)
         this.favourites.push({ id: response.data.id, title, artist })
       } catch (err) {
         console.error('Error adding favourite:', err.response || err.message)
@@ -66,9 +62,8 @@ export const useFavouritesStore = defineStore('favourites', {
     },
 
     async removeFavourite(songId) {
-      console.log(`Removing favourite with ID: ${songId}`)
-      const token = localStorage.getItem('token')
-      console.log('Retrieved token for removeFavourite:', token) // Debugging
+      const token =
+        localStorage.getItem('token') || sessionStorage.getItem('token')
 
       if (!token) {
         console.error('No token found. User must be logged in.')
@@ -80,10 +75,8 @@ export const useFavouritesStore = defineStore('favourites', {
         await axios.delete(`${BACKEND_API_URL}/${songId}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
-        console.log('Favourite removed successfully')
         this.favourites = this.favourites.filter((song) => song.id !== songId)
       } catch (err) {
-        console.error('Error removing favourite:', err.response || err.message)
         this.error = err.response?.data?.error || 'Failed to remove favourite'
       }
     },

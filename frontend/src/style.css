@@ -55,3 +55,7 @@
 .p-card-body {
   gap: 0 !important;
 }
+
+.p-card-header .favourite-button.p-button-text {
+  color: red;
+}

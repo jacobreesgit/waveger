@@ -20,8 +20,6 @@
       {{ hot100Store.error }}
     </Message>
 
-    {{ userStore }}
-
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center h-full">
       <ProgressSpinner
@@ -55,11 +53,6 @@
               isFavourite(track.title, track.artist)
                 ? 'pi pi-heart-fill'
                 : 'pi pi-heart'
-            "
-            :class="
-              isFavourite(track.title, track.artist)
-                ? 'p-button-danger'
-                : 'p-button-outlined'
             "
             text
             rounded
@@ -97,7 +90,6 @@ import { watch, computed, onMounted, ref } from 'vue'
 import { useHot100Store } from '../stores/hot100'
 import { useFavouritesStore } from '../stores/favourites'
 import { useSelectedDateStore } from '../stores/selectedDate'
-import { useUserStore } from '../stores/users'
 import DatePicker from 'primevue/datepicker'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -110,7 +102,6 @@ import 'vidstack/bundle'
 const hot100Store = useHot100Store()
 const favouritesStore = useFavouritesStore()
 const selectedDateStore = useSelectedDateStore()
-const userStore = useUserStore()
 const lastFetchedDate = ref(null)
 
 // Track loading state

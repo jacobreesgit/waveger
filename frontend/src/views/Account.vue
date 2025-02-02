@@ -127,7 +127,7 @@ const loginUser = async () => {
         username: username.value,
         password: password.value,
       },
-      rememberMe.value // ✅ Pass "Remember Me" choice
+      rememberMe.value
     )
   } catch (err) {
     error.value = 'Invalid login credentials.'
