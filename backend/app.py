@@ -8,7 +8,9 @@ from charts import charts_bp
 from favourites import favourites_bp
 
 app = Flask(__name__)
-CORS(app)
+
+# Allow requests from frontend
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "supersecret")
 jwt = JWTManager(app)

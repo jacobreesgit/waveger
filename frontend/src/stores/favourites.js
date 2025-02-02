@@ -14,13 +14,21 @@ export const useFavouriteStore = defineStore('favourites', {
     async fetchFavourites() {
       try {
         const userStore = useUserStore()
-        if (!userStore.token) throw new Error('User not authenticated')
+        if (!userStore.currentUser || !userStore.token) {
+          throw new Error('User not authenticated')
+        }
 
-        const response = await axios.get(`${API_BASE_URL}`, {
-          headers: { Authorization: `Bearer ${userStore.token}` },
-        })
+        // Correct API request to include user_id
+        const response = await axios.get(
+          `${API_BASE_URL}/${userStore.currentUser.id}`,
+          {
+            headers: { Authorization: `Bearer ${userStore.token}` },
+          }
+        )
+
         this.favourites = response.data
       } catch (err) {
+        console.error('Error fetching favourites:', err)
         this.error = err.response?.data?.error || 'Error fetching favourites'
       }
     },
@@ -40,15 +48,22 @@ export const useFavouriteStore = defineStore('favourites', {
     async addFavourite(song) {
       try {
         const userStore = useUserStore()
-        if (!userStore.token) throw new Error('User not authenticated')
+        if (!userStore.currentUser || !userStore.token) {
+          throw new Error('User not authenticated')
+        }
 
         const response = await axios.post(
-          `${API_BASE_URL}`,
-          { title: song.title, artist: song.artist },
+          API_BASE_URL,
+          {
+            title: song.title,
+            artist: song.artist,
+          },
           { headers: { Authorization: `Bearer ${userStore.token}` } }
         )
+
         this.favourites.push({ id: response.data.id, ...song })
       } catch (err) {
+        console.error('Error adding favourite:', err)
         this.error = err.response?.data?.error || 'Error adding favourite'
       }
     },
@@ -56,13 +71,17 @@ export const useFavouriteStore = defineStore('favourites', {
     async removeFavourite(favId) {
       try {
         const userStore = useUserStore()
-        if (!userStore.token) throw new Error('User not authenticated')
+        if (!userStore.currentUser || !userStore.token) {
+          throw new Error('User not authenticated')
+        }
 
         await axios.delete(`${API_BASE_URL}/${favId}`, {
           headers: { Authorization: `Bearer ${userStore.token}` },
         })
+
         this.favourites = this.favourites.filter((fav) => fav.id !== favId)
       } catch (err) {
+        console.error('Error removing favourite:', err)
         this.error = err.response?.data?.error || 'Error removing favourite'
       }
     },

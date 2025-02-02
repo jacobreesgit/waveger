@@ -19,7 +19,6 @@ export const useHot100Store = defineStore('hot100', {
         const response = await axios.get(`${API_BASE_URL}/hot-100`, {
           params: { date, range },
         })
-        console.log('Fetched Hot 100 Data:', response.data)
 
         this.hot100Data = {
           content: response.data.content,
