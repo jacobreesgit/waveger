@@ -51,3 +51,7 @@
 .p-card-header .favourite-button:hover {
   background-color: white !important;
 }
+
+.p-card-body {
+  gap: 0 !important;
+}

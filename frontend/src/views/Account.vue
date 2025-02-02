@@ -9,10 +9,10 @@
       </span>
     </h2>
 
-    <Message v-if="user" severity="success"
-      >Welcome, <strong>{{ user.username }}</strong
-      >! You are successfully logged in.</Message
-    >
+    <Message v-if="user" severity="success">
+      Welcome, <strong>{{ user.username }}</strong
+      >! You are successfully logged in.
+    </Message>
 
     <form
       v-if="!user"
@@ -40,6 +40,17 @@
         class="w-full p-2 border rounded"
         required
       />
+
+      <!-- Remember Me Checkbox -->
+      <div v-if="!isSignUp" class="flex items-center">
+        <input
+          type="checkbox"
+          id="rememberMe"
+          v-model="rememberMe"
+          class="mr-2"
+        />
+        <label for="rememberMe">Remember Me</label>
+      </div>
 
       <button
         type="submit"
@@ -74,7 +85,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useUserStore } from '../stores/users'
 import Message from 'primevue/message'
 
@@ -83,6 +94,7 @@ const userStore = useUserStore()
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const rememberMe = ref(false) // ✅ Remember Me state
 const error = ref(null)
 const isLoading = ref(false)
 const isSignUp = ref(false)
@@ -110,10 +122,13 @@ const loginUser = async () => {
   error.value = null
   isLoading.value = true
   try {
-    await userStore.loginUser({
-      username: username.value,
-      password: password.value,
-    })
+    await userStore.loginUser(
+      {
+        username: username.value,
+        password: password.value,
+      },
+      rememberMe.value // ✅ Pass "Remember Me" choice
+    )
   } catch (err) {
     error.value = 'Invalid login credentials.'
   } finally {

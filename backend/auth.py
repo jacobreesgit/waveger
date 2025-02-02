@@ -3,8 +3,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
 from datetime import timedelta
 from db import get_db_connection
+from flask_cors import CORS 
 
 auth_bp = Blueprint("auth", __name__)
+CORS(auth_bp) 
 
 @auth_bp.route("/register", methods=["POST"])
 def register_user():
@@ -78,6 +80,27 @@ def get_users():
         cursor.execute("SELECT id, username, email FROM users")
         users = cursor.fetchall()
         return jsonify(users)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@auth_bp.route("/validate-token", methods=["GET"])
+@jwt_required()
+def validate_token():
+    """Validate JWT token and return user data."""
+    user_id = get_jwt_identity()
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("SELECT id, username, email FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        return jsonify({"user": user}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:

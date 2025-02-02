@@ -48,6 +48,7 @@ onMounted(async () => {
   background-image: url('/src/assets/background.jpeg');
   background-size: cover;
   background-position: center;
+  background-attachment: fixed;
   filter: contrast(80%) brightness(110%);
 
   @media (max-width: 639px) {
