@@ -3,9 +3,7 @@
     <Heading type="secondary">Billboard Hot 100</Heading>
 
     <!-- Date Picker -->
-    <div
-      class="flex flex-col md:flex-row justify-center items-center gap-2 my-4"
-    >
+    <div class="flex flex-col md:flex-row justify-center items-center gap-2">
       <label for="datePicker" class="font-medium">Choose Chart Date:</label>
       <DatePicker
         id="datePicker"
