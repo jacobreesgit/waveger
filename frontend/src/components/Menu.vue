@@ -1,9 +1,9 @@
 <template>
-  <div>
+  <header>
     <Toolbar v-if="!isMobile" class="glassmorphism">
       <!-- Desktop version: PrimeVue Toolbar -->
       <template #start>
-        <div class="flex gap-4">
+        <div class="flex gap-6">
           <router-link to="/">
             <img src="/src/assets/logo.png" alt="Logo" />
           </router-link>
@@ -25,8 +25,16 @@
         <div class="flex items-center gap-2">
           <router-link to="/account">
             <Avatar
+              v-if="!userStore.currentUser"
+              icon="pi pi-user"
               class="mr-2"
-              size="large"
+              size="medium"
+              shape="circle"
+            />
+            <Avatar
+              v-else
+              class="mr-2"
+              size="medium"
               shape="circle"
               image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
             />
@@ -38,7 +46,7 @@
     <Menubar v-else :model="menuItems" class="glassmorphism">
       <!-- Mobile version: PrimeVue Menubar -->
     </Menubar>
-  </div>
+  </header>
 </template>
 
 <script setup>
@@ -48,6 +56,10 @@ import Toolbar from 'primevue/toolbar'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Menubar from 'primevue/menubar'
+
+import { useUserStore } from '../stores/users'
+
+const userStore = useUserStore()
 
 const router = useRouter()
 
@@ -87,11 +99,11 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .p-toolbar {
   padding: 0.5rem;
   border-radius: 3rem;
-  & img {
+  img {
     height: 35px;
   }
 }

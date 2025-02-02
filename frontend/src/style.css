@@ -7,3 +7,16 @@
   border-radius: 12px !important;
   border: 1px solid rgba(209, 213, 219, 0.3) !important;
 }
+
+.p-datepicker {
+  padding: 0 !important;
+}
+
+.p-avatar {
+  width: 35px !important;
+  height: 35px !important;
+}
+
+.p-card {
+  overflow: auto;
+}

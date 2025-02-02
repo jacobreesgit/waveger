@@ -1,6 +1,11 @@
 <template>
   <div>
-    <h1 class="text-3xl font-bold mb-6">Welcome to Waveger!</h1>
-    <p class="text-lg">Explore the Billboard Hot 100 charts.</p>
+    <Heading>Welcome</Heading>
   </div>
 </template>
+
+<script setup>
+import Heading from '../components/Heading.vue'
+</script>
+
+<style scoped></style>

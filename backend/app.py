@@ -5,7 +5,6 @@ import os
 
 from auth import auth_bp
 from charts import charts_bp
-from favourites import favourites_bp
 
 app = Flask(__name__)
 
@@ -17,7 +16,6 @@ jwt = JWTManager(app)
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(charts_bp, url_prefix="/api")
-app.register_blueprint(favourites_bp, url_prefix="/api")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

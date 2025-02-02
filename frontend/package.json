@@ -12,6 +12,7 @@
     "@primevue/themes": "^4.2.5",
     "@tailwindcss/vite": "^4.0.0",
     "axios": "^1.7.9",
+    "jsonwebtoken": "^9.0.2",
     "pinia": "^2.3.1",
     "primeicons": "^7.0.0",
     "primevue": "^4.2.5",
