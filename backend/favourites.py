@@ -73,27 +73,3 @@ def remove_favourite(song_id):
     finally:
         cursor.close()
         conn.close()
-
-@auth_bp.route("/validate-token", methods=["GET"])
-@jwt_required()
-def validate_token():
-    """Validate JWT token and return user data."""
-    try:
-        user_id = get_jwt_identity()
-        if not user_id:
-            return jsonify({"error": "Invalid token"}), 401
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, username, email FROM users WHERE id = %s", (user_id,))
-        user = cursor.fetchone()
-
-        if not user:
-            return jsonify({"error": "User not found"}), 404
-
-        return jsonify({"user": user}), 200
-    except Exception as e:
-        return jsonify({"error": f"Token validation failed: {str(e)}"}), 500
-    finally:
-        cursor.close()
-        conn.close()
