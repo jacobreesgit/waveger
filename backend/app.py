@@ -5,7 +5,7 @@ import os
 
 from auth import auth_bp
 from charts import charts_bp
-from apple_music import apple_music_bp  # Import the new blueprint
+from apple_music import apple_music_bp  
 
 app = Flask(__name__)
 
@@ -18,7 +18,7 @@ jwt = JWTManager(app)
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(charts_bp, url_prefix="/api")
-app.register_blueprint(apple_music_bp, url_prefix="/api")  # Register Apple Music API
+app.register_blueprint(apple_music_bp, url_prefix="/api") 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

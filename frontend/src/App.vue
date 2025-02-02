@@ -1,25 +1,34 @@
 <template>
   <div class="app flex flex-col min-h-screen gap-4">
     <!-- Menubar -->
-    <Menu class="pt-4 container mx-auto" />
+    <Menu class="pt-4 container mx-auto"></Menu>
 
     <!-- Content -->
-    <main class="flex-1 container mx-auto flex flex-col">
+    <main class="flex-1 container mx-auto flex flex-col pb-4">
       <router-view
-        class="flex items-center flex-col mx-auto p-8 bg-white glassmorphism gap-4 w-5/6"
+        :class="[
+          'flex items-center flex-col mx-auto p-8  gap-4 w-5/6',
+          themeClass,
+        ]"
       />
     </main>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useHot100Store } from './stores/hot100'
 import { useSelectedDateStore } from './stores/selectedDate'
 import Menu from './components/Menu.vue'
+import { usePreferredDark } from '@vueuse/core'
 
 const hot100Store = useHot100Store()
 const selectedDateStore = useSelectedDateStore()
+
+const isDark = usePreferredDark()
+const themeClass = computed(() =>
+  isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
+)
 
 const getFormattedToday = () => new Date().toISOString().split('T')[0]
 

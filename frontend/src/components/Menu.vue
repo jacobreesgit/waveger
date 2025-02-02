@@ -1,6 +1,6 @@
 <template>
   <header>
-    <Toolbar v-if="!isMobile" class="glassmorphism">
+    <Toolbar v-if="!isMobile" :class="themeClass">
       <!-- Desktop version: PrimeVue Toolbar -->
       <template #start>
         <div class="flex gap-6">
@@ -43,7 +43,7 @@
       </template>
     </Toolbar>
 
-    <Menubar v-else :model="menuItems" class="glassmorphism">
+    <Menubar v-else :model="menuItems" :class="themeClass">
       <!-- Mobile version: PrimeVue Menubar -->
     </Menubar>
   </header>
@@ -52,16 +52,21 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { usePreferredDark } from '@vueuse/core'
 import Toolbar from 'primevue/toolbar'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Menubar from 'primevue/menubar'
-
 import { useUserStore } from '../stores/users'
 
 const userStore = useUserStore()
-
 const router = useRouter()
+
+// Theme detection using VueUse
+const isDark = usePreferredDark()
+const themeClass = computed(() =>
+  isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
+)
 
 // Dynamically generate menu items from Vue Router routes (excluding the 404 route)
 const menuItems = computed(() => {

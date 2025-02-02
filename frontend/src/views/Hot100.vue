@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="{ 'h-screen': loading }">
     <Heading type="secondary">Billboard Hot 100</Heading>
 
     <!-- Date Picker -->
@@ -16,25 +16,25 @@
     </div>
 
     <!-- Error Message -->
-    <Message v-if="hot100Store.error && loading" severity="error">{{
-      hot100Store.error
-    }}</Message>
+    <Message v-if="hot100Store.error" severity="error">
+      {{ hot100Store.error }}
+    </Message>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex justify-center">
+    <div v-if="loading" class="flex justify-center items-center h-full">
       <ProgressSpinner
         style="width: 64px; height: 64px"
         strokeWidth="8"
         fill="transparent"
         animationDuration=".5s"
-        aria-label="Custom ProgressSpinner"
+        aria-label="Loading..."
       />
     </div>
 
     <!-- Billboard Hot 100 Cards -->
     <div
       v-if="hot100Store.hot100Data && !loading"
-      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full md:w-4/5"
     >
       <Card
         v-for="(track, index) in hot100Store.hot100Data"
@@ -43,10 +43,7 @@
       >
         <template #header>
           <img
-            :src="
-              hot100Store.appleMusicTracks[index]?.albumArt ||
-              'default-placeholder.jpg'
-            "
+            :src="getAlbumArt(index)"
             alt="Album Cover"
             class="w-full h-40 object-cover"
           />
@@ -62,24 +59,23 @@
         <template #content>
           <div class="flex flex-col items-center gap-2">
             <a
-              v-if="hot100Store.appleMusicTracks[index]?.appleMusicUrl"
-              :href="hot100Store.appleMusicTracks[index].appleMusicUrl"
+              v-if="getAppleMusicUrl(index)"
+              :href="getAppleMusicUrl(index)"
               target="_blank"
               class="p-button p-button-sm p-button-outlined"
             >
               Listen on Apple Music
             </a>
 
-            <audio
-              v-if="hot100Store.appleMusicTracks[index]?.previewUrl"
-              controls
+            <media-player
+              v-if="getPreviewUrl(index)"
+              :title="track.title"
+              :src="getPreviewUrl(index)"
               class="w-full"
             >
-              <source
-                :src="hot100Store.appleMusicTracks[index].previewUrl"
-                type="audio/mpeg"
-              />
-            </audio>
+              <media-provider></media-provider>
+              <media-audio-layout></media-audio-layout>
+            </media-player>
           </div>
         </template>
       </Card>
@@ -88,7 +84,7 @@
 </template>
 
 <script setup>
-import { watch, computed, onMounted } from 'vue'
+import { watch, computed, onMounted, ref } from 'vue'
 import { useHot100Store } from '../stores/hot100'
 import { useSelectedDateStore } from '../stores/selectedDate'
 import DatePicker from 'primevue/datepicker'
@@ -96,10 +92,12 @@ import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Card from 'primevue/card'
 import Heading from '../components/Heading.vue'
+import 'vidstack/bundle'
 
 // Stores
 const hot100Store = useHot100Store()
 const selectedDateStore = useSelectedDateStore()
+const lastFetchedDate = ref(null)
 
 // Track loading state
 const loading = computed(() => hot100Store.loading)
@@ -110,22 +108,44 @@ const selectedDate = computed({
   set: (value) => (selectedDateStore.selectedDate = value),
 })
 
-// Ensure valid date format (yyyy-mm-dd)
+// Format date to yyyy-mm-dd
 const formatDate = (date) => {
-  if (!date) return null
-  return new Date(date).toISOString().split('T')[0]
+  return date ? new Date(date).toISOString().split('T')[0] : null
 }
 
-// Watch for changes in selectedDate and refetch data
-watch(selectedDate, async (newDate, oldDate) => {
-  const formattedDate = formatDate(newDate)
-  if (!formattedDate || formattedDate === formatDate(oldDate)) return
+// Get album art
+const getAlbumArt = (index) => {
+  return (
+    hot100Store.appleMusicTracks[index]?.albumArt ||
+    'https://via.placeholder.com/150'
+  )
+}
 
+// Get Apple Music URL
+const getAppleMusicUrl = (index) => {
+  return hot100Store.appleMusicTracks[index]?.appleMusicUrl || null
+}
+
+// Get Preview URL
+const getPreviewUrl = (index) => {
+  return hot100Store.appleMusicTracks[index]?.previewUrl || null
+}
+
+// Watch selectedDate for changes
+watch(selectedDate, async (newDate) => {
+  const formattedDate = formatDate(newDate)
+
+  if (!formattedDate || formattedDate === lastFetchedDate.value) return
+
+  lastFetchedDate.value = formattedDate
   await hot100Store.fetchHot100(formattedDate, '1-10')
 })
 
 // Fetch data on mount
 onMounted(() => {
-  hot100Store.fetchHot100(selectedDate.value, '1-10')
+  if (selectedDate.value) {
+    lastFetchedDate.value = formatDate(selectedDate.value)
+    hot100Store.fetchHot100(selectedDate.value, '1-10')
+  }
 })
 </script>
