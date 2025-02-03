@@ -71,12 +71,11 @@
           <div class="flex flex-col gap-2">
             <media-player
               v-if="getPreviewUrl(index)"
-              :title="track.title"
               :src="getPreviewUrl(index)"
               class="w-full"
             >
               <media-provider></media-provider>
-              <media-audio-layout></media-audio-layout>
+              <media-audio-layout> </media-audio-layout>
             </media-player>
           </div>
         </template>
