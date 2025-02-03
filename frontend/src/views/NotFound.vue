@@ -1,10 +1,7 @@
 <template>
   <div>
-    <!-- Title -->
-    <h1 class="text-2xl font-bold text-gray-800">Oops! Page Not Found</h1>
-
-    <!-- Description -->
-    <p class="text-lg text-gray-600 text-center">
+    <Heading>Oops! Page Not Found</Heading>
+    <p class="text-lg text-center">
       It looks like the page you're looking for doesn't exist or has been moved.
       Please check the URL or return to the homepage.
     </p>
@@ -12,9 +9,5 @@
 </template>
 
 <script setup>
-// You can add any additional logic if needed
+import Heading from '../components/Heading.vue'
 </script>
-
-<style scoped>
-/* You can customize the styles as needed */
-</style>

@@ -16,7 +16,10 @@ app.use(createPinia())
 app.use(router)
 
 const userStore = useUserStore()
-userStore.autoLogin()
+window.addEventListener('load', () => {
+  sessionStorage.clear()
+  userStore.autoLogin()
+})
 
 app.use(PrimeVue, {
   theme: {
