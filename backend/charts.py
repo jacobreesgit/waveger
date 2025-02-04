@@ -32,5 +32,5 @@ def get_top_charts():
 @charts_bp.route("/chart", methods=["GET"])
 def get_chart_details():
     chart_id = request.args.get("id", "hot-100")
-    historical_date = request.args.get("date", datetime.today().strftime('%Y-%m-%d'))
-    return fetch_api(f"/chart.php?id={chart_id}&date={historical_date}")
+    historical_week = request.args.get("week", datetime.today().strftime('%Y-%m-%d'))
+    return fetch_api(f"/chart.php?id={chart_id}&week={historical_week}")
