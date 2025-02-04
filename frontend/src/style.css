@@ -92,7 +92,7 @@ media-controls.vds-controls {
 }
 
 .gr-btn-container-foreground {
-  box-shadow: 0 0 3px 0 #eee !important;
+  box-shadow: 0 0 2px 0 #eee !important;
 }
 
 @supports (-webkit-touch-callout: none) {
