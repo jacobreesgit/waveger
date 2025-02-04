@@ -42,5 +42,10 @@ const { isMobile, deviceClass } = useDevice()
   @media (max-width: 639px) {
     padding: 0 1rem 1rem 1rem;
   }
+
+  & main {
+    height: 100%;
+    margin-bottom: 114px;
+  }
 }
 </style>
