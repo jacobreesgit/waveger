@@ -1,6 +1,6 @@
 <template>
   <div class="h-full">
-    <Heading type="secondary">Billboard Charts</Heading>
+    <Heading type="secondary">Charts</Heading>
 
     <!-- Chart Selector -->
     <div class="flex flex-col md:flex-row justify-center items-center gap-2">
@@ -95,7 +95,7 @@
         v-if="chartsStore.chartData.length < 100"
         label="View More"
         @click="loadMore"
-      />
+      ></Button>
     </div>
   </div>
 </template>
@@ -173,5 +173,8 @@ onMounted(async () => {
 <style lang="scss" scoped>
 .grid {
   width: 70%;
+}
+.mobile .grid {
+  width: 85%;
 }
 </style>

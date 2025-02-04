@@ -39,13 +39,20 @@ const { isMobile, deviceClass } = useDevice()
   background-attachment: fixed;
   filter: contrast(80%) brightness(110%);
 
-  @media (max-width: 639px) {
-    padding: 0 1rem 1rem 1rem;
-  }
-
   & main {
     height: 100%;
     margin-bottom: 114px;
+  }
+
+  @media (max-width: 639px) {
+    padding: 0 1rem 1rem 1rem;
+
+    & main {
+      margin-bottom: 32px;
+      @supports (-webkit-touch-callout: none) {
+        margin-bottom: 114px;
+      }
+    }
   }
 }
 </style>
