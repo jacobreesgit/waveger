@@ -127,3 +127,9 @@ onMounted(async () => {
   await chartsStore.fetchChartData('hot-100', selectedDate.value)
 })
 </script>
+
+<style lang="scss" scoped>
+.grid {
+  max-width: 76%;
+}
+</style>
