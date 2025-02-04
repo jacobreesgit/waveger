@@ -175,6 +175,6 @@ onMounted(async () => {
   width: 70%;
 }
 .mobile .grid {
-  width: 90%;
+  width: 95%;
 }
 </style>
