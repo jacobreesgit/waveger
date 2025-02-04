@@ -16,31 +16,14 @@
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
-import { useHot100Store } from '@/stores/hot100'
-import { useSelectedDateStore } from '@/stores/selectedDate'
+import { computed } from 'vue'
 import Menu from '@/components/Menu.vue'
 import { usePreferredDark } from '@vueuse/core'
-
-const hot100Store = useHot100Store()
-const selectedDateStore = useSelectedDateStore()
 
 const isDark = usePreferredDark()
 const themeClass = computed(() =>
   isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
 )
-
-const getFormattedToday = () => new Date().toISOString().split('T')[0]
-
-onMounted(async () => {
-  try {
-    const today = getFormattedToday()
-    selectedDateStore.setSelectedDate(today)
-    await hot100Store.fetchHot100(today, '1-10')
-  } catch (error) {
-    console.error('Failed to fetch Hot 100 data:', error)
-  }
-})
 </script>
 
 <style lang="scss" scoped>

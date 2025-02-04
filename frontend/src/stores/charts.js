@@ -4,9 +4,9 @@ import { defineStore } from 'pinia'
 const BACKEND_API_URL = 'https://wavegerpython.onrender.com/api'
 const APPLE_MUSIC_API_URL = 'https://api.music.apple.com/v1/catalog/us'
 
-export const useHot100Store = defineStore('hot100', {
+export const useChartsStore = defineStore('charts', {
   state: () => ({
-    hot100Data: null,
+    chartData: null,
     appleMusicTracks: [],
     appleMusicToken: null,
     loading: false,
@@ -23,24 +23,24 @@ export const useHot100Store = defineStore('hot100', {
       }
     },
 
-    async fetchHot100(date = '', range = '1-10') {
+    async fetchChartData(chartId = 'hot-100', date = '', range = '1-10') {
       this.loading = true
       this.error = null
 
       try {
-        const response = await axios.get(`${BACKEND_API_URL}/hot-100`, {
-          params: { date, range },
+        const response = await axios.get(`${BACKEND_API_URL}/chart`, {
+          params: { id: chartId, week: date, range },
         })
 
-        if (!response.data || typeof response.data.content !== 'object') {
+        if (!response.data || typeof response.data.data !== 'object') {
           throw new Error('Invalid API response format')
         }
 
-        this.hot100Data = Object.values(response.data.content)
-        await this.fetchAppleMusicTracks(this.hot100Data)
+        this.chartData = Object.values(response.data.data.songs)
+        await this.fetchAppleMusicTracks(this.chartData)
       } catch (err) {
         this.error =
-          err.response?.data?.error || 'Failed to fetch Billboard Hot 100'
+          err.response?.data?.error || 'Failed to fetch Billboard chart'
       } finally {
         this.loading = false
       }
@@ -54,12 +54,12 @@ export const useHot100Store = defineStore('hot100', {
       try {
         const appleMusicResults = await Promise.all(
           tracks.map(async (track) => {
-            if (!track.title || !track.artist) return null
+            if (!track.name || !track.artist) return null
 
             const response = await axios.get(`${APPLE_MUSIC_API_URL}/search`, {
               headers: { Authorization: `Bearer ${this.appleMusicToken}` },
               params: {
-                term: `${track.title} ${track.artist}`,
+                term: `${track.name} ${track.artist}`,
                 types: 'songs',
                 limit: 1,
               },

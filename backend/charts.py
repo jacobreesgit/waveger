@@ -79,4 +79,19 @@ def get_top_charts():
 def get_chart_details():
     chart_id = request.args.get("id", "hot-100")
     historical_week = request.args.get("week", datetime.today().strftime('%Y-%m-%d'))
-    return fetch_api(f"/chart.php?id={chart_id}&week={historical_week}", chart_id, historical_week)
+    range_param = request.args.get("range", "1-10")  # Default to first 10 entries
+
+    response = fetch_api(f"/chart.php?id={chart_id}&week={historical_week}", chart_id, historical_week)
+    
+    if response.status_code != 200:
+        return response  # Return error response if any
+
+    data = response.get_json()
+    if "data" in data and isinstance(data["data"], dict) and "songs" in data["data"]:
+        try:
+            start, end = map(int, range_param.split("-"))
+            data["data"]["songs"] = data["data"]["songs"][start-1:end]  # Slice the song list
+        except ValueError:
+            return jsonify({"error": "Invalid range format. Use 'start-end' format."}), 400
+
+    return jsonify(data)
