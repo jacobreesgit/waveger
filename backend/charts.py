@@ -4,6 +4,7 @@ import json
 from datetime import datetime, timedelta
 from db import get_db_connection
 import os
+from bs4 import BeautifulSoup
 
 charts_bp = Blueprint("charts", __name__)
 
@@ -74,3 +75,55 @@ def get_hot_100():
     finally:
         cursor.close()
         conn.close()
+
+
+@charts_bp.route("/backup-hot-100", methods=["GET"])
+def backup_hot_100():
+    date = request.args.get('date', datetime.today().strftime('%Y-%m-%d'))
+
+    try:
+        datetime.strptime(date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({"error": "Invalid date format"}), 400
+
+    url = f"https://www.billboard.com/charts/hot-100/{date}/"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' \
+                      '(KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36'
+    }
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        return jsonify({'error': 'Could not retrieve data from Billboard.'}), 500
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    rows = soup.find_all('div', class_='o-chart-results-list-row-container')
+    if not rows:
+        return jsonify({'error': 'Could not parse chart data. The website structure might have changed.'}), 500
+
+    chart_data = []
+    for row in rows:
+        pos_tag = row.find('span', class_='c-label')
+        position = pos_tag.get_text(strip=True) if pos_tag else None
+
+        title_tag = row.find('h3', id='title-of-a-story')
+        if not title_tag:
+            title_tag = row.find('h3', class_='c-title')
+        title = title_tag.get_text(strip=True) if title_tag else None
+
+        labels = row.find_all('span', class_='c-label')
+        artist = labels[1].get_text(strip=True) if len(labels) > 1 else None
+
+        if position and title and artist:
+            chart_data.append({
+                'position': position,
+                'title': title,
+                'artist': artist
+            })
+
+    return jsonify({
+        'source': 'web_scraping',
+        'date': date,
+        'chart': chart_data
+    })

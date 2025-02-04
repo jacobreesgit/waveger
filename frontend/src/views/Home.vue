@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import Heading from '../components/Heading.vue'
+import Heading from '@/components/Heading.vue'
 </script>
 
 <style scoped></style>

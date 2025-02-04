@@ -17,9 +17,9 @@
 
 <script setup>
 import { onMounted, computed } from 'vue'
-import { useHot100Store } from './stores/hot100'
-import { useSelectedDateStore } from './stores/selectedDate'
-import Menu from './components/Menu.vue'
+import { useHot100Store } from '@/stores/hot100'
+import { useSelectedDateStore } from '@/stores/selectedDate'
+import Menu from '@/components/Menu.vue'
 import { usePreferredDark } from '@vueuse/core'
 
 const hot100Store = useHot100Store()

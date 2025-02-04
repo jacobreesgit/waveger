@@ -86,15 +86,15 @@
 
 <script setup>
 import { watch, computed, onMounted, ref } from 'vue'
-import { useHot100Store } from '../stores/hot100'
-import { useFavouritesStore } from '../stores/favourites'
-import { useSelectedDateStore } from '../stores/selectedDate'
+import { useHot100Store } from '@/stores/hot100'
+import { useFavouritesStore } from '@/stores/favourites'
+import { useSelectedDateStore } from '@/stores/selectedDate'
 import DatePicker from 'primevue/datepicker'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
-import Heading from '../components/Heading.vue'
+import Heading from '@/components/Heading.vue'
 import 'vidstack/bundle'
 
 // Stores

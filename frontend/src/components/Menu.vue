@@ -1,11 +1,10 @@
 <template>
   <header>
-    <Toolbar v-if="!isMobile" :class="themeClass">
-      <!-- Desktop version: PrimeVue Toolbar -->
+    <Toolbar :class="themeClass">
       <template #start>
         <div class="flex gap-6">
           <router-link to="/">
-            <img src="/src/assets/logo.png" alt="Logo" />
+            <img :src="logo" alt="Logo" />
           </router-link>
           <div class="flex gap-2">
             <Button
@@ -35,28 +34,25 @@
               v-else
               size="medium"
               shape="circle"
-              image="https://primefaces.org/cdn/primevue/images/avatar/amyelsner.png"
+              :image="userStore.currentUser?.avatar || defaultAvatar"
             />
           </router-link>
         </div>
       </template>
     </Toolbar>
-
-    <Menubar v-else :model="menuItems" :class="themeClass">
-      <!-- Mobile version: PrimeVue Menubar -->
-    </Menubar>
   </header>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { usePreferredDark } from '@vueuse/core'
 import Toolbar from 'primevue/toolbar'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
-import Menubar from 'primevue/menubar'
-import { useUserStore } from '../stores/users'
+import { useUserStore } from '@/stores/users'
+import logo from '@/assets/logo.png'
+import defaultAvatar from '@/assets/default-avatar.png'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -67,7 +63,7 @@ const themeClass = computed(() =>
   isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
 )
 
-// Dynamically generate menu items from Vue Router routes (excluding the 404 route)
+// Dynamically generate menu items from Vue Router routes (excluding specific routes)
 const menuItems = computed(() => {
   const routes = router.getRoutes()
   return routes
@@ -81,25 +77,7 @@ const menuItems = computed(() => {
       label: routeItem.meta?.label || routeItem.name,
       icon: routeItem.meta?.icon || 'pi pi-circle',
       command: () => router.push(routeItem.path),
-      class:
-        router.currentRoute.value.path === routeItem.path ? 'p-highlight' : '',
     }))
-})
-
-// Set up a reactive property to detect window width
-const windowWidth = ref(window.innerWidth)
-const isMobile = computed(() => windowWidth.value <= 768)
-
-const handleResize = () => {
-  windowWidth.value = window.innerWidth
-}
-
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
 })
 </script>
 

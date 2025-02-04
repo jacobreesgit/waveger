@@ -80,7 +80,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useUserStore } from '../stores/users'
+import { useUserStore } from '@/stores/users'
 import Message from 'primevue/message'
 
 const userStore = useUserStore()
