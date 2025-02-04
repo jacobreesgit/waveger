@@ -72,3 +72,15 @@ body,
 .p-card-header .favourite-button.p-button-text {
   color: red;
 }
+
+media-audio-layout,
+.vds-audio-layout {
+  background: transparent;
+  border: none !important;
+  height: fit-content;
+}
+
+media-controls.vds-controls {
+  padding-inline: 0 !important;
+  padding: 0 20px 20px 20px !important;
+}
