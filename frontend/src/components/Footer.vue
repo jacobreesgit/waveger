@@ -1,7 +1,7 @@
 <template>
   <footer>
     <GrowBottomNavigation
-      :class="themeClass"
+      :class="[themeClass, textClass]"
       :options="routeOptions"
       v-model="selected"
       :color="'black'"
@@ -21,7 +21,7 @@ const router = useRouter()
 const route = useRoute()
 const selected = ref(0)
 
-const { themeClass } = useDarkMode()
+const { themeClass, textClass } = useDarkMode()
 
 // Extract routes with meta info for the bottom navigation
 const routeOptions = computed(() =>
