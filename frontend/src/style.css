@@ -104,7 +104,6 @@ media-controls.vds-controls {
       rgba(17, 25, 40, 0.62),
       rgba(17, 25, 40, 0.62)
     ) !important;
-    position: relative !important;
     -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
   }
 
@@ -116,7 +115,6 @@ media-controls.vds-controls {
       rgba(255, 255, 255, 0.62),
       rgba(255, 255, 255, 0.62)
     ) !important;
-    position: relative !important;
     -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
   }
 }
