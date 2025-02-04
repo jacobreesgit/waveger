@@ -47,6 +47,7 @@ export const useChartsStore = defineStore('charts', {
           throw new Error('Invalid API response format')
         }
 
+        console.log(response)
         this.chartData = response.data.data.songs
 
         // Fetch Apple Music tracks and merge them
