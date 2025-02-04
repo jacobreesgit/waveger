@@ -44,7 +44,7 @@
       class="flex justify-center items-center h-full"
     >
       <ProgressSpinner
-        style="width: 64px; height: 64px"
+        class="w-16 h-16"
         strokeWidth="8"
         fill="transparent"
         animationDuration=".5s"

@@ -16,7 +16,7 @@
               @click="item.command"
               severity="secondary"
               size="small"
-            />
+            ></Button>
           </div>
         </div>
       </template>

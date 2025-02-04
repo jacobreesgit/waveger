@@ -82,5 +82,13 @@ media-audio-layout,
 
 media-controls.vds-controls {
   padding-inline: 0 !important;
-  padding: 0 20px 8px 20px !important;
+  padding: 0 16px 8px 16px !important;
+}
+
+.p-card-caption {
+  padding: 16px;
+}
+
+.gr-btn-container-foreground {
+  box-shadow: 0 0 3px 0 #eee !important;
 }
