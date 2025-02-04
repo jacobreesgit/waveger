@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+body,
+#app {
+  overflow: hidden;
+}
+
 .glassmorphism-dark {
   backdrop-filter: blur(16px) saturate(180%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(180%) !important;
