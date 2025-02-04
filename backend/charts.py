@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 import requests
 import os
 import psycopg2
-import json  # ✅ Import json
+import json
 from datetime import datetime
 
 charts_bp = Blueprint("charts", __name__)
@@ -14,7 +14,24 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
 
-def fetch_api(endpoint):
+def fetch_api(endpoint, chart_id=None, historical_week=None):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    if chart_id and historical_week:
+        # Check if data exists in the database
+        cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
+        existing_record = cursor.fetchone()
+        
+        if existing_record:
+            cursor.close()
+            conn.close()
+            return jsonify({
+                "source": "database",
+                "data": json.loads(existing_record[0])
+            })
+    
+    # Fetch from API if not found in DB or for top-charts
     if not RAPIDAPI_KEY:
         return jsonify({"error": "Missing API key"}), 500
 
@@ -28,24 +45,27 @@ def fetch_api(endpoint):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        store_chart_data(data)  # ✅ Store the data in the database
-        return jsonify(data)
+        
+        if chart_id and historical_week:
+            store_chart_data(data, chart_id, historical_week)  # ✅ Store the data in the database
+        
+        return jsonify({
+            "source": "api",
+            "data": data
+        })
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
-def store_chart_data(data):
+def store_chart_data(data, chart_id, historical_week):
     """Stores chart data in PostgreSQL if it doesn't already exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    title = data.get("title")
-    week = data.get("week")
-    
-    cursor.execute("SELECT * FROM charts WHERE title = %s AND week = %s", (title, week))
+    cursor.execute("SELECT * FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
     existing_record = cursor.fetchone()
     
     if not existing_record:
-        cursor.execute("INSERT INTO charts (title, week, data) VALUES (%s, %s, %s)", (title, week, json.dumps(data)))
+        cursor.execute("INSERT INTO charts (title, week, data) VALUES (%s, %s, %s)", (chart_id, historical_week, json.dumps(data)))
         conn.commit()
     
     cursor.close()
@@ -59,4 +79,4 @@ def get_top_charts():
 def get_chart_details():
     chart_id = request.args.get("id", "hot-100")
     historical_week = request.args.get("week", datetime.today().strftime('%Y-%m-%d'))
-    return fetch_api(f"/chart.php?id={chart_id}&week={historical_week}")
+    return fetch_api(f"/chart.php?id={chart_id}&week={historical_week}", chart_id, historical_week)
