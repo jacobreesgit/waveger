@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import requests
 import os
 import psycopg2
+import json  # ✅ Import json
 from datetime import datetime
 
 charts_bp = Blueprint("charts", __name__)
@@ -27,12 +28,13 @@ def fetch_api(endpoint):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        store_chart_data(data)
+        store_chart_data(data)  # ✅ Store the data in the database
         return jsonify(data)
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
 
 def store_chart_data(data):
+    """Stores chart data in PostgreSQL if it doesn't already exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
     
