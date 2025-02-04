@@ -21,10 +21,10 @@ def get_charts_by_category():
 @charts_bp.route("/chart", methods=["GET"])
 def get_chart_details():
     chart_id = request.args.get("id")
-    week = request.args.get("week", "")
+    historical_date = request.args.get("date", "")
     if not chart_id:
         return jsonify({"error": "Missing chart_id parameter"}), 400
-    return fetch_api(f"/chart.php?id={chart_id}&week={week}")
+    return fetch_api(f"/chart.php?id={chart_id}&date={historical_date}")
 
 @charts_bp.route("/hot-100", methods=["GET"])
 def get_hot_100():
