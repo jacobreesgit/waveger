@@ -6,10 +6,13 @@ const APPLE_MUSIC_API_URL = 'https://api.music.apple.com/v1/catalog/us'
 
 export const useChartsStore = defineStore('charts', {
   state: () => ({
-    chartData: null, // Billboard chart data
+    chartData: [],
+    appleMusicTracks: {},
     appleMusicToken: null,
     loading: false,
     error: null,
+    week: null,
+    loadedResults: 9, // Start with 9 results
   }),
 
   actions: {
@@ -22,11 +25,7 @@ export const useChartsStore = defineStore('charts', {
       }
     },
 
-    async fetchChartData(
-      selectedChart = 'hot-100',
-      selectedWeek = '',
-      selectedRange = '1-10'
-    ) {
+    async fetchChartData(selectedChart = 'hot-100', selectedWeek = '') {
       this.loading = true
       this.error = null
 
@@ -35,7 +34,7 @@ export const useChartsStore = defineStore('charts', {
           params: {
             id: selectedChart,
             week: selectedWeek,
-            range: selectedRange,
+            range: `1-${this.loadedResults}`, // Fetch only the required number of songs
           },
         })
 
@@ -47,11 +46,11 @@ export const useChartsStore = defineStore('charts', {
           throw new Error('Invalid API response format')
         }
 
-        console.log(response)
         this.chartData = response.data.data.songs
+        this.week = response.data.data.week
 
-        // Fetch Apple Music tracks and merge them
-        await this.fetchAppleMusicTracks()
+        // Fetch Apple Music tracks only for the newly fetched data
+        await this.fetchAppleMusicTracks(this.chartData)
       } catch (err) {
         this.error = err.response?.data?.error || 'Failed to fetch chart data'
       } finally {
@@ -59,14 +58,20 @@ export const useChartsStore = defineStore('charts', {
       }
     },
 
-    async fetchAppleMusicTracks() {
+    async fetchMoreResults() {
+      // Load 9 more results each time "View More" is clicked
+      this.loadedResults += 9
+      await this.fetchChartData()
+    },
+
+    async fetchAppleMusicTracks(tracks) {
       if (!this.appleMusicToken) {
         await this.fetchAppleMusicToken()
       }
 
       try {
         const appleMusicResults = await Promise.all(
-          this.chartData.map(async (track) => {
+          tracks.map(async (track) => {
             if (!track.name || !track.artist) return null
 
             const response = await axios.get(`${APPLE_MUSIC_API_URL}/search`, {
@@ -79,22 +84,26 @@ export const useChartsStore = defineStore('charts', {
             })
 
             const trackData = response.data.results.songs?.data[0]?.attributes
-            if (trackData) {
-              track.appleMusic = {
-                name: trackData.name,
-                artist: trackData.artistName,
-                albumArt: trackData.artwork.url
-                  .replace('{w}', '500')
-                  .replace('{h}', '500'),
-                previewUrl: trackData.previews?.[0]?.url || '',
-                appleMusicUrl: trackData.url,
-              }
-            }
-            return track
+            return trackData
+              ? {
+                  name: trackData.name,
+                  artist: trackData.artistName,
+                  albumArt: trackData.artwork.url
+                    .replace('{w}', '500')
+                    .replace('{h}', '500'),
+                  previewUrl: trackData.previews?.[0]?.url || '',
+                  appleMusicUrl: trackData.url,
+                }
+              : null
           })
         )
 
-        this.chartData = appleMusicResults // Update chartData with Apple Music details
+        // Store Apple Music data in an object with song title as the key
+        tracks.forEach((track, index) => {
+          if (appleMusicResults[index]) {
+            this.appleMusicTracks[track.name] = appleMusicResults[index]
+          }
+        })
       } catch {
         this.error = 'Failed to fetch Apple Music track data'
       }
