@@ -28,7 +28,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
             conn.close()
             return jsonify({
                 "source": "database",
-                "data": json.loads(existing_record[0])
+                "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
             })
     
     # Fetch from API if not found in DB or for top-charts
