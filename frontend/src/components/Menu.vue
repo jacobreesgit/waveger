@@ -46,22 +46,18 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { usePreferredDark } from '@vueuse/core'
 import Toolbar from 'primevue/toolbar'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import { useUserStore } from '@/stores/users'
 import logo from '@/assets/logo.png'
 import defaultAvatar from '@/assets/default-avatar.png'
+import { useDarkMode } from '@/utils/useDarkMode'
 
 const userStore = useUserStore()
 const router = useRouter()
 
-// Theme detection using VueUse
-const isDark = usePreferredDark()
-const themeClass = computed(() =>
-  isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
-)
+const { themeClass } = useDarkMode()
 
 // Dynamically generate menu items from Vue Router routes (excluding specific routes)
 const menuItems = computed(() => {

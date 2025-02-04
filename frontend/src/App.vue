@@ -1,29 +1,34 @@
 <template>
-  <div class="app flex flex-col min-h-screen gap-4">
+  <div class="app flex flex-col gap-4 h-screen" :class="deviceClass">
     <!-- Menubar -->
-    <Menu class="pt-4 container mx-auto"></Menu>
+    <Menu v-if="!isMobile" class="pt-4 container mx-auto"></Menu>
 
     <!-- Content -->
-    <main class="flex-1 container mx-auto flex flex-col pb-4">
+    <main
+      class="flex-1 container mx-auto flex flex-col overflow-hidden"
+      :class="{ 'pt-4': isMobile, 'pb-4': !isMobile }"
+    >
       <router-view
         :class="[
-          'flex items-center flex-col mx-auto p-8  gap-4 w-5/6',
+          'flex items-center flex-col mx-auto p-8 gap-4 w-full sm:w-5/6 overflow-auto',
           themeClass,
         ]"
       />
     </main>
+
+    <!-- Footer -->
+    <Footer v-if="isMobile"></Footer>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import Menu from '@/components/Menu.vue'
-import { usePreferredDark } from '@vueuse/core'
+import Footer from '@/components/Footer.vue'
+import { useDarkMode } from '@/utils/useDarkMode'
+import { useDevice } from '@/utils/useDevice'
 
-const isDark = usePreferredDark()
-const themeClass = computed(() =>
-  isDark.value ? 'glassmorphism-dark' : 'glassmorphism-light'
-)
+const { themeClass } = useDarkMode()
+const { isMobile, deviceClass } = useDevice()
 </script>
 
 <style lang="scss" scoped>

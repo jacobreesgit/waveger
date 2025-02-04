@@ -1,9 +1,25 @@
 <template>
-  <div :class="{ 'h-screen': chartsStore.loading }">
+  <div class="h-full">
     <Heading type="secondary">Billboard Charts</Heading>
 
-    <!-- Date Picker -->
+    <!-- Chart Selector -->
     <div class="flex flex-col md:flex-row justify-center items-center gap-2">
+      <label for="chartSelect" class="font-medium">Select Chart:</label>
+      <Dropdown
+        id="chartSelect"
+        v-model="selectedChart"
+        :options="chartOptions"
+        optionLabel="title"
+        optionValue="id"
+        placeholder="Select a chart"
+        class="w-64"
+      />
+    </div>
+
+    <!-- Date Picker -->
+    <div
+      class="flex flex-col md:flex-row justify-center items-center gap-2 mt-2"
+    >
       <label for="datePicker" class="font-medium">Choose Chart Date:</label>
       <DatePicker
         id="datePicker"
@@ -14,6 +30,8 @@
         class="p-inputtext-sm w-64"
       />
     </div>
+
+    <p v-if="!chartsStore.loading">{{ chartsStore.week }}</p>
 
     <!-- Error Message -->
     <Message v-if="chartsStore.error" severity="error">
@@ -86,6 +104,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import DatePicker from 'primevue/datepicker'
+import Dropdown from 'primevue/dropdown'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Card from 'primevue/card'
@@ -96,25 +115,48 @@ import 'vidstack/bundle'
 // Stores
 const chartsStore = useChartsStore()
 
-// Set default date to today
+// Default chart selection and date
+const selectedChart = ref('hot-100')
 const selectedDate = ref(new Date().toISOString().split('T')[0])
+
+// Available charts
+const chartOptions = ref([
+  { id: 'hot-100', title: 'Billboard Hot 100' },
+  { id: 'billboard-200', title: 'Billboard 200' },
+  { id: 'artist-100', title: 'Billboard Artist 100' },
+  { id: 'emerging-artists', title: 'Emerging Artists' },
+  { id: 'streaming-songs', title: 'Streaming Songs' },
+  { id: 'radio-songs', title: 'Radio Songs' },
+  { id: 'digital-song-sales', title: 'Digital Song Sales' },
+  { id: 'summer-songs', title: 'Songs of the Summer' },
+  { id: 'top-album-sales', title: 'Top Album Sales' },
+  { id: 'tiktok-billboard-top-50', title: 'TikTok Billboard Top 50' },
+  { id: 'top-streaming-albums', title: 'Top Streaming Albums' },
+  { id: 'independent-albums', title: 'Independent Albums' },
+  { id: 'vinyl-albums', title: 'Vinyl Albums' },
+  { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
+  {
+    id: 'billboard-u-s-afrobeats-songs',
+    title: 'Billboard U.S. Afrobeats Songs',
+  },
+])
 
 // Get album art from Apple Music data
 const getAlbumArt = (trackName) => {
   return (
-    chartsStore.appleMusicTracks[trackName]?.albumArt ||
+    chartsStore.appleMusicTracks?.[trackName]?.albumArt ||
     'https://via.placeholder.com/150'
   )
 }
 
 // Get preview URL for audio
 const getPreviewUrl = (trackName) => {
-  return chartsStore.appleMusicTracks[trackName]?.previewUrl || null
+  return chartsStore.appleMusicTracks?.[trackName]?.previewUrl || null
 }
 
-// Fetch chart data when date changes
-watch(selectedDate, async (newDate) => {
-  await chartsStore.fetchChartData('hot-100', newDate)
+// Fetch chart data when date or chart changes
+watch([selectedChart, selectedDate], async () => {
+  await chartsStore.fetchChartData(selectedChart.value, selectedDate.value)
 })
 
 // Load more results
@@ -124,12 +166,12 @@ const loadMore = async () => {
 
 // Fetch initial data on mount
 onMounted(async () => {
-  await chartsStore.fetchChartData('hot-100', selectedDate.value)
+  await chartsStore.fetchChartData(selectedChart.value, selectedDate.value)
 })
 </script>
 
 <style lang="scss" scoped>
 .grid {
-  max-width: 76%;
+  width: 70%;
 }
 </style>

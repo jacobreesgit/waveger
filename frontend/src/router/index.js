@@ -12,10 +12,10 @@ const routes = [
     meta: { label: 'Home', icon: 'pi pi-home' },
   },
   {
-    path: '/the-charts',
-    name: 'The Charts',
+    path: '/charts',
+    name: 'Charts',
     component: Charts,
-    meta: { label: 'The Charts', icon: 'pi pi-chart-line' },
+    meta: { label: 'Charts', icon: 'pi pi-chart-line' },
   },
   {
     path: '/account',

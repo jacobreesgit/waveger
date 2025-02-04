@@ -10,21 +10,30 @@ CORS(auth_bp)
 
 @auth_bp.route("/register", methods=["POST"])
 def register_user():
-    """Registers a new user with hashed password"""
+    """Registers a new user with hashed password and checks for duplicates"""
     data = request.json
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        hashed_password = generate_password_hash(data["password"])  # Hash password
+        # Check if username or email already exists
+        cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", (data["username"], data["email"]))
+        existing_user = cursor.fetchone()
+        
+        if existing_user:
+            return jsonify({"error": "Username or email already taken"}), 409
+        
+        # Hash password and insert user
+        hashed_password = generate_password_hash(data["password"])
         cursor.execute(
             "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
             (data["username"], data["email"], hashed_password),
         )
-        user_id = cursor.fetchone()["id"]
+        user_id = cursor.fetchone()[0]  # Ensure correct fetching of ID
         conn.commit()
         return jsonify({"message": "User registered", "id": user_id}), 201
     except Exception as e:
+        conn.rollback()
         return jsonify({"error": str(e)}), 500
     finally:
         cursor.close()
@@ -46,23 +55,22 @@ def login():
             return jsonify({"error": "User not found"}), 404
 
         # Ensure password is checked correctly
-        if not check_password_hash(user["password_hash"], data["password"]):
+        if not check_password_hash(user[3], data["password"]):
             return jsonify({"error": "Invalid credentials"}), 401
 
         # Create JWT token
-        access_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(days=7))
+        access_token = create_access_token(identity=str(user[0]), expires_delta=timedelta(days=7))
 
         # Return user details & token
         return jsonify({
             "message": "Login successful",
             "user": {
-                "id": user["id"],
-                "username": user["username"],
-                "email": user["email"]
+                "id": user[0],
+                "username": user[1],
+                "email": user[2]
             },
             "access_token": access_token
         }), 200
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
@@ -100,7 +108,7 @@ def validate_token():
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        return jsonify({"user": user}), 200
+        return jsonify({"user": {"id": user[0], "username": user[1], "email": user[2]}}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     finally:
