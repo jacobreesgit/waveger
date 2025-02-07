@@ -24,6 +24,12 @@ const routes = [
     meta: { label: 'Account', icon: 'pi pi-user' },
   },
   {
+    path: '/fantasy',
+    name: 'Fantasy',
+    // component: ,
+    meta: { label: 'Fanatasy', icon: 'pi pi-user' },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: NotFound,

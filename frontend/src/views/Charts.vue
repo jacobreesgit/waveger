@@ -31,8 +31,6 @@
       />
     </div>
 
-    <p v-if="!chartsStore.loading">{{ chartsStore.week }}</p>
-
     <!-- Error Message -->
     <Message v-if="chartsStore.error" severity="error">
       {{ chartsStore.error }}
@@ -51,6 +49,10 @@
         aria-label="Loading..."
       />
     </div>
+
+    <Heading type="third" v-if="!chartsStore.loading">{{
+      chartsStore.week
+    }}</Heading>
 
     <!-- Chart Cards -->
     <div

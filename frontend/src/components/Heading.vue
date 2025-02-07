@@ -22,8 +22,9 @@ const props = defineProps({
 
 // Class mapping for different heading types
 const headingClasses = {
-  primary: 'text-3xl font-bold',
-  secondary: 'text-2xl font-bold',
+  primary: 'text-4xl font-bold',
+  secondary: 'text-3xl font-bold',
+  third: 'text-2xl font-bold',
 }
 
 // Compute Tailwind classes

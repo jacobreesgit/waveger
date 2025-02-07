@@ -118,3 +118,11 @@ media-controls.vds-controls {
     -webkit-mask-image: -webkit-radial-gradient(white, black) !important;
   }
 }
+
+.w-16 {
+  width: calc(var(--spacing) * 16) !important;
+}
+
+.h-16 {
+  height: calc(var(--spacing) * 16) !important;
+}
