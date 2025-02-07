@@ -13,6 +13,9 @@ PRIVATE_KEY_PATH = "/etc/secrets/AuthKey.p8"  # Using Render Secret Files
 
 def generate_apple_music_token():
     """Generates a JWT token for Apple Music API authentication."""
+    if not os.path.exists(PRIVATE_KEY_PATH):
+        return "Private key file missing", 500
+
     try:
         with open(PRIVATE_KEY_PATH, "r") as key_file:
             private_key = key_file.read()
