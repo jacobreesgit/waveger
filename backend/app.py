@@ -3,10 +3,8 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import os
 
-from auth import auth_bp
 from charts import charts_bp
 from apple_music import apple_music_bp  
-from favourites import favourites_bp
 
 app = Flask(__name__)
 
