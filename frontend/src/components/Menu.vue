@@ -23,7 +23,7 @@
       <template #end>
         <div class="flex items-center gap-2">
           <router-link to="/account" class="flex">
-            <Avatar
+            <!-- <Avatar
               v-if="!userStore.currentUser"
               icon="pi pi-user"
               class="mr-2"
@@ -35,7 +35,7 @@
               size="medium"
               shape="circle"
               :image="userStore.currentUser?.avatar || defaultAvatar"
-            />
+            /> -->
           </router-link>
         </div>
       </template>
@@ -49,12 +49,12 @@ import { useRouter } from 'vue-router'
 import Toolbar from 'primevue/toolbar'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
-import { useUserStore } from '@/stores/users'
+// import { useUserStore } from '@/stores/users'
 import logo from '@/assets/logo.png'
 import defaultAvatar from '@/assets/default-avatar.png'
 import { useDarkMode } from '@/utils/useDarkMode'
 
-const userStore = useUserStore()
+// const userStore = useUserStore()
 const router = useRouter()
 
 const { themeClass } = useDarkMode()

@@ -1,6 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { useUserStore } from '@/stores/users'
+// import { useUserStore } from '@/stores/users'
 
 import App from '@/App.vue'
 import '@/style.css'
@@ -19,11 +19,11 @@ app.use(createPinia())
 app.use(router)
 app.use(bottomNavigationVue)
 
-const userStore = useUserStore()
-window.addEventListener('load', () => {
-  sessionStorage.clear()
-  userStore.autoLogin()
-})
+// const userStore = useUserStore()
+// window.addEventListener('load', () => {
+//   sessionStorage.clear()
+//   userStore.autoLogin()
+// })
 
 app.use(PrimeVue, {
   theme: {
