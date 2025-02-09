@@ -23,49 +23,26 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
 
         if existing_record:
             try:
-                # Ensure existing_record is correctly unpacked
-                json_data = existing_record[0]  # The first column contains the JSON string
+                json_data = existing_record[0] if existing_record else None  # Ensure there's data
 
-                if isinstance(json_data, str):  # Ensure it's a string before parsing
-                    data = json.loads(json_data)
+                if json_data:
+                    data = json.loads(json_data) if isinstance(json_data, str) else json_data
+                    logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
+                    return {
+                        "source": "database",
+                        "data": data
+                    }
                 else:
-                    data = json_data  # If already a dict, use it directly
-
-                logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
-                return {
-                    "source": "database",
-                    "data": data
-                }
+                    logging.error(f"Database entry for {chart_id} on {historical_week} is empty")
             except json.JSONDecodeError as e:
                 logging.error(f"Error parsing database data for {chart_id} on {historical_week}: {e}")
                 return {"error": "Corrupt data in database"}, 500
 
+    # If no record is found, fallback to API
     if not RAPIDAPI_KEY:
         logging.error("Missing API key")
         return {"error": "Missing API key"}, 500
 
-    headers = {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": RAPIDAPI_HOST
-    }
-    url = f"https://{RAPIDAPI_HOST}{endpoint}"
-    logging.debug(f"Fetching data from API: {url}")
-
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-
-        if chart_id and historical_week:
-            store_chart_data(data, chart_id, historical_week)
-
-        return {
-            "source": "api",
-            "data": data
-        }
-    except requests.exceptions.RequestException as e:
-        logging.error(f"API request failed: {e}")
-        return {"error": str(e)}, 500
 
 def store_chart_data(data, chart_id, historical_week):
     conn = get_db_connection()
