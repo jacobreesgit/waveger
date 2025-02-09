@@ -12,16 +12,19 @@ export const useChartsStore = defineStore('charts', {
     loading: false,
     error: null,
     week: null,
-    loadedResults: 9, // Start with 9 results
+    source: null,
+    loadedResults: 9,
   }),
 
   actions: {
     async fetchAppleMusicToken() {
       try {
         const response = await axios.get(`${BACKEND_API_URL}/apple-music-token`)
-        this.appleMusicToken = response.data.token
+        this.appleMusicToken = response.data?.token ?? null
+        if (!this.appleMusicToken) throw new Error('Invalid token response')
       } catch (err) {
-        this.error = 'Failed to retrieve Apple Music token'
+        this.error =
+          err.response?.data?.message || 'Failed to retrieve Apple Music token'
       }
     },
 
@@ -34,22 +37,17 @@ export const useChartsStore = defineStore('charts', {
           params: {
             id: selectedChart,
             week: selectedWeek,
-            range: `1-${this.loadedResults}`, // Fetch only the required number of songs
+            range: `1-${this.loadedResults}`,
           },
         })
 
-        if (
-          !response.data ||
-          !response.data.data ||
-          !response.data.data.songs
-        ) {
-          throw new Error('Invalid API response format')
-        }
+        const songs = response.data?.data?.songs
+        if (!songs) throw new Error('Invalid API response format')
 
         this.chartData = response.data.data.songs
         this.week = response.data.data.week
+        this.source = response.data.source
 
-        // Fetch Apple Music tracks only for the newly fetched data
         await this.fetchAppleMusicTracks(this.chartData)
       } catch (err) {
         this.error = err.response?.data?.error || 'Failed to fetch chart data'
@@ -59,14 +57,16 @@ export const useChartsStore = defineStore('charts', {
     },
 
     async fetchMoreResults() {
-      // Load 9 more results each time "View More" is clicked
       this.loadedResults += 9
-      await this.fetchChartData()
+      await this.fetchChartData(this.source, this.week)
     },
 
     async fetchAppleMusicTracks(tracks) {
       if (!this.appleMusicToken) {
-        await this.fetchAppleMusicToken()
+        if (!this.tokenRequestPromise) {
+          this.tokenRequestPromise = this.fetchAppleMusicToken()
+        }
+        await this.tokenRequestPromise
       }
 
       try {
@@ -98,12 +98,11 @@ export const useChartsStore = defineStore('charts', {
           })
         )
 
-        // Store Apple Music data in an object with song title as the key
-        tracks.forEach((track, index) => {
-          if (appleMusicResults[index]) {
-            this.appleMusicTracks[track.name] = appleMusicResults[index]
-          }
-        })
+        this.appleMusicTracks = Object.fromEntries(
+          tracks
+            .map((track, index) => [track.name, appleMusicResults[index]])
+            .filter(([_, value]) => value)
+        )
       } catch {
         this.error = 'Failed to fetch Apple Music track data'
       }
