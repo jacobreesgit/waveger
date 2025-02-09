@@ -92,7 +92,10 @@
     </div>
 
     <!-- View More Button -->
-    <div v-if="!chartsStore.loading" class="flex justify-center mt-4">
+    <div
+      v-if="!chartsStore.loading & !chartsStore.error"
+      class="flex justify-center mt-4"
+    >
       <Button
         v-if="chartsStore.chartData.length < 100"
         label="View More"
