@@ -20,15 +20,18 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
     if chart_id and historical_week:
         cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
         existing_record = cursor.fetchone()
-        
-        if existing_record:
-            cursor.close()
-            conn.close()
-            logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
-            return {
-                "source": "database",
-                "data": json.loads(existing_record[0]) if isinstance(existing_record[0], str) else existing_record[0]
-            }
+
+        if existing_record is not None:  # FIX: Check if data exists
+            try:
+                data = json.loads(existing_record[0]) if isinstance(existing_record[0], str) else existing_record[0]
+                logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
+                return {
+                    "source": "database",
+                    "data": data
+                }
+            except json.JSONDecodeError:
+                logging.error(f"Invalid JSON format in database for {chart_id} on {historical_week}")
+                return {"error": "Corrupt data in database"}, 500
 
     if not RAPIDAPI_KEY:
         logging.error("Missing API key")
@@ -48,7 +51,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         
         if chart_id and historical_week:
             store_chart_data(data, chart_id, historical_week)
-        
+
         return {
             "source": "api",
             "data": data
@@ -72,10 +75,6 @@ def store_chart_data(data, chart_id, historical_week):
 
     cursor.close()
     conn.close()
-
-@charts_bp.route("/top-charts", methods=["GET"])
-def get_top_charts():
-    return fetch_api("/top-charts.php")
 
 @charts_bp.route("/chart", methods=["GET"])
 def get_chart_details():
