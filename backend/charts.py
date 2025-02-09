@@ -23,8 +23,13 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
 
         if existing_record:
             try:
-                # Properly parse JSON data
-                data = json.loads(existing_record[0])  # existing_record[0] contains the JSON string
+                # Ensure existing_record is correctly unpacked
+                json_data = existing_record[0]  # The first column contains the JSON string
+
+                if isinstance(json_data, str):  # Ensure it's a string before parsing
+                    data = json.loads(json_data)
+                else:
+                    data = json_data  # If already a dict, use it directly
 
                 logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
                 return {
@@ -35,7 +40,6 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
                 logging.error(f"Error parsing database data for {chart_id} on {historical_week}: {e}")
                 return {"error": "Corrupt data in database"}, 500
 
-    # If not found in DB, fetch from API
     if not RAPIDAPI_KEY:
         logging.error("Missing API key")
         return {"error": "Missing API key"}, 500
@@ -52,7 +56,6 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         response.raise_for_status()
         data = response.json()
 
-        # Store API response in DB before returning
         if chart_id and historical_week:
             store_chart_data(data, chart_id, historical_week)
 
@@ -64,9 +67,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         logging.error(f"API request failed: {e}")
         return {"error": str(e)}, 500
 
-
 def store_chart_data(data, chart_id, historical_week):
-    """Stores chart data in PostgreSQL if it doesn't already exist."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -85,14 +86,13 @@ def store_chart_data(data, chart_id, historical_week):
 def get_chart_details():
     chart_id = request.args.get("id", "hot-100")
     historical_week = request.args.get("week", datetime.today().strftime('%Y-%m-%d'))
-    range_param = request.args.get("range", "1-10")  # Default to first 10 entries
+    range_param = request.args.get("range", "1-10")
 
     logging.debug(f"Request for chart: {chart_id}, Week: {historical_week}, Range: {range_param}")
 
     response = fetch_api(f"/chart.php?id={chart_id}&week={historical_week}", chart_id, historical_week)
 
-    # Fix: Ensure correct handling of error responses
-    if isinstance(response, tuple):  # Error responses are returned as (dict, status_code)
+    if isinstance(response, tuple):
         return jsonify(response[0]), response[1]
 
     data = response["data"]
@@ -100,7 +100,7 @@ def get_chart_details():
     if "songs" in data and isinstance(data["songs"], list):
         try:
             start, end = map(int, range_param.split("-"))
-            data["songs"] = data["songs"][start-1:end]  # Slice the song list
+            data["songs"] = data["songs"][start-1:end]
         except ValueError:
             logging.error("Invalid range format")
             return jsonify({"error": "Invalid range format. Use 'start-end' format."}), 400
