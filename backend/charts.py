@@ -62,26 +62,19 @@ def store_chart_data(data, chart_id, historical_week):
     conn.close()
 
 @charts_bp.route("/chart", methods=["GET"])
-def get_chart_details():
-    chart_id = request.args.get("id", "hot-100")
-    historical_week = request.args.get("week", datetime.today().strftime('%Y-%m-%d'))
-    range_param = request.args.get("range", "1-10")
+def get_chart():
+    chart_name = "hot-100"
+    week = "2025-02-09"
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+    cursor.execute("SELECT data FROM charts WHERE chart_name = %s AND week = %s", (chart_name, week))
+    result = cursor.fetchone()
 
-    logging.debug(f"Request for chart: {chart_id}, Week: {historical_week}, Range: {range_param}")
+    logging.debug(f"Raw database response: {result}")
 
-    response = fetch_api(f"/chart.php?id={chart_id}&week={historical_week}", chart_id, historical_week)
+    if not result or 'data' not in result:
+        logging.error(f"Unexpected database format: {result}")
+        return jsonify({"error": "Unexpected database format"}), 500
 
-    if isinstance(response, tuple):
-        return jsonify(response[0]), response[1]
-
-    data = response["data"]
-
-    if "songs" in data and isinstance(data["songs"], list):
-        try:
-            start, end = map(int, range_param.split("-"))
-            data["songs"] = data["songs"][start-1:end]
-        except ValueError:
-            logging.error("Invalid range format")
-            return jsonify({"error": "Invalid range format. Use 'start-end' format."}), 400
-
-    return jsonify(response)
+    return jsonify(result['data'])
