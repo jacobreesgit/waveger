@@ -48,7 +48,7 @@ export const useChartsStore = defineStore('charts', {
         this.week = response.data.data.week
         this.source = response.data.source
 
-        console.log('Chart data received:', this.chartData)
+        console.log(`Chart data received from: ${this.source}`) // Debugging line
 
         await this.fetchAppleMusicTracks(this.chartData)
       } catch (err) {

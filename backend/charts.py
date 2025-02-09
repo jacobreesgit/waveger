@@ -21,20 +21,21 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
         existing_record = cursor.fetchone()
 
-        if existing_record:  # FIX: Check if data exists
+        if existing_record:
             try:
-                # FIX: Properly access the "data" field
-                data = existing_record["data"] if isinstance(existing_record, dict) else json.loads(existing_record[0])
+                # Properly parse JSON data
+                data = json.loads(existing_record[0])  # existing_record[0] contains the JSON string
 
                 logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
                 return {
                     "source": "database",
                     "data": data
                 }
-            except (KeyError, json.JSONDecodeError) as e:
+            except json.JSONDecodeError as e:
                 logging.error(f"Error parsing database data for {chart_id} on {historical_week}: {e}")
                 return {"error": "Corrupt data in database"}, 500
 
+    # If not found in DB, fetch from API
     if not RAPIDAPI_KEY:
         logging.error("Missing API key")
         return {"error": "Missing API key"}, 500
@@ -51,6 +52,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         response.raise_for_status()
         data = response.json()
 
+        # Store API response in DB before returning
         if chart_id and historical_week:
             store_chart_data(data, chart_id, historical_week)
 
@@ -61,6 +63,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
     except requests.exceptions.RequestException as e:
         logging.error(f"API request failed: {e}")
         return {"error": str(e)}, 500
+
 
 def store_chart_data(data, chart_id, historical_week):
     """Stores chart data in PostgreSQL if it doesn't already exist."""
