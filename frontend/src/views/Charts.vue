@@ -5,7 +5,7 @@
     <!-- Chart Selector -->
     <div class="flex flex-col md:flex-row justify-center items-center gap-2">
       <label for="chartSelect" class="font-medium">Select Chart:</label>
-      <Dropdown
+      <Select
         id="chartSelect"
         v-model="selectedChart"
         :options="chartOptions"
@@ -106,10 +106,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import DatePicker from 'primevue/datepicker'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Card from 'primevue/card'
