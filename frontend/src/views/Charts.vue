@@ -168,11 +168,6 @@ watch([selectedChart, selectedDate], async () => {
 const loadMore = async () => {
   await chartsStore.fetchMoreResults()
 }
-
-// Fetch initial data on mount
-onMounted(async () => {
-  await chartsStore.fetchChartData(selectedChart.value, selectedDate.value)
-})
 </script>
 
 <style lang="scss" scoped>

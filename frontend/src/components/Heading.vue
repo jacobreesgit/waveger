@@ -11,7 +11,7 @@ const props = defineProps({
   type: {
     type: String,
     default: 'primary',
-    validator: (value) => ['primary', 'secondary'].includes(value),
+    validator: (value) => ['primary', 'secondary', 'third'].includes(value),
   },
   level: {
     type: String,

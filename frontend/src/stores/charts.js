@@ -48,6 +48,8 @@ export const useChartsStore = defineStore('charts', {
         this.week = response.data.data.week
         this.source = response.data.source
 
+        console.log('Chart data received:', this.chartData)
+
         await this.fetchAppleMusicTracks(this.chartData)
       } catch (err) {
         this.error = err.response?.data?.error || 'Failed to fetch chart data'
@@ -103,6 +105,8 @@ export const useChartsStore = defineStore('charts', {
             .map((track, index) => [track.name, appleMusicResults[index]])
             .filter(([_, value]) => value)
         )
+
+        console.log('Apple Music data received:', this.appleMusicTracks)
       } catch {
         this.error = 'Failed to fetch Apple Music track data'
       }
