@@ -21,16 +21,18 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
         existing_record = cursor.fetchone()
 
-        if existing_record is not None:  # FIX: Check if data exists
+        if existing_record:  # FIX: Check if data exists
             try:
-                data = json.loads(existing_record[0]) if isinstance(existing_record[0], str) else existing_record[0]
+                # FIX: Properly access the "data" field
+                data = existing_record["data"] if isinstance(existing_record, dict) else json.loads(existing_record[0])
+
                 logging.debug(f"Returning cached chart data for {chart_id} on {historical_week}")
                 return {
                     "source": "database",
                     "data": data
                 }
-            except json.JSONDecodeError:
-                logging.error(f"Invalid JSON format in database for {chart_id} on {historical_week}")
+            except (KeyError, json.JSONDecodeError) as e:
+                logging.error(f"Error parsing database data for {chart_id} on {historical_week}: {e}")
                 return {"error": "Corrupt data in database"}, 500
 
     if not RAPIDAPI_KEY:
@@ -48,7 +50,7 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
-        
+
         if chart_id and historical_week:
             store_chart_data(data, chart_id, historical_week)
 
