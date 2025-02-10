@@ -9,7 +9,7 @@ export const useChartsStore = defineStore('charts', () => {
   const topCharts = ref(null)
   const chartDetails = ref(null)
   const loading = ref(false)
-  const error = ref(null)
+  const error = ref<string | null>(null)
 
   // Fetch Apple Music Token
   const fetchAppleMusicToken = async () => {
@@ -18,8 +18,12 @@ export const useChartsStore = defineStore('charts', () => {
       const response = await axios.get(`${API_URL}/apple-music-token`)
       appleMusicToken.value = response.data.token
       error.value = null
-    } catch (err: any) {
-      error.value = err.response?.data?.error || 'Failed to fetch token.'
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? (err as any).response?.data?.error || err.message
+          : 'Failed to fetch token.'
+      error.value = errorMessage
     } finally {
       loading.value = false
     }
@@ -37,9 +41,12 @@ export const useChartsStore = defineStore('charts', () => {
         params: { song: songTitle, artist },
       })
       return response.data
-    } catch (err: any) {
-      error.value =
-        err.response?.data?.error || 'Failed to fetch Apple Music info.'
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error
+          ? (err as any).response?.data?.error || err.message
+          : 'Failed to fetch Apple Music info.'
+      error.value = errorMessage
       return null
     } finally {
       loading.value = false
@@ -51,17 +58,25 @@ export const useChartsStore = defineStore('charts', () => {
     try {
       loading.value = true
       const response = await axios.get(`${API_URL}/top-charts`)
-      topCharts.value = response.data.data // The backend already checks the database first
+      topCharts.value = response.data.data
       error.value = null
     } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to fetch top charts.'
+      const errorMessage =
+        err instanceof Error
+          ? (err as any).response?.data?.error || err.message
+          : 'Failed to fetch top charts.'
+      error.value = errorMessage
     } finally {
       loading.value = false
     }
   }
 
   // Fetch specific chart details (checks database first via backend logic)
-  const fetchChartDetails = async (chartId, historicalWeek, range) => {
+  const fetchChartDetails = async (
+    chartId: string,
+    historicalWeek: string,
+    range: string
+  ) => {
     try {
       loading.value = true
       const response = await axios.get(`${API_URL}/chart`, {
@@ -77,8 +92,11 @@ export const useChartsStore = defineStore('charts', () => {
       chartDetails.value = response.data.data
       error.value = null
     } catch (err) {
-      error.value =
-        err.response?.data?.error || 'Failed to fetch chart details.'
+      const errorMessage =
+        err instanceof Error
+          ? (err as any).response?.data?.error || err.message
+          : 'Failed to fetch chart details.'
+      error.value = errorMessage
     } finally {
       loading.value = false
     }
