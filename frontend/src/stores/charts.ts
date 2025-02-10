@@ -5,8 +5,8 @@ import axios, { AxiosError } from 'axios'
 const API_URL = 'https://wavegerpython.onrender.com/api'
 
 export const useChartsStore = defineStore('charts', () => {
-  const topCharts = ref(null)
-  const chartDetails = ref(null)
+  const topCharts = ref<any | null>(null)
+  const chartDetails = ref<any | null>(null)
   const appleMusicToken = ref<string | null>(null)
 
   const loadingTopCharts = ref(false)
@@ -17,51 +17,53 @@ export const useChartsStore = defineStore('charts', () => {
   const errorChartDetails = ref<string | null>(null)
   const errorAppleMusicToken = ref<string | null>(null)
 
-  // Generic API request function
-  const fetchData = async (
+  // Unified API request function
+  const fetchData = async <T>(
     endpoint: string,
     params: Record<string, any> = {},
     loadingRef: { value: boolean },
     errorRef: { value: string | null },
-    dataRef: { value: any }
-  ) => {
+    dataRef: { value: T | null }
+  ): Promise<T | null> => {
     try {
       loadingRef.value = true
       const response = await axios.get(`${API_URL}/${endpoint}`, { params })
       const { data } = response
 
-      // Dynamically handle different endpoint responses
-      switch (endpoint) {
-        case 'apple-music-token':
-          dataRef.value = data?.token || null
-          break
-        case 'top-charts':
-        case 'chart':
-          dataRef.value = data?.data || null
-          break
-        default:
-          dataRef.value = data // Fallback for other endpoints
-          break
+      const responseMap: Record<string, any> = {
+        'apple-music-token': data?.token || null,
+        'top-charts': data?.data || null,
+        chart: data?.data || null,
       }
 
+      dataRef.value = responseMap[endpoint] ?? data
       errorRef.value = null
-      return data
+      return dataRef.value
     } catch (err: unknown) {
       if (err instanceof AxiosError) {
         errorRef.value =
-          err.response?.data?.error || 'An error occurred while fetching data.'
+          err.response?.data?.error ||
+          `Error ${err.response?.status}: An issue occurred while fetching data.`
       } else {
         errorRef.value = `Failed to fetch ${endpoint}.`
       }
       console.error(`Error fetching ${endpoint}:`, err)
+      return null
     } finally {
       loadingRef.value = false
     }
   }
 
-  // Fetch top charts
-  const fetchTopCharts = async () =>
-    fetchData('top-charts', {}, loadingTopCharts, errorTopCharts, topCharts)
+  // Fetch Top Charts
+  const fetchTopCharts = async () => {
+    return fetchData(
+      'top-charts',
+      {},
+      loadingTopCharts,
+      errorTopCharts,
+      topCharts
+    )
+  }
 
   // Fetch specific chart details
   const fetchChartDetails = async (
@@ -78,20 +80,23 @@ export const useChartsStore = defineStore('charts', () => {
       chartDetails
     )
 
-    console.log(
-      `Data retrieved from ${data?.source === 'database' ? 'database cache' : 'external API'}`
-    )
+    if (data) {
+      console.log(
+        `Data retrieved from ${data?.source === 'database' ? 'database cache' : 'external API'}`
+      )
+    }
   }
 
   // Fetch Apple Music Token
-  const fetchAppleMusicToken = async () =>
-    fetchData(
+  const fetchAppleMusicToken = async () => {
+    return fetchData(
       'apple-music-token',
       {},
       loadingAppleMusicToken,
       errorAppleMusicToken,
       appleMusicToken
     )
+  }
 
   return {
     topCharts,
