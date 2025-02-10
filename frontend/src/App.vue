@@ -35,11 +35,11 @@ import { useCharts } from '@/utils/useChartsStore'
 const { themeClass } = useDarkMode()
 const { isMobile, deviceClass } = useDevice()
 
-const { chartsStore, loadDefaultChart, loadChartTypes } = useCharts()
+const { chartsStore, loadAppleMusicToken, loadDefaultChart } = useCharts()
 
 onMounted(() => {
+  loadAppleMusicToken()
   loadDefaultChart()
-  loadChartTypes()
 })
 </script>
 

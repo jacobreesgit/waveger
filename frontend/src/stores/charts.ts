@@ -15,7 +15,7 @@ export const useChartsStore = defineStore('charts', () => {
   const errorChartDetails = ref<string | null>(null)
   const errorAppleMusicToken = ref<string | null>(null)
 
-  // Generic function to handle API requests
+  // Generic API request function
   const fetchData = async (
     endpoint: string,
     params: Record<string, any> | null,
@@ -26,30 +26,35 @@ export const useChartsStore = defineStore('charts', () => {
     try {
       loadingRef.value = true
       const response = await axios.get(`${API_URL}/${endpoint}`, { params })
-      dataRef.value = response.data.data
+
+      // Handle different response structures
+      if (response.data?.token) {
+        dataRef.value = response.data.token // Apple Music Token
+      } else if (response.data?.data) {
+        dataRef.value = response.data.data // Top Charts & Chart Details
+      } else {
+        dataRef.value = response.data // Fallback
+      }
+
       errorRef.value = null
       return response.data
-    } catch (err) {
-      const error = err as AxiosError
-      errorRef.value =
-        error.response?.data?.error || `Failed to fetch ${endpoint}.`
+    } catch (err: unknown) {
+      if (err instanceof AxiosError) {
+        errorRef.value = err.response?.data?.error || err.message
+      } else {
+        errorRef.value = `Failed to fetch ${endpoint}.`
+      }
+      console.error(`Error fetching ${endpoint}:`, err)
     } finally {
       loadingRef.value = false
     }
   }
 
-  // Fetch top charts (checks database first via backend logic)
-  const fetchTopCharts = async () => {
-    await fetchData(
-      'top-charts',
-      null,
-      loadingTopCharts,
-      errorTopCharts,
-      topCharts
-    )
-  }
+  // Fetch top charts
+  const fetchTopCharts = async () =>
+    fetchData('top-charts', null, loadingTopCharts, errorTopCharts, topCharts)
 
-  // Fetch specific chart details (checks database first via backend logic)
+  // Fetch specific chart details
   const fetchChartDetails = async (
     chartId: string,
     historicalWeek: string,
@@ -62,31 +67,20 @@ export const useChartsStore = defineStore('charts', () => {
       errorChartDetails,
       chartDetails
     )
-
-    if (data?.source === 'database') {
-      console.log('Data retrieved from database cache')
-    } else {
-      console.log('Data retrieved from external API')
-    }
+    console.log(
+      `Data retrieved from ${data?.source === 'database' ? 'database cache' : 'external API'}`
+    )
   }
 
   // Fetch Apple Music Token
-  const fetchAppleMusicToken = async () => {
-    if (appleMusicToken.value) return // Avoid redundant API calls
-
-    try {
-      loadingAppleMusicToken.value = true
-      const response = await axios.get(`${API_URL}/apple-music-token`)
-      appleMusicToken.value = response.data.token
-      errorAppleMusicToken.value = null
-    } catch (err) {
-      errorAppleMusicToken.value =
-        err.response?.data?.error || 'Failed to fetch Apple Music token.'
-      appleMusicToken.value = null
-    } finally {
-      loadingAppleMusicToken.value = false
-    }
-  }
+  const fetchAppleMusicToken = async () =>
+    fetchData(
+      'apple-music-token',
+      null,
+      loadingAppleMusicToken,
+      errorAppleMusicToken,
+      appleMusicToken
+    )
 
   return {
     topCharts,

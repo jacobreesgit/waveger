@@ -3,6 +3,11 @@ import { useChartsStore } from '@/stores/charts'
 export function useCharts() {
   const chartsStore = useChartsStore()
 
+  const loadAppleMusicToken = async () => {
+    await chartsStore.fetchAppleMusicToken()
+    console.log('Apple Music Token: ' + chartsStore.appleMusicToken)
+  }
+
   const loadChartTypes = async () => {
     await chartsStore.fetchTopCharts()
     console.log(chartsStore.topCharts)
@@ -23,6 +28,7 @@ export function useCharts() {
 
   return {
     chartsStore,
+    loadAppleMusicToken,
     loadDefaultChart,
     loadChartTypes,
   }
