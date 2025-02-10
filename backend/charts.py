@@ -65,12 +65,12 @@ def store_chart_data(data, chart_id, historical_week):
 
 @charts_bp.route("/chart", methods=["GET"])
 def get_chart():
-    chart_name = "hot-100"
+    title = "hot-100"
     week = "2025-02-09"
     
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-    cursor.execute("SELECT data FROM charts WHERE chart_name = %s AND week = %s", (chart_name, week))
+    cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
     result = cursor.fetchone()
 
     logging.debug(f"Raw database response: {result}")
