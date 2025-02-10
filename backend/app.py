@@ -12,7 +12,7 @@ app = Flask(__name__)
 # Allow requests from frontend
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "supersecret")
 if not JWT_SECRET_KEY:
     logging.error("JWT_SECRET_KEY is missing! Authentication is not secure.")
     raise RuntimeError("JWT_SECRET_KEY must be set in environment variables.")
