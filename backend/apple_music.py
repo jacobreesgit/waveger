@@ -12,21 +12,27 @@ KEY_ID = os.getenv("APPLE_MUSIC_KEY_ID")
 PRIVATE_KEY_PATH = "/etc/secrets/AuthKey.p8"  # Using Render Secret Files
 
 def generate_apple_music_token():
+    """Generates a JWT token for Apple Music API authentication."""
     if not os.path.exists(PRIVATE_KEY_PATH):
         return jsonify({"error": "Private key file missing"}), 500
 
     try:
         with open(PRIVATE_KEY_PATH, "r") as key_file:
             private_key = key_file.read()
-        
+
+        # Token payload
         payload = {
             "iss": TEAM_ID,
-            "exp": int(time.time()) + (180 * 24 * 60 * 60),
+            "exp": int(time.time()) + (180 * 24 * 60 * 60),  # 180-day expiry
             "iat": int(time.time()),
         }
 
-        token = jwt.encode(payload, private_key, algorithm="ES256", headers={"kid": KEY_ID})
-        return jsonify({"token": token})
+        # Generate JWT Token
+        token = jwt.encode(
+            payload, private_key, algorithm="ES256", headers={"kid": KEY_ID}
+        )
+
+        return token
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -34,4 +40,9 @@ def generate_apple_music_token():
 def get_apple_music_token():
     """Returns the Apple Music API token."""
     token = generate_apple_music_token()
+
+    # If token is a response object (error), return it directly
+    if isinstance(token, tuple):  
+        return token  # Avoids wrapping an error response inside jsonify
+
     return jsonify({"token": token})
