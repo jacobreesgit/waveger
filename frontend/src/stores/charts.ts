@@ -28,14 +28,20 @@ export const useChartsStore = defineStore('charts', () => {
     try {
       loadingRef.value = true
       const response = await axios.get(`${API_URL}/${endpoint}`, { params })
-
       const { data } = response
-      if (data?.token) {
-        dataRef.value = data.token // Apple Music Token
-      } else if (data?.data) {
-        dataRef.value = data.data // Top Charts & Chart Details
-      } else {
-        dataRef.value = data // Fallback
+
+      // Dynamically handle different endpoint responses
+      switch (endpoint) {
+        case 'apple-music-token':
+          dataRef.value = data?.token || null
+          break
+        case 'top-charts':
+        case 'chart':
+          dataRef.value = data?.data || null
+          break
+        default:
+          dataRef.value = data // Fallback for other endpoints
+          break
       }
 
       errorRef.value = null
