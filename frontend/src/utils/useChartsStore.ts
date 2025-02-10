@@ -4,11 +4,8 @@ export function useCharts() {
   const chartsStore = useChartsStore()
 
   const loadDefaultChart = async () => {
-    await chartsStore.fetchChartDetails() // Defaults to "hot-100"
-    console.log(
-      'Default Chart with Apple Music Data:',
-      chartsStore.chartDetails
-    )
+    await chartsStore.fetchChartDetails()
+    console.log(chartsStore.chartDetails)
   }
 
   return {

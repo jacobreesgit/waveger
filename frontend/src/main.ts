@@ -12,11 +12,14 @@ import 'primeicons/primeicons.css'
 import BottomNavigation from 'bottom-navigation-vue'
 import 'bottom-navigation-vue/dist/style.css'
 
+import Tres from '@tresjs/core'
+
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.component('BottomNavigation', BottomNavigation)
+app.use(Tres)
 
 app.use(PrimeVue, {
   theme: {

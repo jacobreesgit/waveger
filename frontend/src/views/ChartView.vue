@@ -7,6 +7,8 @@ const props = defineProps({
   loading: Boolean,
   error: String,
 })
+
+import { TresCanvas } from '@tresjs/core'
 </script>
 
 <template>
