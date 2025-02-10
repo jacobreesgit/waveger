@@ -1,37 +1,33 @@
 <template>
-  <component :is="tag" :class="computedClasses" class="tracking-wide">
+  <component :is="tag" :class="computedClasses">
     <slot />
   </component>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 
-const props = defineProps({
-  type: {
-    type: String,
-    default: 'primary',
-    validator: (value) => ['primary', 'secondary', 'third'].includes(value),
-  },
-  level: {
-    type: String,
-    default: 'h2',
-    validator: (value) => ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(value),
-  },
-})
+const props = defineProps<{
+  type?: 'primary' | 'secondary' | 'third'
+  level?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+}>()
+
+// Default props
+const type = computed(() => props.type || 'primary')
+const level = computed(() => props.level || 'h2')
 
 // Class mapping for different heading types
-const headingClasses = {
-  primary: 'text-4xl font-bold',
-  secondary: 'text-3xl font-bold',
-  third: 'text-2xl font-bold',
+const headingClasses: Record<string, string> = {
+  primary: 'text-3xl font-bold',
+  secondary: 'text-2xl font-bold',
+  third: 'text-xl font-bold',
 }
 
 // Compute Tailwind classes
 const computedClasses = computed(
-  () => headingClasses[props.type] || headingClasses.primary
+  () => `tracking-wide ${headingClasses[type.value]}`
 )
 
 // Determine HTML tag
-const tag = computed(() => props.level)
+const tag = computed(() => level.value)
 </script>

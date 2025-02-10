@@ -1,21 +1,30 @@
-import globals from "globals";
-import pluginJs from "@eslint/js";
-import pluginVue from "eslint-plugin-vue";
-import pluginPrettier from "eslint-plugin-prettier";
-import prettierConfig from "eslint-config-prettier";
+import globals from 'globals'
+import pluginJs from '@eslint/js'
+import pluginVue from 'eslint-plugin-vue'
+import pluginPrettier from 'eslint-plugin-prettier'
+import pluginTs from '@typescript-eslint/eslint-plugin'
+import parserTs from '@typescript-eslint/parser'
+import prettierConfig from 'eslint-config-prettier'
 
-/** @type {import('eslint').Linter.Config[]} */
+/** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
   {
-    files: ["**/*.{js,mjs,cjs,vue}"],
-    languageOptions: { globals: globals.browser },
+    files: ['**/*.{js,mjs,cjs,ts,tsx,vue}'], // Added TS & TSX files
+    languageOptions: {
+      globals: globals.browser,
+      parser: parserTs,
+      parserOptions: {
+        sourceType: 'module',
+        project: './tsconfig.json',
+      },
+    },
     rules: {
-      // Ensures Prettier formatting issues are reported as ESLint errors
-      "prettier/prettier": "error",
+      'prettier/prettier': 'error',
     },
   },
   pluginJs.configs.recommended,
-  ...pluginVue.configs["flat/essential"],
+  pluginTs.configs.recommended, // Enables recommended TypeScript rules
+  ...pluginVue.configs['flat/essential'],
   prettierConfig, // Disables conflicting ESLint rules from Prettier
   pluginPrettier.configs.recommended, // Enables Prettier as an ESLint rule
-];
+]
