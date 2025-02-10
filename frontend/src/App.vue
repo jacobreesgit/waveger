@@ -22,21 +22,21 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+// import { onMounted } from 'vue'
 import Menu from '@/components/Menu.vue'
 import Footer from '@/components/Footer.vue'
 import { useDarkMode } from '@/utils/useDarkMode'
 import { useDevice } from '@/utils/useDevice'
-import { useChartHelper } from './utils/chartsHelper'
+// import { useChartHelper } from './utils/chartsHelper'
 
 const { themeClass } = useDarkMode()
 const { isMobile, deviceClass } = useDevice()
 
-const { loadChartData } = useChartHelper()
+// const { loadChartData } = useChartHelper()
 
-onMounted(() => {
-  loadChartData()
-})
+// onMounted(() => {
+//   loadChartData()
+// })
 </script>
 
 <style lang="scss" scoped>

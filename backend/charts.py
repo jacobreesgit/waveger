@@ -4,12 +4,17 @@ import os
 import psycopg2
 import json
 from datetime import datetime
+import logging
 
 charts_bp = Blueprint("charts", __name__)
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 RAPIDAPI_HOST = "billboard-charts-api.p.rapidapi.com"
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not RAPIDAPI_KEY:
+    logging.error("RAPIDAPI_KEY is missing! API requests will fail.")
+    raise RuntimeError("RAPIDAPI_KEY is not set. Check your environment variables.")
 
 def get_db_connection():
     return psycopg2.connect(DATABASE_URL)
