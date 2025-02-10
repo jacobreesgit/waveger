@@ -9,45 +9,50 @@ export const useChartsStore = defineStore('charts', () => {
   const chartDetails = ref(null)
   const loadingTopCharts = ref(false)
   const loadingChartDetails = ref(false)
-  const error = ref(null)
+  const errorTopCharts = ref(null)
+  const errorChartDetails = ref(null)
 
-  // Fetch top charts (checks database first via backend logic)
-  const fetchTopCharts = async () => {
+  // Generic function to handle API requests
+  const fetchData = async (endpoint, params, loadingRef, errorRef, dataRef) => {
     try {
-      loadingTopCharts.value = true
-      const response = await axios.get(`${API_URL}/top-charts`)
-      topCharts.value = response.data.data
-      error.value = null
+      loadingRef.value = true
+      const response = await axios.get(`${API_URL}/${endpoint}`, { params })
+      dataRef.value = response.data.data
+      errorRef.value = null
+      return response.data
     } catch (err) {
-      error.value = err.response?.data?.error || 'Failed to fetch top charts.'
-      topCharts.value = null
+      errorRef.value =
+        err.response?.data?.error || `Failed to fetch ${endpoint}.`
     } finally {
-      loadingTopCharts.value = false
+      loadingRef.value = false
     }
   }
 
+  // Fetch top charts (checks database first via backend logic)
+  const fetchTopCharts = async () => {
+    await fetchData(
+      'top-charts',
+      null,
+      loadingTopCharts,
+      errorTopCharts,
+      topCharts
+    )
+  }
+
   // Fetch specific chart details (checks database first via backend logic)
-  const fetchChartDetails = async (chartId, historicalWeek, range = '1-10') => {
-    try {
-      loadingChartDetails.value = true
-      const response = await axios.get(`${API_URL}/chart`, {
-        params: { id: chartId, week: historicalWeek, range },
-      })
+  const fetchChartDetails = async (chartId, historicalWeek, range) => {
+    const data = await fetchData(
+      'chart',
+      { id: chartId, week: historicalWeek, range },
+      loadingChartDetails,
+      errorChartDetails,
+      chartDetails
+    )
 
-      console.log(
-        response.data.source === 'database'
-          ? 'Data retrieved from database cache'
-          : 'Data retrieved from external API'
-      )
-
-      chartDetails.value = response.data.data
-      error.value = null
-    } catch (err) {
-      error.value =
-        err.response?.data?.error || 'Failed to fetch chart details.'
-      chartDetails.value = null
-    } finally {
-      loadingChartDetails.value = false
+    if (data?.source === 'database') {
+      console.log('Data retrieved from database cache')
+    } else {
+      console.log('Data retrieved from external API')
     }
   }
 
@@ -56,7 +61,8 @@ export const useChartsStore = defineStore('charts', () => {
     chartDetails,
     loadingTopCharts,
     loadingChartDetails,
-    error,
+    errorTopCharts,
+    errorChartDetails,
     fetchTopCharts,
     fetchChartDetails,
   }
