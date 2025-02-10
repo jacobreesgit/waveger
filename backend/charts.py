@@ -5,6 +5,8 @@ import json
 import logging
 from datetime import datetime
 from db import get_db_connection
+import psycopg2
+import psycopg2.extras
 
 charts_bp = Blueprint("charts", __name__)
 
