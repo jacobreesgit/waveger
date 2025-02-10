@@ -9,6 +9,9 @@
       :class="{ 'pt-4': isMobile, 'pb-4': !isMobile }"
     >
       <router-view
+        :chartDetails="chartsStore.chartDetails"
+        :loading="chartsStore.loading"
+        :error="chartsStore.error"
         :class="[
           'flex items-center flex-col mx-auto p-8 gap-4 w-full sm:w-5/6 overflow-auto',
           themeClass,
@@ -32,7 +35,7 @@ import { useCharts } from '@/utils/useChartsStore'
 const { themeClass } = useDarkMode()
 const { isMobile, deviceClass } = useDevice()
 
-const { store, loadDefaultChart } = useCharts()
+const { chartsStore, loadDefaultChart } = useCharts()
 
 onMounted(() => {
   loadDefaultChart()

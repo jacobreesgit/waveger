@@ -1,15 +1,18 @@
 import { useChartsStore } from '@/stores/charts'
 
 export function useCharts() {
-  const store = useChartsStore()
+  const chartsStore = useChartsStore()
 
   const loadDefaultChart = async () => {
-    await store.fetchChartDetails() // Defaults to "hot-100"
-    console.log('Default Chart with Apple Music Data:', store.chartDetails)
+    await chartsStore.fetchChartDetails() // Defaults to "hot-100"
+    console.log(
+      'Default Chart with Apple Music Data:',
+      chartsStore.chartDetails
+    )
   }
 
   return {
-    store,
+    chartsStore,
     loadDefaultChart,
   }
 }

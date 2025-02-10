@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { useCharts } from '@/utils/useChartsStore'
+import { defineProps } from 'vue'
 import type { ChartSong } from '@/types/types'
 
-const { store, loadDefaultChart } = useCharts()
-
-onMounted(() => {
-  loadDefaultChart()
+const props = defineProps({
+  chartDetails: Object,
+  loading: Boolean,
+  error: String,
 })
 </script>
 
@@ -14,20 +13,20 @@ onMounted(() => {
   <div class="container mx-auto p-6">
     <h1 class="text-2xl font-bold mb-4">Waveger - Music Charts</h1>
 
-    <p v-if="store.loading" class="text-gray-500">Loading...</p>
-    <p v-if="store.error" class="text-red-500">{{ store.error }}</p>
+    <p v-if="loading" class="text-gray-500">Loading...</p>
+    <p v-if="error" class="text-red-500">{{ error }}</p>
 
-    <ul v-if="store.chartDetails?.songs" class="space-y-6">
+    <ul v-if="chartDetails?.songs" class="space-y-6">
       <li
-        v-for="(song, index) in store.chartDetails.songs as ChartSong[]"
+        v-for="(song, index) in chartDetails.songs as ChartSong[]"
         :key="index"
         class="flex items-center space-x-4 bg-gray-100 p-4 rounded-lg shadow-md"
       >
-        <!-- Billboard Chart Image -->
         <img
           :src="song.image"
           :alt="song.name"
           class="w-20 h-20 object-cover rounded-lg"
+          referrerpolicy="no-referrer"
         />
 
         <div class="flex-1">
@@ -43,7 +42,6 @@ onMounted(() => {
           >
         </div>
 
-        <!-- Apple Music Metadata -->
         <div v-if="song.appleMusicInfo" class="flex flex-col items-center">
           <img
             :src="
