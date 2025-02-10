@@ -35,10 +35,11 @@ import { useCharts } from '@/utils/useChartsStore'
 const { themeClass } = useDarkMode()
 const { isMobile, deviceClass } = useDevice()
 
-const { chartsStore, loadDefaultChart } = useCharts()
+const { chartsStore, loadDefaultChart, loadChartTypes } = useCharts()
 
 onMounted(() => {
   loadDefaultChart()
+  loadChartTypes()
 })
 </script>
 
