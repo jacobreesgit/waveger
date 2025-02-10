@@ -5,10 +5,46 @@ import axios from 'axios'
 const API_URL = 'https://wavegerpython.onrender.com/api'
 
 export const useChartsStore = defineStore('charts', () => {
+  const appleMusicToken = ref<string | null>(null)
   const topCharts = ref(null)
   const chartDetails = ref(null)
   const loading = ref(false)
   const error = ref(null)
+
+  // Fetch Apple Music Token
+  const fetchAppleMusicToken = async () => {
+    try {
+      loading.value = true
+      const response = await axios.get(`${API_URL}/apple-music-token`)
+      appleMusicToken.value = response.data.token
+      error.value = null
+    } catch (err: any) {
+      error.value = err.response?.data?.error || 'Failed to fetch token.'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Fetch Apple Music Metadata for a song
+  const fetchAppleMusicInfo = async (songTitle: string, artist: string) => {
+    if (!appleMusicToken.value) {
+      await fetchAppleMusicToken()
+    }
+
+    try {
+      loading.value = true
+      const response = await axios.get(`${API_URL}/apple-music-info`, {
+        params: { song: songTitle, artist },
+      })
+      return response.data
+    } catch (err: any) {
+      error.value =
+        err.response?.data?.error || 'Failed to fetch Apple Music info.'
+      return null
+    } finally {
+      loading.value = false
+    }
+  }
 
   // Fetch top charts (checks database first via backend logic)
   const fetchTopCharts = async () => {
@@ -25,7 +61,7 @@ export const useChartsStore = defineStore('charts', () => {
   }
 
   // Fetch specific chart details (checks database first via backend logic)
-  const fetchChartDetails = async (chartId, historicalWeek, range = '1-10') => {
+  const fetchChartDetails = async (chartId, historicalWeek, range) => {
     try {
       loading.value = true
       const response = await axios.get(`${API_URL}/chart`, {
@@ -33,11 +69,8 @@ export const useChartsStore = defineStore('charts', () => {
       })
 
       if (response.data.source === 'database') {
-        console.log(response.data)
         console.log('Data retrieved from database cache')
       } else {
-        console.log(response.data)
-
         console.log('Data retrieved from external API')
       }
 
@@ -54,8 +87,11 @@ export const useChartsStore = defineStore('charts', () => {
   return {
     topCharts,
     chartDetails,
+    appleMusicToken,
     loading,
     error,
+    fetchAppleMusicToken,
+    fetchAppleMusicInfo,
     fetchTopCharts,
     fetchChartDetails,
   }
