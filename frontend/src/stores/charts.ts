@@ -1,8 +1,9 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import axios, { AxiosError } from 'axios'
 
 const API_URL = 'https://wavegerpython.onrender.com/api'
+const APPLE_MUSIC_API_URL = 'https://api.music.apple.com/v1/catalog/us/search'
 
 export const useChartsStore = defineStore('charts', () => {
   const topCharts = ref<any | null>(null)
@@ -12,10 +13,12 @@ export const useChartsStore = defineStore('charts', () => {
   const loadingTopCharts = ref(false)
   const loadingChartDetails = ref(false)
   const loadingAppleMusicToken = ref(false)
+  const loadingSongDetails = ref(false)
 
   const errorTopCharts = ref<string | null>(null)
   const errorChartDetails = ref<string | null>(null)
   const errorAppleMusicToken = ref<string | null>(null)
+  const errorSongDetails = ref<string | null>(null)
 
   // Unified API request function
   const fetchData = async <T>(
@@ -30,13 +33,7 @@ export const useChartsStore = defineStore('charts', () => {
       const response = await axios.get(`${API_URL}/${endpoint}`, { params })
       const { data } = response
 
-      const responseMap: Record<string, any> = {
-        'apple-music-token': data?.token || null,
-        'top-charts': data?.data || null,
-        chart: data?.data || null,
-      }
-
-      dataRef.value = responseMap[endpoint] ?? data
+      dataRef.value = data?.token || data?.data || data
       errorRef.value = null
       return dataRef.value
     } catch (err: unknown) {
@@ -84,6 +81,7 @@ export const useChartsStore = defineStore('charts', () => {
       console.log(
         `Data retrieved from ${data?.source === 'database' ? 'database cache' : 'external API'}`
       )
+      await fetchAppleMusicDetailsForSongs()
     }
   }
 
@@ -98,6 +96,65 @@ export const useChartsStore = defineStore('charts', () => {
     )
   }
 
+  // Fetch additional song details from Apple Music
+  const fetchAppleMusicSongDetails = async (
+    songName: string,
+    artist: string
+  ) => {
+    if (!appleMusicToken.value) {
+      await fetchAppleMusicToken()
+    }
+    if (!appleMusicToken.value) {
+      console.error('Apple Music Token is not available')
+      return null
+    }
+
+    try {
+      const response = await axios.get(APPLE_MUSIC_API_URL, {
+        headers: {
+          Authorization: `Bearer ${appleMusicToken.value}`,
+        },
+        params: {
+          term: `${songName} ${artist}`,
+          types: 'songs',
+          limit: 1,
+        },
+      })
+
+      const songData = response.data?.results?.songs?.data?.[0] || null
+      return songData
+    } catch (error) {
+      console.error(
+        `Error fetching Apple Music data for ${songName} by ${artist}:`,
+        error
+      )
+      return null
+    }
+  }
+
+  // Fetch Apple Music details for each song in the chart
+  const fetchAppleMusicDetailsForSongs = async () => {
+    if (!chartDetails.value?.songs) return
+
+    loadingSongDetails.value = true
+
+    const updatedSongs = await Promise.all(
+      chartDetails.value.songs.map(async (song: any) => {
+        const appleMusicData = await fetchAppleMusicSongDetails(
+          song.name,
+          song.artist
+        )
+        return {
+          ...song,
+          appleMusic: appleMusicData,
+        }
+      })
+    )
+
+    chartDetails.value.songs = updatedSongs
+    loadingSongDetails.value = false
+  }
+
   return {
     topCharts,
     chartDetails,
@@ -106,13 +163,16 @@ export const useChartsStore = defineStore('charts', () => {
     loadingTopCharts,
     loadingChartDetails,
     loadingAppleMusicToken,
+    loadingSongDetails,
 
     errorTopCharts,
     errorChartDetails,
     errorAppleMusicToken,
+    errorSongDetails,
 
     fetchTopCharts,
     fetchChartDetails,
     fetchAppleMusicToken,
+    fetchAppleMusicDetailsForSongs,
   }
 })

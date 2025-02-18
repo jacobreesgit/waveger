@@ -1,11 +1,5 @@
-<template>
-  <div>
-    <Heading>Welcome</Heading>
-  </div>
-</template>
+<template></template>
 
-<script setup>
-import Heading from '@/components/Heading.vue'
-</script>
+<script setup></script>
 
 <style scoped></style>

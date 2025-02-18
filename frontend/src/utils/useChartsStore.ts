@@ -13,17 +13,17 @@ export function useCharts() {
     console.log(chartsStore.topCharts)
   }
 
-  const loadDefaultChart = async () => {
-    const defaultChartId = 'hot-100' // Default chart
-    const defaultWeek = new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
-    const defaultRange = '1-3' // Defualt range
-
-    await chartsStore.fetchChartDetails(
-      defaultChartId,
-      defaultWeek,
-      defaultRange
-    )
-    console.log(chartsStore.chartDetails)
+  const loadDefaultChart = async ({
+    chartId = 'hot-100',
+    week = new Date().toISOString().split('T')[0], // Default to today's date
+    range = '1-3',
+  } = {}) => {
+    try {
+      await chartsStore.fetchChartDetails(chartId, week, range)
+      console.log(chartsStore.chartDetails)
+    } catch (error) {
+      console.error('Error loading chart details:', error)
+    }
   }
 
   return {

@@ -2,33 +2,27 @@
   <header>
     <Toolbar :class="themeClass">
       <template #start>
-        <div class="flex gap-6">
-          <router-link to="/">
-            <img :src="logo" alt="Logo" />
-          </router-link>
-          <div class="flex gap-2">
-            <Button
-              v-for="item in menuItems"
-              :key="item.label"
-              :label="item.label"
-              :icon="item.icon"
-              :class="item.class"
-              @click="item.command"
-              severity="secondary"
-              size="small"
-            ></Button>
-          </div>
+        <router-link to="/">
+          <img :src="logo" alt="Logo" />
+        </router-link>
+      </template>
+      <template #center>
+        <div class="flex gap-2">
+          <Button
+            v-for="item in menuItems"
+            :key="item.label"
+            :label="item.label"
+            :icon="item.icon"
+            :class="item.class"
+            @click="item.command"
+            severity="secondary"
+          ></Button>
         </div>
       </template>
       <template #end>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center">
           <router-link to="/account" class="flex">
-            <Avatar
-              icon="pi pi-user"
-              class="mr-2"
-              size="medium"
-              shape="circle"
-            />
+            <Avatar icon="pi pi-user" shape="circle" />
           </router-link>
         </div>
       </template>
@@ -72,8 +66,13 @@ const menuItems = computed(() => {
 .p-toolbar {
   padding: 0.5rem;
   border-radius: 3rem;
+  margin: 0 auto;
   img {
-    height: 35px;
+    height: 42px;
+  }
+  .p-avatar {
+    width: 42px !important;
+    height: 42px !important;
   }
 }
 </style>
