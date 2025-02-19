@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
 
 const API_URL = 'https://wavegerpython.onrender.com/api'
