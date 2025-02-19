@@ -8,18 +8,21 @@
         v-model="username"
         placeholder="Username"
         class="p-inputtext w-full"
+        autocomplete="username"
       />
       <InputText
         v-model="email"
         type="email"
         placeholder="Email"
         class="p-inputtext w-full"
+        autocomplete="email"
       />
       <Password
         v-model="password"
         placeholder="Password"
         class="p-inputtext w-full"
         toggleMask
+        autocomplete="new-password"
       />
       <FileUpload
         mode="basic"
