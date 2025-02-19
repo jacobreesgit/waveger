@@ -3,6 +3,9 @@ import HomeView from '@/views/HomeView.vue'
 import ChartView from '@/views/ChartView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import AccountView from '@/views/AccountView.vue'
+import LoginView from '@/views/LoginView.vue'
+import RegisterView from '@/views/RegisterView.vue'
+import ProfileView from '@/views/ProfileView.vue'
 
 const routes = [
   {
@@ -23,10 +26,22 @@ const routes = [
     component: NotFoundView,
   },
   {
-    path: '/account',
-    name: 'Account',
-    component: AccountView,
-    meta: { label: 'Account', icon: 'pi pi-user' },
+    path: '/login',
+    name: 'Login',
+    component: LoginView,
+    meta: { label: 'Login', icon: 'pi pi-user' },
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView,
+    meta: { label: 'Register', icon: 'pi pi-user' },
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: ProfileView,
+    meta: { label: 'Profile', icon: 'pi pi-user' },
   },
 ]
 
