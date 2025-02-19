@@ -1,15 +1,22 @@
 <template>
-  <div>
-    <h2>Login</h2>
-    <form @submit.prevent="loginUser">
-      <input v-model="email" type="email" placeholder="Email" required />
-      <input
-        v-model="password"
-        type="password"
-        placeholder="Password"
-        required
+  <div
+    class="flex flex-col items-center p-6 bg-white shadow-lg rounded-lg w-96 mx-auto"
+  >
+    <h2 class="text-2xl font-bold mb-4">Login</h2>
+    <form @submit.prevent="loginUser" class="w-full flex flex-col gap-4">
+      <InputText
+        v-model="email"
+        type="email"
+        placeholder="Email"
+        class="p-inputtext w-full"
       />
-      <button type="submit">Login</button>
+      <Password
+        v-model="password"
+        placeholder="Password"
+        class="p-inputtext w-full"
+        toggleMask
+      />
+      <Button type="submit" label="Login" class="w-full" />
     </form>
   </div>
 </template>
@@ -17,6 +24,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/users'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
 
 const userStore = useUserStore()
 const email = ref('')

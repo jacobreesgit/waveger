@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 
 const API_URL = 'https://wavegerpython.onrender.com/api'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null,
-    token: localStorage.getItem('token') || null,
+    token: localStorage.getItem('token') || '',
   }),
 
   getters: {
@@ -14,7 +14,12 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
-    async register(username, email, password, profilePic) {
+    async register(
+      username: string,
+      email: string,
+      password: string,
+      profilePic: File | null
+    ) {
       try {
         const formData = new FormData()
         formData.append('username', username)
@@ -24,22 +29,28 @@ export const useUserStore = defineStore('user', {
 
         const response = await axios.post(`${API_URL}/register`, formData)
         return response.data
-      } catch (error) {
-        throw error.response?.data || error
+      } catch (error: unknown) {
+        if (error instanceof AxiosError && error.response) {
+          throw error.response.data
+        }
+        throw error
       }
     },
 
-    async login(email, password) {
+    async login(email: string, password: string) {
       try {
         const response = await axios.post(`${API_URL}/login`, {
           email,
           password,
         })
-        this.token = response.data.access_token
+        this.token = response.data.access_token || ''
         localStorage.setItem('token', this.token)
         await this.fetchUserProfile()
-      } catch (error) {
-        throw error.response?.data || error
+      } catch (error: unknown) {
+        if (error instanceof AxiosError && error.response) {
+          throw error.response.data
+        }
+        throw error
       }
     },
 
@@ -50,12 +61,12 @@ export const useUserStore = defineStore('user', {
           headers: { Authorization: `Bearer ${this.token}` },
         })
         this.user = response.data
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Failed to fetch user profile', error)
       }
     },
 
-    async uploadProfilePic(profilePic) {
+    async uploadProfilePic(profilePic: File) {
       if (!this.token || !profilePic) return
       try {
         const formData = new FormData()
@@ -65,13 +76,16 @@ export const useUserStore = defineStore('user', {
           headers: { Authorization: `Bearer ${this.token}` },
         })
         await this.fetchUserProfile()
-      } catch (error) {
-        throw error.response?.data || error
+      } catch (error: unknown) {
+        if (error instanceof AxiosError && error.response) {
+          throw error.response.data
+        }
+        throw error
       }
     },
 
     logout() {
-      this.token = null
+      this.token = ''
       this.user = null
       localStorage.removeItem('token')
     },

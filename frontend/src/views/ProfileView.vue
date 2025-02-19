@@ -1,16 +1,28 @@
 <template>
-  <div>
-    <h2>User Profile</h2>
-    <div v-if="userStore.user">
-      <p>Username: {{ userStore.user.username }}</p>
-      <p>Email: {{ userStore.user.email }}</p>
+  <div
+    class="flex flex-col items-center p-6 bg-white shadow-lg rounded-lg w-96 mx-auto"
+  >
+    <h2 class="text-2xl font-bold mb-4">User Profile</h2>
+    <div v-if="user" class="w-full flex flex-col gap-4 items-center">
+      <p class="text-lg">Username: {{ user.username }}</p>
+      <p class="text-lg">Email: {{ user.email }}</p>
       <img
-        v-if="userStore.user.profile_pic"
+        v-if="user.profile_pic"
         :src="profilePicUrl"
+        class="rounded-full w-24 h-24"
         alt="Profile Picture"
       />
-      <input type="file" @change="handleFileUpload" />
-      <button @click="uploadProfilePic">Upload Profile Picture</button>
+      <FileUpload
+        mode="basic"
+        auto
+        chooseLabel="Choose New Profile Picture"
+        @select="handleFileUpload"
+      />
+      <Button
+        label="Upload Profile Picture"
+        class="w-full"
+        @click="uploadProfilePic"
+      />
     </div>
   </div>
 </template>
@@ -18,21 +30,28 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/users'
+import FileUpload from 'primevue/fileupload'
+import Button from 'primevue/button'
 
 const userStore = useUserStore()
 const profilePic = ref<File | null>(null)
 
-const profilePicUrl = computed(() =>
-  userStore.user?.profile_pic
-    ? `https://wavegerpython.onrender.com/api/profile-pic/${userStore.user.profile_pic}`
-    : ''
-)
+type User = {
+  username: string
+  email: string
+  profile_pic: string | null
+}
 
-const handleFileUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files) {
-    profilePic.value = target.files[0]
-  }
+const user = computed<User | null>(() => userStore.user as User | null)
+
+const profilePicUrl = computed(() => {
+  return user.value?.profile_pic
+    ? `https://wavegerpython.onrender.com/api/profile-pic/${user.value.profile_pic}`
+    : ''
+})
+
+const handleFileUpload = (event: any) => {
+  profilePic.value = event.files[0]
 }
 
 const uploadProfilePic = async () => {
