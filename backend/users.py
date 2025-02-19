@@ -12,36 +12,49 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @users_bp.route("/register", methods=["POST"])
 def register():
-    data = request.form
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-    profile_pic = request.files.get("profile_pic")
+    try:
+        data = request.form
+        username = data.get("username")
+        email = data.get("email")
+        password = data.get("password")
+        profile_pic = request.files.get("profile_pic")
+
+        if not username or not email or not password:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        hashed_password = generate_password_hash(password)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
+        if cursor.fetchone():
+            return jsonify({"error": "Email already registered"}), 400
+
+        profile_pic_filename = None
+        if profile_pic:
+            profile_pic_filename = secure_filename(profile_pic.filename)
+            profile_pic.save(os.path.join(UPLOAD_FOLDER, profile_pic_filename))
+
+        cursor.execute(
+            "INSERT INTO users (username, email, password, profile_pic) VALUES (%s, %s, %s, %s) RETURNING id",
+            (username, email, hashed_password, profile_pic_filename),
+        )
+
+        user_row = cursor.fetchone()
+        if not user_row:
+            conn.rollback()
+            return jsonify({"error": "Failed to create user"}), 500
+
+        user_id = user_row[0]
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({"message": "User registered successfully", "user_id": user_id})
     
-    if not username or not email or not password:
-        return jsonify({"error": "Missing required fields"}), 400
-    
-    hashed_password = generate_password_hash(password)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT id FROM users WHERE email = %s", (email,))
-    if cursor.fetchone():
-        return jsonify({"error": "Email already registered"}), 400
-    
-    profile_pic_filename = None
-    if profile_pic:
-        profile_pic_filename = secure_filename(profile_pic.filename)
-        profile_pic.save(os.path.join(UPLOAD_FOLDER, profile_pic_filename))
-    
-    cursor.execute("INSERT INTO users (username, email, password, profile_pic) VALUES (%s, %s, %s, %s) RETURNING id", 
-                   (username, email, hashed_password, profile_pic_filename))
-    user_id = cursor.fetchone()[0]
-    conn.commit()
-    cursor.close()
-    conn.close()
-    
-    return jsonify({"message": "User registered successfully", "user_id": user_id})
+    except Exception as e:
+        print(f"Error in /register: {str(e)}")  # Log the error
+        return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 @users_bp.route("/login", methods=["POST"])
 def login():
