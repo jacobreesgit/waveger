@@ -35,13 +35,16 @@ def register():
             profile_pic_filename = secure_filename(profile_pic.filename)
             profile_pic.save(os.path.join(UPLOAD_FOLDER, profile_pic_filename))
 
+        # ✅ Use RETURNING explicitly with fetchone()
         cursor.execute(
             "INSERT INTO users (username, email, password, profile_pic) VALUES (%s, %s, %s, %s) RETURNING id",
             (username, email, hashed_password, profile_pic_filename),
         )
 
         user_row = cursor.fetchone()
-        if not user_row:
+        print(f"DEBUG: Insert result: {user_row}")  # Log the output
+
+        if user_row is None or user_row[0] is None:
             conn.rollback()
             return jsonify({"error": "Failed to create user"}), 500
 
