@@ -26,6 +26,7 @@
         class="w-full"
         toggleMask
         :autocomplete="isLogin ? 'current-password' : 'new-password'"
+        :feedback="!isLogin"
       />
       <FileUpload
         v-if="!isLogin"

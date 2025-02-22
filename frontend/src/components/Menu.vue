@@ -21,6 +21,7 @@
       </template>
       <template #end>
         <div class="flex items-center">
+          {{ userStore.isAuthenticated }}
           <router-link to="/account" class="flex">
             <Avatar icon="pi pi-user" shape="circle" />
           </router-link>
@@ -38,8 +39,9 @@ import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import logo from '@/assets/logo.png'
 import { useDarkMode } from '@/utils/useDarkMode'
+import { useUserStore } from '@/stores/users'
 
-// const userStore = useUserStore()
+const userStore = useUserStore()
 const router = useRouter()
 
 const { themeClass } = useDarkMode()
