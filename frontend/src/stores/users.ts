@@ -3,14 +3,40 @@ import axios, { AxiosError } from 'axios'
 
 const API_URL = 'https://wavegerpython.onrender.com/api'
 
+interface User {
+  username: string
+  email: string
+  profile_pic: string | null
+}
+
+interface LoginCredentials {
+  identifier: string
+  password: string
+}
+
+interface RegisterCredentials {
+  username: string
+  email: string
+  password: string
+}
+
+interface ApiError {
+  error: string
+  details?: string
+}
+
 export const useUserStore = defineStore('user', {
   state: () => ({
-    user: null,
+    user: null as User | null,
     token: localStorage.getItem('token') || '',
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.token,
+    profilePicUrl: (state) =>
+      state.user?.profile_pic
+        ? `${API_URL}/profile-pic/${state.user.profile_pic}`
+        : null,
   },
 
   actions: {
@@ -21,6 +47,10 @@ export const useUserStore = defineStore('user', {
       profilePic: File | null
     ) {
       try {
+        if (!username || !email || !password) {
+          throw new Error('Missing required fields')
+        }
+
         const formData = new FormData()
         formData.append('username', username)
         formData.append('email', email)
@@ -29,58 +59,86 @@ export const useUserStore = defineStore('user', {
 
         const response = await axios.post(`${API_URL}/register`, formData)
         return response.data
-      } catch (error: unknown) {
-        if (error instanceof AxiosError && error.response) {
-          throw error.response.data
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.data) {
+          throw error.response.data as ApiError
         }
-        throw error
+        throw {
+          error: 'Registration failed',
+          details: (error as Error).message,
+        }
       }
     },
 
     async login(identifier: string, password: string) {
       try {
-        const response = await axios.post(`${API_URL}/login`, {
+        if (!identifier || !password) {
+          throw new Error('Missing credentials')
+        }
+
+        const credentials: LoginCredentials = {
           identifier,
           password,
-        })
+        }
+
+        const response = await axios.post(`${API_URL}/login`, credentials)
         this.token = response.data.access_token || ''
         localStorage.setItem('token', this.token)
+
+        // Fetch user profile immediately after successful login
         await this.fetchUserProfile()
-      } catch (error: unknown) {
-        if (error instanceof AxiosError && error.response) {
-          throw error.response.data
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.data) {
+          throw error.response.data as ApiError
+        }
+        throw { error: 'Login failed', details: (error as Error).message }
+      }
+    },
+
+    async fetchUserProfile() {
+      try {
+        if (!this.token) {
+          this.user = null
+          return
+        }
+
+        const response = await axios.get<User>(`${API_URL}/profile`, {
+          headers: { Authorization: `Bearer ${this.token}` },
+        })
+        this.user = response.data
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error)
+        // If we get a 401 error, the token is invalid
+        if (error instanceof AxiosError && error.response?.status === 401) {
+          this.logout()
         }
         throw error
       }
     },
 
-    async fetchUserProfile() {
-      if (!this.token) return
-      try {
-        const response = await axios.get(`${API_URL}/profile`, {
-          headers: { Authorization: `Bearer ${this.token}` },
-        })
-        this.user = response.data
-      } catch (error: unknown) {
-        console.error('Failed to fetch user profile', error)
-      }
-    },
-
     async uploadProfilePic(profilePic: File) {
-      if (!this.token || !profilePic) return
       try {
+        if (!this.token || !profilePic) {
+          throw new Error('Missing required data')
+        }
+
         const formData = new FormData()
         formData.append('profile_pic', profilePic)
 
         await axios.post(`${API_URL}/upload-profile-pic`, formData, {
           headers: { Authorization: `Bearer ${this.token}` },
         })
+
+        // Refresh user profile to get updated profile pic
         await this.fetchUserProfile()
-      } catch (error: unknown) {
-        if (error instanceof AxiosError && error.response) {
-          throw error.response.data
+      } catch (error) {
+        if (error instanceof AxiosError && error.response?.data) {
+          throw error.response.data as ApiError
         }
-        throw error
+        throw {
+          error: 'Profile picture upload failed',
+          details: (error as Error).message,
+        }
       }
     },
 
