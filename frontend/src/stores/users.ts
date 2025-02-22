@@ -25,6 +25,10 @@ interface ApiError {
   details?: string
 }
 
+const isValidToken = (token: string): boolean => {
+  return token.length > 0 && token.split('.').length === 3
+}
+
 export const useUserStore = defineStore('user', {
   state: () => ({
     user: null as User | null,
@@ -97,20 +101,34 @@ export const useUserStore = defineStore('user', {
 
     async fetchUserProfile() {
       try {
-        if (!this.token) {
-          this.user = null
-          return
+        if (!this.token || !isValidToken(this.token)) {
+          this.logout()
+          throw new Error('Invalid or missing token')
         }
 
         const response = await axios.get<User>(`${API_URL}/profile`, {
-          headers: { Authorization: `Bearer ${this.token}` },
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
         })
+
+        if (response.status === 422) {
+          this.logout()
+          throw new Error('Invalid token format')
+        }
+
         this.user = response.data
       } catch (error) {
         console.error('Failed to fetch user profile:', error)
-        // If we get a 401 error, the token is invalid
-        if (error instanceof AxiosError && error.response?.status === 401) {
-          this.logout()
+        if (error instanceof AxiosError) {
+          if (
+            error.response?.status === 401 ||
+            error.response?.status === 422
+          ) {
+            this.logout()
+          }
+          throw error.response?.data || error
         }
         throw error
       }

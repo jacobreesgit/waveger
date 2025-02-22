@@ -111,7 +111,12 @@ def login():
 @jwt_required()
 def get_profile():
     try:
+        # Explicitly verify JWT
+        verify_jwt_in_request()
         user_id = get_jwt_identity()
+        
+        if not user_id:
+            return jsonify({"error": "Invalid token"}), 401
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -128,6 +133,10 @@ def get_profile():
         
         return jsonify(user)
     
+    except (NoAuthorizationError, InvalidHeaderError) as e:
+        return jsonify({"error": "Invalid authorization header"}), 422
+    except InvalidTokenError as e:
+        return jsonify({"error": "Invalid token format"}), 422
     except Exception as e:
         print(f"Error in /profile: {str(e)}")
         return jsonify({

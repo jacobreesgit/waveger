@@ -6,13 +6,23 @@
       {{ isLogin ? 'Login' : 'Register' }}
     </h2>
 
-    <!-- Error Message -->
-    <div
+    <!-- Error/Success Messages -->
+    <Message
       v-if="errorMessage"
-      class="w-full mb-4 p-3 bg-red-100 text-red-700 rounded"
+      severity="error"
+      :closable="false"
+      class="w-full mb-4"
     >
       {{ errorMessage }}
-    </div>
+    </Message>
+    <Message
+      v-if="successMessage"
+      severity="success"
+      :closable="false"
+      class="w-full mb-4"
+    >
+      {{ successMessage }}
+    </Message>
 
     <form @submit.prevent="handleSubmit" class="w-full flex flex-col gap-4">
       <InputText
@@ -100,6 +110,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import FileUpload from 'primevue/fileupload'
+import Message from 'primevue/message'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -112,6 +123,7 @@ const password = ref('')
 const profilePic = ref<File | null>(null)
 const loading = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 
 interface FormErrors {
   username?: string
@@ -157,6 +169,7 @@ const toggleMode = () => {
   password.value = ''
   profilePic.value = null
   errorMessage.value = ''
+  successMessage.value = ''
   formErrors.value = {}
 }
 
@@ -180,8 +193,7 @@ const handleSubmit = async () => {
         password.value,
         profilePic.value
       )
-      // Show success message and switch to login
-      errorMessage.value = 'Registration successful! Please login.'
+      successMessage.value = 'Registration successful! Please login.'
       isLogin.value = true
     }
   } catch (error: any) {
