@@ -10,11 +10,6 @@ users_bp = Blueprint("users", __name__)
 UPLOAD_FOLDER = "static/uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
 @users_bp.route("/register", methods=["POST"])
 def register():
     try:
@@ -36,7 +31,7 @@ def register():
             return jsonify({"error": "Email already registered"}), 400
 
         profile_pic_filename = None
-        if profile_pic and allowed_file(profile_pic.filename):
+        if profile_pic:
             profile_pic_filename = secure_filename(profile_pic.filename)
             profile_pic.save(os.path.join(UPLOAD_FOLDER, profile_pic_filename))
 
@@ -44,20 +39,23 @@ def register():
             "INSERT INTO users (username, email, password, profile_pic) VALUES (%s, %s, %s, %s) RETURNING id",
             (username, email, hashed_password, profile_pic_filename),
         )
-        user_row = cursor.fetchone()
 
-        if not user_row:
+        user_row = cursor.fetchone()
+        print(f"DEBUG: Insert result: {user_row}") 
+
+        if not user_row or "id" not in user_row:
             conn.rollback()
             return jsonify({"error": "Failed to create user"}), 500
 
-        user_id = user_row[0]
+        user_id = user_row["id"] 
         conn.commit()
         cursor.close()
         conn.close()
 
         return jsonify({"message": "User registered successfully", "user_id": user_id})
+    
     except Exception as e:
-        print(f"Error in /register: {str(e)}")
+        print(f"Error in /register: {str(e)}") 
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
 @users_bp.route("/login", methods=["POST"])
@@ -71,10 +69,10 @@ def login():
     cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
     user = cursor.fetchone()
     
-    if not user or not check_password_hash(user[1], password):
+    if not user or not check_password_hash(user["password"], password):
         return jsonify({"error": "Invalid credentials"}), 401
     
-    access_token = create_access_token(identity=user[0])
+    access_token = create_access_token(identity=user["id"])
     return jsonify({"access_token": access_token})
 
 @users_bp.route("/profile", methods=["GET"])
@@ -100,8 +98,8 @@ def upload_profile_pic():
     user_id = get_jwt_identity()
     profile_pic = request.files.get("profile_pic")
     
-    if not profile_pic or not allowed_file(profile_pic.filename):
-        return jsonify({"error": "Invalid file type"}), 400
+    if not profile_pic:
+        return jsonify({"error": "No file uploaded"}), 400
     
     filename = secure_filename(profile_pic.filename)
     profile_pic.save(os.path.join(UPLOAD_FOLDER, filename))
