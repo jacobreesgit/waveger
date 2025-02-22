@@ -23,16 +23,24 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router' // Added
 import { useUserStore } from '@/stores/users'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 
+const router = useRouter()
 const userStore = useUserStore()
 const email = ref('')
 const password = ref('')
 
 const loginUser = async () => {
-  await userStore.login(email.value, password.value)
+  try {
+    await userStore.login(email.value, password.value)
+    console.log('Login successful:', { email: email.value })
+    router.push('/profile')
+  } catch (error) {
+    console.error('Login failed:', error)
+  }
 }
 </script>

@@ -37,12 +37,14 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router' // Added
 import { useUserStore } from '@/stores/users'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import FileUpload from 'primevue/fileupload'
 
+const router = useRouter()
 const userStore = useUserStore()
 const username = ref('')
 const email = ref('')
@@ -54,11 +56,21 @@ const handleFileUpload = (event: any) => {
 }
 
 const registerUser = async () => {
-  await userStore.register(
-    username.value,
-    email.value,
-    password.value,
-    profilePic.value
-  )
+  try {
+    await userStore.register(
+      username.value,
+      email.value,
+      password.value,
+      profilePic.value
+    )
+    console.log('Registration successful:', {
+      username: username.value,
+      email: email.value,
+      hasProfilePic: !!profilePic.value,
+    })
+    router.push('/profile')
+  } catch (error) {
+    console.error('Registration failed:', error)
+  }
 }
 </script>
