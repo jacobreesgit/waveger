@@ -47,7 +47,7 @@ def register():
             conn.rollback()
             return jsonify({"error": "Failed to create user"}), 500
 
-        user_id = user_row["id"]  # ✅ Correct way to access the ID
+        user_id = user_row["id"] 
         conn.commit()
         cursor.close()
         conn.close()
@@ -69,10 +69,10 @@ def login():
     cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
     user = cursor.fetchone()
     
-    if not user or not check_password_hash(user[1], password):
+    if not user or not check_password_hash(user["password"], password):
         return jsonify({"error": "Invalid credentials"}), 401
     
-    access_token = create_access_token(identity=user[0])
+    access_token = create_access_token(identity=user["id"])
     return jsonify({"access_token": access_token})
 
 @users_bp.route("/profile", methods=["GET"])
