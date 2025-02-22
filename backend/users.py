@@ -111,15 +111,29 @@ def login():
 @jwt_required()
 def get_profile():
     try:
-        # Explicitly verify JWT
-        verify_jwt_in_request()
-        user_id = get_jwt_identity()
+        # Get the JWT from the request
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Invalid authorization header"}), 422
+
+        token = auth_header.split(' ')[1].strip()
         
+        try:
+            # Validate token format
+            decoded = jwt.decode(token, verify=False)  # Just check format, not signature
+            if not isinstance(decoded.get('sub'), str):
+                return jsonify({"error": "Invalid token subject"}), 422
+        except jwt.InvalidTokenError:
+            return jsonify({"error": "Invalid token format"}), 422
+
+        # Get user ID from valid token
+        user_id = get_jwt_identity()
         if not user_id:
-            return jsonify({"error": "Invalid token"}), 401
+            return jsonify({"error": "Invalid user identifier in token"}), 422
         
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
         cursor.execute(
             "SELECT username, email, profile_pic FROM users WHERE id = %s",
             (user_id,)
@@ -133,17 +147,15 @@ def get_profile():
         
         return jsonify(user)
     
-    except (NoAuthorizationError, InvalidHeaderError) as e:
-        return jsonify({"error": "Invalid authorization header"}), 422
-    except InvalidTokenError as e:
-        return jsonify({"error": "Invalid token format"}), 422
+    except (NoAuthorizationError, InvalidHeaderError):
+        return jsonify({"error": "Missing or invalid authorization header"}), 422
     except Exception as e:
         print(f"Error in /profile: {str(e)}")
         return jsonify({
             "error": "Internal server error",
             "details": str(e)
         }), 500
-
+        
 @users_bp.route("/upload-profile-pic", methods=["POST"])
 @jwt_required()
 def upload_profile_pic():

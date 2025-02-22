@@ -101,26 +101,28 @@ export const useUserStore = defineStore('user', {
 
     async fetchUserProfile() {
       try {
-        if (!this.token || !isValidToken(this.token)) {
-          this.logout()
-          throw new Error('Invalid or missing token')
+        if (!this.token) {
+          this.user = null
+          return
         }
 
         const response = await axios.get<User>(`${API_URL}/profile`, {
           headers: {
-            Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.token.trim()}`,
+            Accept: 'application/json',
+          },
+          validateStatus: (status) => {
+            return status < 500 // Resolve only if the status code is less than 500
           },
         })
 
-        if (response.status === 422) {
+        if (response.status === 401 || response.status === 422) {
           this.logout()
-          throw new Error('Invalid token format')
+          throw new Error('Session expired - please login again')
         }
 
         this.user = response.data
       } catch (error) {
-        console.error('Failed to fetch user profile:', error)
         if (error instanceof AxiosError) {
           if (
             error.response?.status === 401 ||
@@ -128,7 +130,6 @@ export const useUserStore = defineStore('user', {
           ) {
             this.logout()
           }
-          throw error.response?.data || error
         }
         throw error
       }
