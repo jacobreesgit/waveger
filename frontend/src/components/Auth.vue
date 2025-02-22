@@ -100,7 +100,6 @@ const handleSubmit = async () => {
         hasProfilePic: !!profilePic.value,
       })
     }
-    router.push('/profile')
   } catch (error) {
     console.error(`${isLogin.value ? 'Login' : 'Registration'} failed:`, error)
   }
