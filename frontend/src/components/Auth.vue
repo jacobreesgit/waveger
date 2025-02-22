@@ -14,11 +14,19 @@
         autocomplete="username"
       />
       <InputText
+        v-if="!isLogin"
         v-model="email"
         type="email"
         placeholder="Email"
         class="p-inputtext w-full"
         autocomplete="email"
+      />
+      <InputText
+        v-if="isLogin"
+        v-model="identifier"
+        placeholder="Email or Username"
+        class="p-inputtext w-full"
+        autocomplete="username"
       />
       <Password
         v-model="password"
@@ -67,6 +75,7 @@ const userStore = useUserStore()
 const isLogin = ref(true)
 const username = ref('')
 const email = ref('')
+const identifier = ref('')
 const password = ref('')
 const profilePic = ref<File | null>(null)
 
@@ -74,6 +83,7 @@ const toggleMode = () => {
   isLogin.value = !isLogin.value
   username.value = ''
   email.value = ''
+  identifier.value = ''
   password.value = ''
   profilePic.value = null
 }
@@ -85,8 +95,8 @@ const handleFileUpload = (event: any) => {
 const handleSubmit = async () => {
   try {
     if (isLogin.value) {
-      await userStore.login(email.value, password.value)
-      console.log('Login successful:', { email: email.value })
+      await userStore.login(identifier.value, password.value)
+      console.log('Login successful:', { identifier: identifier.value })
     } else {
       await userStore.register(
         username.value,

@@ -37,10 +37,10 @@ export const useUserStore = defineStore('user', {
       }
     },
 
-    async login(email: string, password: string) {
+    async login(identifier: string, password: string) {
       try {
         const response = await axios.post(`${API_URL}/login`, {
-          email,
+          identifier,
           password,
         })
         this.token = response.data.access_token || ''

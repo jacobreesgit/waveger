@@ -61,13 +61,23 @@ def register():
 @users_bp.route("/login", methods=["POST"])
 def login():
     data = request.json
-    email = data.get("email")
+    identifier = data.get("identifier")  # This can be either email or username
     password = data.get("password")
+    
+    if not identifier or not password:
+        return jsonify({"error": "Missing credentials"}), 400
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, password FROM users WHERE email = %s", (email,))
+    
+    # Check for either username or email match
+    cursor.execute(
+        "SELECT id, password FROM users WHERE email = %s OR username = %s", 
+        (identifier, identifier)
+    )
     user = cursor.fetchone()
+    cursor.close()
+    conn.close()
     
     if not user or not check_password_hash(user["password"], password):
         return jsonify({"error": "Invalid credentials"}), 401
