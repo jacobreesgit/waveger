@@ -2,8 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import ChartView from '@/views/ChartView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
-import AccountView from '@/views/AccountView.vue'
-import ProfileView from '@/views/ProfileView.vue'
+import UserView from '@/views/UserView.vue'
 
 const routes = [
   {
@@ -26,14 +25,8 @@ const routes = [
   {
     path: '/account',
     name: 'Account',
-    component: AccountView,
+    component: UserView,
     meta: { label: 'Account', icon: 'pi pi-user' },
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: ProfileView,
-    meta: { label: 'Profile', icon: 'pi pi-user' },
   },
 ]
 

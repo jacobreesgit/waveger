@@ -23,7 +23,7 @@
       <Password
         v-model="password"
         placeholder="Password"
-        class="p-inputtext w-full"
+        class="w-full"
         toggleMask
         :autocomplete="isLogin ? 'current-password' : 'new-password'"
       />

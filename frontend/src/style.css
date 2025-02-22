@@ -140,3 +140,7 @@ media-controls.vds-controls {
 .p-toolbar-end {
   justify-content: flex-end;
 }
+
+.p-password input {
+  width: 100%;
+}
