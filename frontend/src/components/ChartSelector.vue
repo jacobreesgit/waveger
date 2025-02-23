@@ -1,36 +1,52 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 
 const store = useChartsStore()
+const isTopChartsLoaded = ref(false)
+const isChartDataLoaded = ref(false)
 
-const selectChart = async (chartId: string) => {
-  await store.fetchChartDetails({ id: chartId, range: '1-10' })
+const selectChart = async (event: Event) => {
+  const select = event.target as HTMLSelectElement
+  isChartDataLoaded.value = false
+  await store.fetchChartDetails({ id: select.value, range: '1-10' })
+  isChartDataLoaded.value = true
 }
 
 onMounted(async () => {
   await store.fetchAvailableCharts()
+  isTopChartsLoaded.value = true
+
+  if (store.availableCharts.length > 0) {
+    const hotChart = store.availableCharts.find((chart) => chart.title === 'Billboard Hot 100™')
+    if (hotChart) {
+      store.selectedChartId = hotChart.id
+      await store.fetchChartDetails({ id: hotChart.id, range: '1-10' })
+      isChartDataLoaded.value = true
+    }
+  }
 })
 </script>
 
 <template>
   <div class="chart-selector">
     <div class="selector-header">
-      <select
-        v-model="store.selectedChartId"
-        @change="selectChart(store.selectedChartId)"
-        class="chart-select"
-      >
+      <select :value="store.selectedChartId" @change="selectChart" class="chart-select">
         <option v-for="chart in store.availableCharts" :key="chart.id" :value="chart.id">
           {{ chart.title }}
         </option>
       </select>
       <div class="source-badges">
-        <span class="source-badge" :class="store.topChartsSource" title="Charts list source">
+        <span
+          v-if="isTopChartsLoaded"
+          class="source-badge"
+          :class="store.topChartsSource"
+          title="Charts list source"
+        >
           Lists: {{ store.topChartsSource }}
         </span>
         <span
-          v-if="store.currentChart"
+          v-if="store.currentChart && isChartDataLoaded"
           class="source-badge"
           :class="store.dataSource"
           title="Chart data source"

@@ -6,7 +6,7 @@ import { getChartDetails, getTopCharts } from '@/services/api'
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
   const availableCharts = ref<ChartOption[]>([])
-  const selectedChartId = ref('hot-100')
+  const selectedChartId = ref('')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasMore = ref(true)
@@ -19,6 +19,16 @@ export const useChartsStore = defineStore('charts', () => {
       const response = await getTopCharts()
       availableCharts.value = response.data
       topChartsSource.value = response.source
+
+      // Set default chart if not already set
+      if (!selectedChartId.value && availableCharts.value.length > 0) {
+        const hotChart = availableCharts.value.find(
+          (chart) => chart.title === 'Billboard Hot 100™',
+        )
+        if (hotChart) {
+          selectedChartId.value = hotChart.id
+        }
+      }
     } catch (e) {
       console.error('Failed to fetch available charts:', e)
     }
@@ -34,6 +44,7 @@ export const useChartsStore = defineStore('charts', () => {
       console.log('Store - Initial fetch with params:', params)
       const response = await getChartDetails(params)
       currentChart.value = response.data
+      dataSource.value = response.source
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch chart details'
       hasMore.value = false
