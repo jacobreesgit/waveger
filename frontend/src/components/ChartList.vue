@@ -1,15 +1,31 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
-import type { Song } from '@/types/api'
+import { useAppleMusicStore } from '@/stores/appleMusic'
+import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from './ChartSelector.vue'
 
 const store = useChartsStore()
-const selectedSong = ref<Song | null>(null)
+const appleMusicStore = useAppleMusicStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
+const songData = ref<Map<string, AppleMusicData>>(new Map())
 
-onMounted(() => {
+const getArtworkUrl = (url: string, width: number = 100, height: number = 100) => {
+  return url.replace('{w}', width.toString()).replace('{h}', height.toString())
+}
+
+const fetchAppleMusicData = async (song: any) => {
+  const query = `${song.name} ${song.artist}`
+  const data = await appleMusicStore.searchSong(query)
+  if (data) {
+    songData.value.set(`${song.position}`, data)
+  }
+}
+
+onMounted(async () => {
+  await appleMusicStore.fetchToken()
+
   observer.value = new IntersectionObserver(
     async (entries) => {
       const target = entries[0]
@@ -52,6 +68,29 @@ watch(loadMoreTrigger, (newTrigger) => {
     observer.value.observe(newTrigger)
   }
 })
+
+watch(
+  () => store.currentChart?.songs,
+  async (newSongs) => {
+    if (newSongs) {
+      for (const song of newSongs) {
+        if (!songData.value.has(`${song.position}`)) {
+          await fetchAppleMusicData(song)
+        }
+      }
+    }
+  },
+  { deep: true },
+)
+
+watch(
+  () => store.error,
+  (newError) => {
+    if (newError && observer.value && loadMoreTrigger.value) {
+      observer.value.unobserve(loadMoreTrigger.value)
+    }
+  },
+)
 </script>
 
 <template>
@@ -74,43 +113,56 @@ watch(loadMoreTrigger, (newTrigger) => {
     </div>
 
     <div v-else-if="store.currentChart" class="chart-container">
-      <!-- Chart header -->
       <div class="chart-header">
         <h1>{{ store.currentChart.title }}</h1>
         <p class="chart-info">{{ store.currentChart.info }}</p>
         <p class="chart-week">{{ store.currentChart.week }}</p>
       </div>
 
-      <!-- Songs list -->
       <div class="songs">
         <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
-          <img :src="song.image" :alt="song.name" class="song-image" />
+          <img
+            :src="
+              songData.get(`${song.position}`)?.attributes.artwork.url
+                ? getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url)
+                : song.image
+            "
+            :alt="song.name"
+            class="song-image"
+          />
           <div class="song-info">
             <div class="song-title">{{ song.name }}</div>
             <div class="song-artist">{{ song.artist }}</div>
-            <div class="song-trend">
-              <span
-                class="trend-indicator"
-                :class="{
-                  'trend-up': song.position < (song.last_week_position || Infinity),
-                  'trend-down': song.position > (song.last_week_position || 0),
-                  'trend-same': song.position === song.last_week_position,
-                }"
+            <div class="song-metadata" v-if="songData.get(`${song.position}`)">
+              <div class="album-name">
+                Album: {{ songData.get(`${song.position}`)?.attributes.albumName }}
+              </div>
+              <div
+                class="genres"
+                v-if="songData.get(`${song.position}`)?.attributes.genreNames.length"
               >
-                {{
-                  song.last_week_position
-                    ? song.position < song.last_week_position
-                      ? '↑'
-                      : song.position > song.last_week_position
-                        ? '↓'
-                        : '='
-                    : 'NEW'
-                }}
-              </span>
-              <span class="weeks-on-chart">
-                {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
-              </span>
+                Genres: {{ songData.get(`${song.position}`)?.attributes.genreNames.join(', ') }}
+              </div>
+              <div class="song-actions">
+                <audio
+                  v-if="songData.get(`${song.position}`)?.attributes.previews?.[0]"
+                  controls
+                  class="preview-player"
+                >
+                  <source
+                    :src="songData.get(`${song.position}`)?.attributes.previews[0].url"
+                    type="audio/mp4"
+                  />
+                </audio>
+                <a
+                  :href="songData.get(`${song.position}`)?.attributes.url"
+                  target="_blank"
+                  class="apple-music-button"
+                >
+                  Listen on Apple Music
+                </a>
+              </div>
             </div>
           </div>
           <div class="song-stats">
@@ -119,7 +171,6 @@ watch(loadMoreTrigger, (newTrigger) => {
           </div>
         </div>
 
-        <!-- Load more trigger -->
         <div v-if="store.hasMore" ref="loadMoreTrigger" class="load-more-trigger">
           <div v-if="store.loading" class="loading-more">
             <div class="loading-spinner"></div>
@@ -182,13 +233,7 @@ watch(loadMoreTrigger, (newTrigger) => {
   gap: 20px;
   padding: 16px;
   border-radius: 8px;
-  transition: background-color 0.2s;
-  cursor: pointer;
   align-items: center;
-}
-
-.song-item:hover {
-  background-color: #f8f9fa;
 }
 
 .song-rank {
@@ -218,6 +263,56 @@ watch(loadMoreTrigger, (newTrigger) => {
 
 .song-artist {
   color: #6c757d;
+}
+
+.song-metadata {
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+.album-name {
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.song-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.preview-link {
+  color: #666;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #f8f9fa;
+  transition: background-color 0.2s;
+}
+
+.preview-link:hover {
+  background: #e9ecef;
+}
+
+.apple-music-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fa324a;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #fff1f3;
+  transition: background-color 0.2s;
+}
+
+.apple-music-link:hover {
+  background: #ffe4e8;
+}
+
+.apple-music-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .song-trend {
