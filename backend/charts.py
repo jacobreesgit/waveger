@@ -39,9 +39,13 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
                 
                 if existing_record:
                     logging.debug("Found top charts in database")
+                    # Handle the data correctly based on its type
+                    data = existing_record[0]
+                    if isinstance(data, str):
+                        data = json.loads(data)
                     return jsonify({
                         "source": "database",
-                        "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
+                        "data": data
                     })
                 logging.debug("No top charts found in database")
             
@@ -51,9 +55,12 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
                 existing_record = cursor.fetchone()
                 
                 if existing_record:
+                    data = existing_record[0]
+                    if isinstance(data, str):
+                        data = json.loads(data)
                     return jsonify({
                         "source": "database",
-                        "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
+                        "data": data
                     })
             
             # Fetch from API if not found in DB
@@ -69,24 +76,25 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
             logging.debug(f"Fetching from API: {url}")
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            data = response.json()
-            logging.debug(f"API response received: {data}")
+            api_data = response.json()
+            logging.debug(f"API response received: {api_data}")
             
             # Store in appropriate table
             if endpoint == "/top-charts.php":
                 logging.debug("Storing top charts in database")
+                # Store the data as a JSON string
                 cursor.execute(
                     "INSERT INTO top_charts (data) VALUES (%s)",
-                    (json.dumps(data),)
+                    (json.dumps(api_data),)
                 )
                 conn.commit()
                 logging.debug("Top charts stored successfully")
             elif chart_id and historical_week:
-                store_chart_data(data, chart_id, historical_week)
+                store_chart_data(api_data, chart_id, historical_week)
             
             return jsonify({
                 "source": "api",
-                "data": data
+                "data": api_data
             })
         except Exception as e:
             logging.error(f"Error in fetch_api: {e}")
