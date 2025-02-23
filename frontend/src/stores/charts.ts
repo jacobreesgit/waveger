@@ -1,14 +1,28 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ChartData } from '@/types/api'
-import { getChartDetails } from '@/services/api'
+import type { ChartData, ChartOption, TopChartsResponse } from '@/types/api'
+import { getChartDetails, getTopCharts } from '@/services/api'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
+  const availableCharts = ref<ChartOption[]>([])
+  const selectedChartId = ref('hot-100')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasMore = ref(true)
   const currentPage = ref(1)
+  const dataSource = ref<'api' | 'database'>('api')
+  const topChartsSource = ref<'api' | 'database'>('api')
+
+  const fetchAvailableCharts = async () => {
+    try {
+      const response = await getTopCharts()
+      availableCharts.value = response.data
+      topChartsSource.value = response.source
+    } catch (e) {
+      console.error('Failed to fetch available charts:', e)
+    }
+  }
 
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
@@ -16,6 +30,7 @@ export const useChartsStore = defineStore('charts', () => {
       error.value = null
       hasMore.value = true
       currentPage.value = 1
+      selectedChartId.value = params.id || 'hot-100'
       console.log('Store - Initial fetch with params:', params)
       const response = await getChartDetails(params)
       currentChart.value = response.data
@@ -41,7 +56,6 @@ export const useChartsStore = defineStore('charts', () => {
       loading.value = true
       error.value = null
 
-      // Calculate next page range
       const start = currentPage.value * 10 + 1
       const end = start + 9
 
@@ -57,7 +71,7 @@ export const useChartsStore = defineStore('charts', () => {
       }
 
       const response = await getChartDetails({
-        id: 'hot-100',
+        id: selectedChartId.value,
         range: `${start}-${end}`,
       })
 
@@ -83,10 +97,15 @@ export const useChartsStore = defineStore('charts', () => {
 
   return {
     currentChart,
+    availableCharts,
+    selectedChartId,
     loading,
     error,
     hasMore,
+    dataSource,
+    topChartsSource,
     fetchChartDetails,
     fetchMoreSongs,
+    fetchAvailableCharts,
   }
 })

@@ -2,26 +2,14 @@
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import type { Song } from '@/types/api'
-import SongDetail from './SongDetail.vue'
+import ChartSelector from './ChartSelector.vue'
 
 const store = useChartsStore()
 const selectedSong = ref<Song | null>(null)
-const isModalOpen = ref(false)
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
 
-const openSongDetail = (song: Song) => {
-  selectedSong.value = song
-  isModalOpen.value = true
-}
-
-const closeModal = () => {
-  isModalOpen.value = false
-  selectedSong.value = null
-}
-
 onMounted(() => {
-  // Create intersection observer
   observer.value = new IntersectionObserver(
     async (entries) => {
       const target = entries[0]
@@ -44,13 +32,11 @@ onMounted(() => {
     },
   )
 
-  // Observe the trigger element
   if (loadMoreTrigger.value) {
     console.log('Intersection Observer - Starting observation')
     observer.value.observe(loadMoreTrigger.value)
   }
 
-  // Initial load
   store.fetchChartDetails({ id: 'hot-100', range: '1-10' })
 })
 
@@ -60,7 +46,6 @@ onUnmounted(() => {
   }
 })
 
-// Watch for changes in the loading trigger element
 watch(loadMoreTrigger, (newTrigger) => {
   if (newTrigger && observer.value) {
     console.log('Watch - New trigger element, starting observation')
@@ -71,6 +56,8 @@ watch(loadMoreTrigger, (newTrigger) => {
 
 <template>
   <div class="chart-list">
+    <ChartSelector />
+
     <div v-if="store.loading && !store.currentChart" class="loading">
       <div class="loading-spinner"></div>
       Loading charts...
@@ -96,12 +83,7 @@ watch(loadMoreTrigger, (newTrigger) => {
 
       <!-- Songs list -->
       <div class="songs">
-        <div
-          v-for="song in store.currentChart.songs"
-          :key="song.position"
-          class="song-item"
-          @click="openSongDetail(song)"
-        >
+        <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
           <img :src="song.image" :alt="song.name" class="song-image" />
           <div class="song-info">
@@ -148,19 +130,9 @@ watch(loadMoreTrigger, (newTrigger) => {
 
         <div v-else class="end-message">No more songs to load</div>
       </div>
-
-      <!-- Song detail modal -->
-      <SongDetail
-        v-if="selectedSong"
-        :song="selectedSong"
-        :is-open="isModalOpen"
-        @close="closeModal"
-      />
     </div>
   </div>
 </template>
-
-<!-- Styles remain the same as in your current implementation -->
 
 <style scoped>
 .chart-list {

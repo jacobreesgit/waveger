@@ -23,36 +23,52 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    if chart_id and historical_week:
-        # Check if data exists in the database
-        cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
-        existing_record = cursor.fetchone()
-        
-        if existing_record:
-            cursor.close()
-            conn.close()
-            return jsonify({
-                "source": "database",
-                "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
-            })
-    
-    # Fetch from API if not found in DB or for top-charts
-    if not RAPIDAPI_KEY:
-        return jsonify({"error": "Missing API key"}), 500
-
-    headers = {
-        "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": RAPIDAPI_HOST
-    }
-    url = f"https://{RAPIDAPI_HOST}{endpoint}"
-    
     try:
+        # For top-charts endpoint
+        if endpoint == "/top-charts.php":
+            cursor.execute("SELECT data FROM top_charts ORDER BY created_at DESC LIMIT 1")
+            existing_record = cursor.fetchone()
+            
+            if existing_record:
+                return jsonify({
+                    "source": "database",
+                    "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
+                })
+        
+        # For individual charts
+        elif chart_id and historical_week:
+            cursor.execute("SELECT data FROM charts WHERE title = %s AND week = %s", (chart_id, historical_week))
+            existing_record = cursor.fetchone()
+            
+            if existing_record:
+                return jsonify({
+                    "source": "database",
+                    "data": existing_record[0] if isinstance(existing_record[0], dict) else json.loads(existing_record[0])
+                })
+        
+        # Fetch from API if not found in DB
+        if not RAPIDAPI_KEY:
+            return jsonify({"error": "Missing API key"}), 500
+
+        headers = {
+            "x-rapidapi-key": RAPIDAPI_KEY,
+            "x-rapidapi-host": RAPIDAPI_HOST
+        }
+        url = f"https://{RAPIDAPI_HOST}{endpoint}"
+        
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         data = response.json()
         
-        if chart_id and historical_week:
-            store_chart_data(data, chart_id, historical_week)  # ✅ Store the data in the database
+        # Store in appropriate table
+        if endpoint == "/top-charts.php":
+            cursor.execute(
+                "INSERT INTO top_charts (data) VALUES (%s)",
+                (json.dumps(data),)
+            )
+            conn.commit()
+        elif chart_id and historical_week:
+            store_chart_data(data, chart_id, historical_week)
         
         return jsonify({
             "source": "api",
@@ -60,6 +76,9 @@ def fetch_api(endpoint, chart_id=None, historical_week=None):
         })
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 def store_chart_data(data, chart_id, historical_week):
     """Stores chart data in PostgreSQL if it doesn't already exist."""

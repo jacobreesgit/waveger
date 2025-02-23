@@ -16,6 +16,16 @@ export interface ChartData {
   week: string
 }
 
+export interface ChartOption {
+  id: string
+  title: string
+}
+
+export interface TopChartsResponse {
+  data: ChartOption[]
+  source: 'api' | 'database'
+}
+
 export interface ApiResponse {
   source: 'database' | 'api'
   data: ChartData
