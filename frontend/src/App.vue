@@ -7,8 +7,6 @@ import { RouterView, RouterLink } from 'vue-router'
     <h1>Billboard Charts</h1>
     <nav class="main-nav">
       <RouterLink to="/" class="nav-link">Current Charts</RouterLink>
-      <RouterLink to="/historical" class="nav-link">Historical View</RouterLink>
-      <RouterLink to="/compare" class="nav-link">Compare Charts</RouterLink>
     </nav>
   </header>
 

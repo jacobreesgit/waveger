@@ -15,3 +15,8 @@ export interface ChartData {
   title: string
   week: string
 }
+
+export interface ApiResponse {
+  source: 'database' | 'api'
+  data: ChartData
+}

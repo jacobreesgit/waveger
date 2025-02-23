@@ -1,57 +1,81 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ChartData, Song } from '@/types/api'
-import { getTopCharts, getChartDetails } from '@/services/api'
+import type { ChartData } from '@/types/api'
+import { getChartDetails } from '@/services/api'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
-  const topCharts = ref<ChartData | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
-
-  const fetchTopCharts = async () => {
-    try {
-      loading.value = true
-      error.value = null
-      const response = await getTopCharts()
-      topCharts.value = response.data
-    } catch (e) {
-      error.value = 'Failed to fetch top charts'
-      console.error(e)
-    } finally {
-      loading.value = false
-    }
-  }
+  const hasMore = ref(true)
+  const currentPage = ref(1)
 
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
       loading.value = true
       error.value = null
+      hasMore.value = true
+      currentPage.value = 1
+      console.log('Store - Initial fetch with params:', params)
       const response = await getChartDetails(params)
       currentChart.value = response.data
     } catch (e) {
-      error.value = 'Failed to fetch chart details'
-      console.error(e)
+      error.value = e instanceof Error ? e.message : 'Failed to fetch chart details'
+      hasMore.value = false
     } finally {
       loading.value = false
     }
   }
 
-  const fetchMoreSongs = async (range: string) => {
+  const fetchMoreSongs = async () => {
+    if (!currentChart.value || loading.value || !hasMore.value) {
+      console.log('Store - Early return conditions:', {
+        noCurrentChart: !currentChart.value,
+        isLoading: loading.value,
+        noMoreSongs: !hasMore.value,
+      })
+      return
+    }
+
     try {
       loading.value = true
       error.value = null
-      const response = await getChartDetails({
-        id: currentChart.value?.title.toLowerCase().replace(/\s+/g, '-'),
-        week: currentChart.value?.week,
-        range,
+
+      // Calculate next page range
+      const start = currentPage.value * 10 + 1
+      const end = start + 9
+
+      console.log('Store - Fetching more songs:', {
+        currentPage: currentPage.value,
+        range: `${start}-${end}`,
       })
+
+      if (start > 100) {
+        console.log('Store - Reached end of chart')
+        hasMore.value = false
+        return
+      }
+
+      const response = await getChartDetails({
+        id: 'hot-100',
+        range: `${start}-${end}`,
+      })
+
       if (currentChart.value && response.data.songs) {
+        if (response.data.songs.length === 0) {
+          console.log('Store - No more songs returned')
+          hasMore.value = false
+          return
+        }
+
         currentChart.value.songs = [...currentChart.value.songs, ...response.data.songs]
+        currentPage.value++
+        console.log('Store - Added new songs. Total count:', currentChart.value.songs.length)
       }
     } catch (e) {
-      error.value = 'Failed to load more songs'
-      console.error(e)
+      console.error('Store - Error fetching more songs:', e)
+      error.value = e instanceof Error ? e.message : 'Failed to load more songs'
+      hasMore.value = false
     } finally {
       loading.value = false
     }
@@ -59,10 +83,9 @@ export const useChartsStore = defineStore('charts', () => {
 
   return {
     currentChart,
-    topCharts,
     loading,
     error,
-    fetchTopCharts,
+    hasMore,
     fetchChartDetails,
     fetchMoreSongs,
   }
