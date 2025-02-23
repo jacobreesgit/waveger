@@ -1,170 +1,146 @@
 import { defineStore } from 'pinia'
-import axios, { AxiosError } from 'axios'
+import { ref } from 'vue'
+import axios from 'axios'
 
 const API_URL = 'https://wavegerpython.onrender.com/api'
 
-interface User {
-  username: string
-  email: string
-  profile_pic: string | null
-}
+export const useUserStore = defineStore('user', () => {
+  const user = ref(null)
+  const isAuthenticated = ref(false)
 
-interface LoginCredentials {
-  identifier: string
-  password: string
-}
-
-interface RegisterCredentials {
-  username: string
-  email: string
-  password: string
-}
-
-interface ApiError {
-  error: string
-  details?: string
-}
-
-const isValidToken = (token: string): boolean => {
-  return token.length > 0 && token.split('.').length === 3
-}
-
-export const useUserStore = defineStore('user', {
-  state: () => ({
-    user: null as User | null,
-    token: localStorage.getItem('token') || '',
-  }),
-
-  getters: {
-    isAuthenticated: (state) => !!state.token,
-    profilePicUrl: (state) =>
-      state.user?.profile_pic
-        ? `${API_URL}/profile-pic/${state.user.profile_pic}`
-        : null,
-  },
-
-  actions: {
-    async register(
-      username: string,
-      email: string,
-      password: string,
-      profilePic: File | null
-    ) {
-      try {
-        if (!username || !email || !password) {
-          throw new Error('Missing required fields')
-        }
-
-        const formData = new FormData()
-        formData.append('username', username)
-        formData.append('email', email)
-        formData.append('password', password)
-        if (profilePic) formData.append('profile_pic', profilePic)
-
-        const response = await axios.post(`${API_URL}/register`, formData)
-        return response.data
-      } catch (error) {
-        if (error instanceof AxiosError && error.response?.data) {
-          throw error.response.data as ApiError
-        }
-        throw {
-          error: 'Registration failed',
-          details: (error as Error).message,
-        }
+  // Initialize axios interceptors
+  axios.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
       }
+      return config
     },
+    (error) => {
+      return Promise.reject(error)
+    }
+  )
 
-    async login(identifier: string, password: string) {
-      try {
-        if (!identifier || !password) {
-          throw new Error('Missing credentials')
-        }
-
-        const credentials: LoginCredentials = {
-          identifier,
-          password,
-        }
-
-        const response = await axios.post(`${API_URL}/login`, credentials)
-        this.token = response.data.access_token || ''
-        localStorage.setItem('token', this.token)
-
-        // Fetch user profile immediately after successful login
-        await this.fetchUserProfile()
-      } catch (error) {
-        if (error instanceof AxiosError && error.response?.data) {
-          throw error.response.data as ApiError
-        }
-        throw { error: 'Login failed', details: (error as Error).message }
+  axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      if (error.response?.status === 401) {
+        // Clear auth state and redirect to login
+        localStorage.removeItem('token')
+        user.value = null
+        isAuthenticated.value = false
+        window.location.href = '/login'
       }
-    },
+      return Promise.reject(error)
+    }
+  )
 
-    async fetchUserProfile() {
-      try {
-        if (!this.token) {
-          this.user = null
-          return
-        }
+  const login = async (identifier: string, password: string) => {
+    try {
+      const response = await axios.post(`${API_URL}/login`, {
+        identifier,
+        password,
+      })
+      const token = response.data.access_token
+      localStorage.setItem('token', token)
+      isAuthenticated.value = true
+      await fetchUserProfile() // Fetch user data right after login
+      return response.data
+    } catch (error: any) {
+      throw error.response?.data || { error: 'Login failed' }
+    }
+  }
 
-        const response = await axios.get<User>(`${API_URL}/profile`, {
-          headers: {
-            Authorization: `Bearer ${this.token.trim()}`,
-            Accept: 'application/json',
-          },
-          validateStatus: (status) => {
-            return status < 500 // Resolve only if the status code is less than 500
-          },
-        })
-
-        if (response.status === 401 || response.status === 422) {
-          this.logout()
-          throw new Error('Session expired - please login again')
-        }
-
-        this.user = response.data
-      } catch (error) {
-        if (error instanceof AxiosError) {
-          if (
-            error.response?.status === 401 ||
-            error.response?.status === 422
-          ) {
-            this.logout()
-          }
-        }
-        throw error
-      }
-    },
-
-    async uploadProfilePic(profilePic: File) {
-      try {
-        if (!this.token || !profilePic) {
-          throw new Error('Missing required data')
-        }
-
-        const formData = new FormData()
+  const register = async (
+    username: string,
+    email: string,
+    password: string,
+    profilePic: File | null
+  ) => {
+    try {
+      const formData = new FormData()
+      formData.append('username', username)
+      formData.append('email', email)
+      formData.append('password', password)
+      if (profilePic) {
         formData.append('profile_pic', profilePic)
-
-        await axios.post(`${API_URL}/upload-profile-pic`, formData, {
-          headers: { Authorization: `Bearer ${this.token}` },
-        })
-
-        // Refresh user profile to get updated profile pic
-        await this.fetchUserProfile()
-      } catch (error) {
-        if (error instanceof AxiosError && error.response?.data) {
-          throw error.response.data as ApiError
-        }
-        throw {
-          error: 'Profile picture upload failed',
-          details: (error as Error).message,
-        }
       }
-    },
 
-    logout() {
-      this.token = ''
-      this.user = null
-      localStorage.removeItem('token')
-    },
-  },
+      const response = await axios.post(`${API_URL}/register`, formData)
+      return response.data
+    } catch (error: any) {
+      throw error.response?.data || { error: 'Registration failed' }
+    }
+  }
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+
+      const response = await axios.get(`${API_URL}/profile`)
+      user.value = response.data
+      isAuthenticated.value = true
+      return response.data
+    } catch (error: any) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('token')
+        user.value = null
+        isAuthenticated.value = false
+        throw new Error('Session expired - please login again')
+      }
+      throw error.response?.data || { error: 'Failed to fetch profile' }
+    }
+  }
+
+  const uploadProfilePic = async (file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('profile_pic', file)
+
+      const response = await axios.post(
+        `${API_URL}/upload-profile-pic`,
+        formData
+      )
+      await fetchUserProfile() // Refresh user data after upload
+      return response.data
+    } catch (error: any) {
+      throw (
+        error.response?.data || { error: 'Failed to upload profile picture' }
+      )
+    }
+  }
+
+  const logout = () => {
+    localStorage.removeItem('token')
+    user.value = null
+    isAuthenticated.value = false
+  }
+
+  // Initialize auth state from localStorage on app start
+  const initializeAuth = async () => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        await fetchUserProfile()
+      } catch (error) {
+        console.error('Failed to restore session:', error)
+        logout()
+      }
+    }
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    login,
+    register,
+    fetchUserProfile,
+    uploadProfilePic,
+    logout,
+    initializeAuth,
+  }
 })
