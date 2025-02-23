@@ -44,6 +44,10 @@ export const useUserStore = defineStore('user', () => {
       })
       const token = response.data.access_token
       localStorage.setItem('token', token)
+
+      // Add token to axios default headers right after receiving it
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
       isAuthenticated.value = true
       await fetchUserProfile() // Fetch user data right after login
       return response.data
