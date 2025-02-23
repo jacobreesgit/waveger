@@ -1,38 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import ChartView from '@/views/ChartView.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
-import UserView from '@/views/UserView.vue'
-
-const routes = [
-  {
-    path: '/',
-    name: 'Home',
-    component: HomeView,
-    meta: { label: 'Home', icon: 'pi pi-home' },
-  },
-  {
-    path: '/charts',
-    name: 'Charts',
-    component: ChartView,
-    meta: { label: 'Charts', icon: 'pi pi-chart-line' },
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    name: 'NotFound',
-    component: NotFoundView,
-  },
-  {
-    path: '/account',
-    name: 'Account',
-    component: UserView,
-    meta: { label: 'Account', icon: 'pi pi-user' },
-  },
-]
+import ChartList from '@/components/ChartList.vue'
+import HistoricalChart from '@/components/HistoricalChart.vue'
+import ChartComparison from '@/components/ChartComparison.vue'
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: ChartList,
+    },
+    {
+      path: '/historical',
+      name: 'historical',
+      component: HistoricalChart,
+    },
+    {
+      path: '/compare',
+      name: 'compare',
+      component: ChartComparison,
+    },
+  ],
 })
 
 export default router

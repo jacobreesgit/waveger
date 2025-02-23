@@ -1,69 +1,55 @@
-<template>
-  <div class="app flex flex-col gap-4 h-screen" :class="deviceClass">
-    <!-- Menubar -->
-    <Menu v-if="!isMobile" class="pt-4 container mx-auto"></Menu>
-
-    <!-- Content -->
-    <main
-      class="flex-1 container mx-auto flex flex-col overflow-hidden"
-      :class="{ 'pt-4': isMobile, 'pb-4': !isMobile }"
-    >
-      <router-view
-        :chartDetails="chartsStore.chartDetails"
-        :loading="chartsStore.loading"
-        :error="chartsStore.error"
-        :class="[
-          'flex items-center flex-col mx-auto p-8 gap-4 w-full sm:w-5/6 overflow-auto',
-          themeClass,
-        ]"
-      />
-    </main>
-
-    <!-- Footer -->
-    <Footer v-if="isMobile"></Footer>
-  </div>
-</template>
-
-<script setup>
-import { onMounted } from 'vue'
-import Menu from '@/components/Menu.vue'
-import Footer from '@/components/Footer.vue'
-import { useDarkMode } from '@/utils/useDarkMode'
-import { useDevice } from '@/utils/useDevice'
-import { useCharts } from '@/utils/useChartsStore'
-
-const { themeClass } = useDarkMode()
-const { isMobile, deviceClass } = useDevice()
-
-const { chartsStore, loadAppleMusicToken, loadDefaultChart } = useCharts()
-
-onMounted(() => {
-  loadAppleMusicToken()
-  loadDefaultChart()
-})
+<script setup lang="ts">
+import { RouterView, RouterLink } from 'vue-router'
 </script>
 
-<style lang="scss" scoped>
-.app {
-  background-image: url('/src/assets/background.jpeg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  filter: contrast(80%) brightness(110%);
+<template>
+  <header class="app-header">
+    <h1>Billboard Charts</h1>
+    <nav class="main-nav">
+      <RouterLink to="/" class="nav-link">Current Charts</RouterLink>
+      <RouterLink to="/historical" class="nav-link">Historical View</RouterLink>
+      <RouterLink to="/compare" class="nav-link">Compare Charts</RouterLink>
+    </nav>
+  </header>
 
-  & main {
-    height: 100%;
-  }
+  <main class="app-main">
+    <RouterView />
+  </main>
+</template>
 
-  @media (max-width: 639px) {
-    padding: 0 1rem 1rem 1rem;
+<style scoped>
+.app-header {
+  background: #f8f9fa;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-    & main {
-      margin-bottom: 32px;
-      @supports (-webkit-touch-callout: none) {
-        margin-bottom: 114px;
-      }
-    }
-  }
+.main-nav {
+  margin-top: 16px;
+  display: flex;
+  gap: 20px;
+}
+
+.nav-link {
+  color: #333;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.nav-link:hover {
+  background: #e9ecef;
+}
+
+.nav-link.router-link-active {
+  background: #007bff;
+  color: white;
+}
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 </style>
