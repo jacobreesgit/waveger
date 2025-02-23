@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import ChartList from '@/components/ChartList.vue'
+import ChartList from '@/views/ChartList.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

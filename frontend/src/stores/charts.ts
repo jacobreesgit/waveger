@@ -6,7 +6,7 @@ import { getChartDetails, getTopCharts } from '@/services/api'
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
   const availableCharts = ref<ChartOption[]>([])
-  const selectedChartId = ref('')
+  const selectedChartId = ref('hot-100/')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasMore = ref(true)
@@ -19,16 +19,6 @@ export const useChartsStore = defineStore('charts', () => {
       const response = await getTopCharts()
       availableCharts.value = response.data
       topChartsSource.value = response.source
-
-      // Set default chart if not already set
-      if (!selectedChartId.value && availableCharts.value.length > 0) {
-        const hotChart = availableCharts.value.find(
-          (chart) => chart.title === 'Billboard Hot 100™',
-        )
-        if (hotChart) {
-          selectedChartId.value = hotChart.id
-        }
-      }
     } catch (e) {
       console.error('Failed to fetch available charts:', e)
     }

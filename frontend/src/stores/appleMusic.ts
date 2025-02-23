@@ -1,7 +1,6 @@
-// src/stores/appleMusic.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { getAppleMusicToken } from '@/services/api'
 
 export const useAppleMusicStore = defineStore('appleMusic', () => {
@@ -13,9 +12,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     try {
       loading.value = true
       error.value = null
-      console.log('Fetching Apple Music token...')
       const response = await getAppleMusicToken()
-      console.log('Token response:', response)
       token.value = response.token
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch Apple Music token'
@@ -44,11 +41,16 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
 
       return response.data.results.songs?.data[0] || null
     } catch (e) {
-      console.error('Apple Music search error:', e)
-      console.error('Error details:', {
-        status: e.response?.status,
-        data: e.response?.data,
-      })
+      if (e instanceof AxiosError) {
+        console.error('Apple Music API error:', e.response?.data)
+        error.value = e.response?.data?.errors?.[0]?.title || 'Failed to search Apple Music'
+      } else if (e instanceof Error) {
+        console.error('Apple Music search error:', e.message)
+        error.value = e.message
+      } else {
+        console.error('Unknown error:', e)
+        error.value = 'An unknown error occurred'
+      }
       return null
     }
   }

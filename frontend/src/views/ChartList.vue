@@ -3,53 +3,42 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import type { AppleMusicData } from '@/types/appleMusic'
-import ChartSelector from './ChartSelector.vue'
+import ChartSelector from '@/components/ChartSelector.vue'
 
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
+const appleDataLoading = ref(new Set<string>())
 
-const getArtworkUrl = (url: string, width: number = 100, height: number = 100) => {
+const getArtworkUrl = (url: string | undefined, width: number = 100, height: number = 100) => {
+  if (!url) return ''
   return url.replace('{w}', width.toString()).replace('{h}', height.toString())
 }
 
 const fetchAppleMusicData = async (song: any) => {
+  appleDataLoading.value.add(`${song.position}`)
   const query = `${song.name} ${song.artist}`
   const data = await appleMusicStore.searchSong(query)
   if (data) {
     songData.value.set(`${song.position}`, data)
   }
+  appleDataLoading.value.delete(`${song.position}`)
 }
 
 onMounted(async () => {
   await appleMusicStore.fetchToken()
 
-  observer.value = new IntersectionObserver(
-    async (entries) => {
-      const target = entries[0]
-      console.log('Intersection Observer - Status:', {
-        isIntersecting: target.isIntersecting,
-        isLoading: store.loading,
-        hasMore: store.hasMore,
-        hasError: store.error,
-      })
-
-      if (target.isIntersecting && !store.loading && store.hasMore && !store.error) {
-        console.log('Intersection Observer - Loading more songs')
-        await store.fetchMoreSongs()
-      }
-    },
-    {
-      root: null,
-      rootMargin: '100px', // Load more before reaching the end
-      threshold: 0.1,
-    },
-  )
+  observer.value = new IntersectionObserver(async (entries) => {
+    const target = entries[0]
+    if (target.isIntersecting && !store.loading && store.hasMore && !store.error) {
+      console.log('Intersection observed, loading more songs')
+      await store.fetchMoreSongs()
+    }
+  })
 
   if (loadMoreTrigger.value) {
-    console.log('Intersection Observer - Starting observation')
     observer.value.observe(loadMoreTrigger.value)
   }
 
@@ -59,13 +48,6 @@ onMounted(async () => {
 onUnmounted(() => {
   if (observer.value && loadMoreTrigger.value) {
     observer.value.unobserve(loadMoreTrigger.value)
-  }
-})
-
-watch(loadMoreTrigger, (newTrigger) => {
-  if (newTrigger && observer.value) {
-    console.log('Watch - New trigger element, starting observation')
-    observer.value.observe(newTrigger)
   }
 })
 
@@ -134,9 +116,42 @@ watch(
           <div class="song-info">
             <div class="song-title">{{ song.name }}</div>
             <div class="song-artist">{{ song.artist }}</div>
-            <div class="song-metadata" v-if="songData.get(`${song.position}`)">
+            <div class="song-trend">
+              <span
+                class="trend-indicator"
+                :class="{
+                  'trend-up': song.position < (song.last_week_position || Infinity),
+                  'trend-down': song.position > (song.last_week_position || 0),
+                  'trend-same': song.position === song.last_week_position,
+                }"
+              >
+                {{
+                  song.last_week_position
+                    ? song.position < song.last_week_position
+                      ? '↑'
+                      : song.position > song.last_week_position
+                        ? '↓'
+                        : '='
+                    : 'NEW'
+                }}
+              </span>
+              <span class="weeks-on-chart">
+                {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
+              </span>
+            </div>
+            <div
+              v-if="appleDataLoading.has(`${song.position}`)"
+              class="loading-spinner apple-loading"
+            ></div>
+            <div class="song-metadata" v-else-if="songData.get(`${song.position}`)">
               <div class="album-name">
                 Album: {{ songData.get(`${song.position}`)?.attributes.albumName }}
+              </div>
+              <div
+                class="composer"
+                v-if="songData.get(`${song.position}`)?.attributes.composerName"
+              >
+                Composer: {{ songData.get(`${song.position}`)?.attributes.composerName }}
               </div>
               <div
                 class="genres"
@@ -266,53 +281,47 @@ watch(
 }
 
 .song-metadata {
-  margin-top: 8px;
+  margin-top: 12px;
   font-size: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.album-name {
+.album-name,
+.composer,
+.genres {
   color: #666;
-  margin-bottom: 4px;
 }
 
 .song-actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: center;
+  margin-top: 8px;
 }
 
-.preview-link {
-  color: #666;
+.preview-player {
+  width: 100%;
+  max-width: 300px;
+  height: 32px;
+}
+
+.apple-music-button {
+  display: inline-block;
+  background: #fa324a;
+  color: white;
   text-decoration: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #f8f9fa;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  text-align: center;
   transition: background-color 0.2s;
+  width: fit-content;
 }
 
-.preview-link:hover {
-  background: #e9ecef;
-}
-
-.apple-music-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: #fa324a;
-  text-decoration: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #fff1f3;
-  transition: background-color 0.2s;
-}
-
-.apple-music-link:hover {
-  background: #ffe4e8;
-}
-
-.apple-music-icon {
-  width: 16px;
-  height: 16px;
+.apple-music-button:hover {
+  background: #e41e36;
 }
 
 .song-trend {
@@ -320,6 +329,7 @@ watch(
   align-items: center;
   gap: 12px;
   margin-top: 4px;
+  margin-bottom: 8px;
 }
 
 .trend-indicator {
@@ -372,6 +382,13 @@ watch(
   border-top: 3px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.apple-loading {
+  width: 24px;
+  height: 24px;
+  margin: 8px 0;
+  border-width: 2px;
 }
 
 @keyframes spin {
