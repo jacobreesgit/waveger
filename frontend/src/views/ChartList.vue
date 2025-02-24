@@ -4,6 +4,7 @@ import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
+import ChartDatePicker from '@/components/ChartDatePicker.vue'
 
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
@@ -12,7 +13,7 @@ const observer = ref<IntersectionObserver | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 
-const getArtworkUrl = (url: string | undefined, width: number = 100, height: number = 100) => {
+const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
   return url.replace('{w}', width.toString()).replace('{h}', height.toString())
 }
@@ -20,9 +21,15 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
 const fetchAppleMusicData = async (song: any) => {
   appleDataLoading.value.add(`${song.position}`)
   const query = `${song.name} ${song.artist}`
+  console.log(`Searching Apple Music for: #${song.position} - ${query}`)
   const data = await appleMusicStore.searchSong(query)
   if (data) {
+    console.log(`Apple Music data for #${song.position} - ${song.name}:`, {
+      data,
+    })
     songData.value.set(`${song.position}`, data)
+  } else {
+    console.log(`No Apple Music match found for #${song.position} - ${song.name}`)
   }
   appleDataLoading.value.delete(`${song.position}`)
 }
@@ -73,10 +80,27 @@ watch(
     }
   },
 )
+
+// Watch for changes in chart data (including date changes)
+watch(
+  () => store.currentChart?.songs,
+  async (newSongs) => {
+    if (newSongs) {
+      songData.value.clear()
+      for (const song of newSongs) {
+        if (!songData.value.has(`${song.position}`)) {
+          await fetchAppleMusicData(song)
+        }
+      }
+    }
+  },
+  { deep: true },
+)
 </script>
 
 <template>
   <div class="chart-list">
+    <ChartDatePicker />
     <ChartSelector />
 
     <div v-if="store.loading && !store.currentChart" class="loading">
@@ -104,6 +128,7 @@ watch(
       <div class="songs">
         <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
+          {{ getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url) }}
           <img
             :src="
               songData.get(`${song.position}`)?.attributes.artwork.url

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ChartData, ChartOption, TopChartsResponse } from '@/types/api'
-import { getChartDetails, getTopCharts } from '@/services/api'
+import type { ChartData, ChartOption } from '@/types/api'
+import { getTopCharts, getChartDetails } from '@/services/api'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
@@ -14,23 +14,13 @@ export const useChartsStore = defineStore('charts', () => {
   const dataSource = ref<'api' | 'database'>('api')
   const topChartsSource = ref<'api' | 'database'>('api')
 
-  const fetchAvailableCharts = async () => {
-    try {
-      const response = await getTopCharts()
-      availableCharts.value = response.data
-      topChartsSource.value = response.source
-    } catch (e) {
-      console.error('Failed to fetch available charts:', e)
-    }
-  }
-
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
       loading.value = true
       error.value = null
       hasMore.value = true
       currentPage.value = 1
-      selectedChartId.value = params.id || 'hot-100'
+      selectedChartId.value = params.id || 'hot-100/'
       console.log('Store - Initial fetch with params:', params)
       const response = await getChartDetails(params)
       currentChart.value = response.data
@@ -93,6 +83,16 @@ export const useChartsStore = defineStore('charts', () => {
       hasMore.value = false
     } finally {
       loading.value = false
+    }
+  }
+
+  const fetchAvailableCharts = async () => {
+    try {
+      const response = await getTopCharts()
+      availableCharts.value = response.data
+      topChartsSource.value = response.source
+    } catch (e) {
+      console.error('Failed to fetch available charts:', e)
     }
   }
 
