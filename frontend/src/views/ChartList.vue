@@ -103,7 +103,7 @@ watch(
     <ChartDatePicker />
     <ChartSelector />
 
-    <div v-if="store.loading && !store.currentChart" class="loading">
+    <div v-if="store.loading" class="loading">
       <div class="loading-spinner"></div>
       Loading charts...
     </div>

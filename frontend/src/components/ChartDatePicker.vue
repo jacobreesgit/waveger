@@ -3,7 +3,6 @@ import { ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 
 const store = useChartsStore()
-
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
 
@@ -13,19 +12,30 @@ const formatDate = (date: string): string => {
 }
 
 watch(selectedDate, async (newDate) => {
+  store.loading = true // Set loading state before fetch
   const formattedDate = formatDate(newDate)
   console.log('Fetching chart for date:', formattedDate)
-  await store.fetchChartDetails({
-    id: store.selectedChartId,
-    week: formattedDate,
-    range: '1-10',
-  })
+  try {
+    await store.fetchChartDetails({
+      id: store.selectedChartId,
+      week: formattedDate,
+      range: '1-10',
+    })
+  } finally {
+    store.loading = false
+  }
 })
 </script>
 
 <template>
   <div class="date-picker">
-    <input type="date" v-model="selectedDate" class="date-input" :max="today" />
+    <input
+      type="date"
+      v-model="selectedDate"
+      class="date-input"
+      :max="today"
+      :disabled="store.loading"
+    />
   </div>
 </template>
 
@@ -48,5 +58,10 @@ watch(selectedDate, async (newDate) => {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.date-input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
 }
 </style>
