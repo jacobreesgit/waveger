@@ -11,9 +11,17 @@ const editMode = ref(false)
 const username = ref('')
 const email = ref('')
 
-// Computed stats for display
+// Computed stats for display with proper type checking
 const accuracy = computed(() => {
-  if (!authStore.user || !authStore.user.predictions_made) return 0
+  if (
+    !authStore.user ||
+    typeof authStore.user.predictions_made !== 'number' ||
+    typeof authStore.user.correct_predictions !== 'number' ||
+    authStore.user.predictions_made === 0
+  ) {
+    return '0.0'
+  }
+
   return ((authStore.user.correct_predictions / authStore.user.predictions_made) * 100).toFixed(1)
 })
 
