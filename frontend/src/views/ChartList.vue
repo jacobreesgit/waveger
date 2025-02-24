@@ -157,7 +157,6 @@ watch(
       <div class="songs">
         <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
-          {{ getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url) }}
           <img
             :src="
               songData.get(`${song.position}`)?.attributes.artwork.url
