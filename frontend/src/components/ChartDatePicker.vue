@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
 
+const props = defineProps<{
+  initialDate?: string
+}>()
+
+const router = useRouter()
+const route = useRoute()
 const store = useChartsStore()
 const today = new Date().toISOString().split('T')[0]
 const selectedDate = ref(today)
@@ -11,11 +18,35 @@ const formatDate = (date: string): string => {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
 }
 
+const formatDateForURL = (date: string): string => {
+  const [year, month, day] = date.split('-')
+  return `${day}-${month}-${year}`
+}
+
+const parseDateFromURL = (urlDate: string): string => {
+  const [day, month, year] = urlDate.split('-')
+  return `${year}-${month}-${day}`
+}
+
+// Watch for route changes to update the date picker
+watch(
+  () => route.params.date,
+  (newDate) => {
+    if (newDate) {
+      selectedDate.value = parseDateFromURL(newDate as string)
+    }
+  },
+  { immediate: true },
+)
+
+// Handle date picker changes
 watch(selectedDate, async (newDate) => {
-  store.loading = true // Set loading state before fetch
+  store.loading = true
   const formattedDate = formatDate(newDate)
-  console.log('Fetching chart for date:', formattedDate)
+  const urlDate = formatDateForURL(formattedDate)
+
   try {
+    await router.push(`/${urlDate}`)
     await store.fetchChartDetails({
       id: store.selectedChartId,
       week: formattedDate,
@@ -23,6 +54,12 @@ watch(selectedDate, async (newDate) => {
     })
   } finally {
     store.loading = false
+  }
+})
+
+onMounted(() => {
+  if (route.params.date) {
+    selectedDate.value = parseDateFromURL(route.params.date as string)
   }
 })
 </script>

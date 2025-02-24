@@ -5,6 +5,12 @@ import { useAppleMusicStore } from '@/stores/appleMusic'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
+import { useRoute } from 'vue-router'
+
+const route = useRoute()
+const props = defineProps<{
+  initialDate?: string
+}>()
 
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
@@ -34,6 +40,17 @@ const fetchAppleMusicData = async (song: any) => {
   appleDataLoading.value.delete(`${song.position}`)
 }
 
+const parseDateFromURL = (urlDate: string): string => {
+  console.log('Parsing date from URL:', urlDate)
+  try {
+    const [day, month, year] = urlDate.split('-')
+    return `${year}-${month}-${day}`
+  } catch (e) {
+    console.error('Date parsing error:', e)
+    return new Date().toISOString().split('T')[0]
+  }
+}
+
 onMounted(async () => {
   await appleMusicStore.fetchToken()
 
@@ -49,7 +66,19 @@ onMounted(async () => {
     observer.value.observe(loadMoreTrigger.value)
   }
 
-  store.fetchChartDetails({ id: 'hot-100', range: '1-10' })
+  console.log('Route params:', route.params)
+
+  const initialDate = route.params.date
+    ? parseDateFromURL(route.params.date as string)
+    : new Date().toISOString().split('T')[0]
+
+  console.log('Using initial date:', initialDate)
+
+  store.fetchChartDetails({
+    id: 'hot-100',
+    week: initialDate,
+    range: '1-10',
+  })
 })
 
 onUnmounted(() => {
