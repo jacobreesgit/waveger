@@ -9,6 +9,9 @@ import logging
 auth_bp = Blueprint("auth", __name__)
 bcrypt = Bcrypt()
 
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db_connection():
@@ -134,16 +137,22 @@ def login():
 @auth_bp.route("/user", methods=["GET"])
 @jwt_required()
 def get_user_data():
+    # Log incoming request details
+    logger.debug("Incoming request to /user endpoint")
+    logger.debug(f"Request headers: {dict(request.headers)}")
+    
     try:
         # Get the user ID from the JWT token
         user_id = get_jwt_identity()
+        logger.debug(f"Extracted user ID from token: {user_id}")
 
         conn = get_db_connection()
         cursor = conn.cursor()
 
         try:
-            # Fetch user details including additional fields
-            cursor.execute("""
+            # Comprehensive query logging
+            logger.debug("Executing user data query")
+            query = """
                 SELECT 
                     id, username, email, 
                     created_at, last_login, 
@@ -151,31 +160,65 @@ def get_user_data():
                     predictions_made, correct_predictions 
                 FROM users 
                 WHERE id = %s
-            """, (user_id,))
+            """
+            logger.debug(f"Query: {query}")
+            logger.debug(f"Query parameters: {user_id}")
+
+            # Execute the query
+            cursor.execute(query, (user_id,))
             
+            # Fetch the user
             user = cursor.fetchone()
+            logger.debug(f"Query result: {user}")
 
             if not user:
+                logger.error(f"No user found with ID: {user_id}")
                 return jsonify({"error": "User not found"}), 404
 
-            # Convert to dictionary for easier JSON serialization
-            user_data = {
-                "id": user[0],
-                "username": user[1],
-                "email": user[2],
-                "created_at": user[3].isoformat() if user[3] else None,
-                "last_login": user[4].isoformat() if user[4] else None,
-                "total_points": user[5],
-                "weekly_points": user[6],
-                "predictions_made": user[7],
-                "correct_predictions": user[8]
-            }
+            # Detailed field conversion and logging
+            try:
+                user_data = {
+                    "id": int(user[0]) if user[0] is not None else None,
+                    "username": str(user[1]) if user[1] is not None else None,
+                    "email": str(user[2]) if user[2] is not None else None,
+                    "created_at": user[3].isoformat() if user[3] is not None else None,
+                    "last_login": user[4].isoformat() if user[4] is not None else None,
+                    "total_points": int(user[5]) if user[5] is not None else 0,
+                    "weekly_points": int(user[6]) if user[6] is not None else 0,
+                    "predictions_made": int(user[7]) if user[7] is not None else 0,
+                    "correct_predictions": int(user[8]) if user[8] is not None else 0
+                }
 
-            return jsonify(user_data), 200
+                # Log each field for verification
+                for key, value in user_data.items():
+                    logger.debug(f"User field {key}: {value} (type: {type(value)})")
+
+                return jsonify(user_data), 200
+
+            except Exception as conversion_error:
+                logger.error(f"Error converting user data: {conversion_error}")
+                logger.error(traceback.format_exc())
+                return jsonify({
+                    "error": "Failed to process user data",
+                    "details": str(conversion_error)
+                }), 500
+
+        except psycopg2.Error as db_error:
+            logger.error(f"Database error: {db_error}")
+            logger.error(traceback.format_exc())
+            return jsonify({
+                "error": "Database error",
+                "details": str(db_error)
+            }), 500
 
         finally:
             cursor.close()
             conn.close()
 
     except Exception as e:
-        logging.error(f"Error fetching user data: {e}")
+        logger.error(f"Unexpected error in get_user_data: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "error": "Unexpected server error",
+            "details": str(e)
+        }), 500

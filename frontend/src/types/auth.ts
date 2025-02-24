@@ -2,8 +2,8 @@ export interface User {
   id: number
   username: string
   email: string
-  created_at?: string
-  last_login?: string
+  created_at?: string | null
+  last_login?: string | null
   total_points?: number
   weekly_points?: number
   predictions_made?: number

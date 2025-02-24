@@ -27,28 +27,61 @@ export const useAuthStore = defineStore('auth', () => {
 
   const fetchUserData = async () => {
     if (!token.value) {
+      console.error('No token available for user data fetch')
       throw new Error('No authentication token available')
     }
 
     try {
       loading.value = true
+      console.log('Attempting to fetch user data')
+      console.log('Current token:', token.value)
+
       const response = await axios.get<User>('https://wavegerpython.onrender.com/api/auth/user', {
         headers: {
           Authorization: `Bearer ${token.value}`,
         },
       })
 
-      // Update user data
-      user.value = {
-        ...user.value,
-        ...response.data,
+      console.log('Full user data response:', response)
+      console.log('Response data:', response.data)
+
+      // Detailed logging of each field
+      Object.entries(response.data).forEach(([key, value]) => {
+        console.log(`User field ${key}:`, value)
+        console.log(`Type of ${key}:`, typeof value)
+      })
+
+      // Validate each field
+      const validatedUser: User = {
+        id: response.data.id ?? 0,
+        username: response.data.username ?? '',
+        email: response.data.email ?? '',
+        created_at: response.data.created_at ?? undefined,
+        last_login: response.data.last_login ?? undefined,
+        total_points: response.data.total_points ?? 0,
+        weekly_points: response.data.weekly_points ?? 0,
+        predictions_made: response.data.predictions_made ?? 0,
+        correct_predictions: response.data.correct_predictions ?? 0,
       }
 
-      // Update localStorage with fresh user data
-      localStorage.setItem('user', JSON.stringify(user.value))
+      user.value = validatedUser
 
-      return response.data
+      // Update localStorage with validated user data
+      localStorage.setItem('user', JSON.stringify(validatedUser))
+
+      return validatedUser
     } catch (e) {
+      console.error('Detailed fetch user data error:', e)
+
+      // More detailed error logging
+      if (axios.isAxiosError(e)) {
+        console.error('Axios Error Details:', {
+          response: e.response?.data,
+          status: e.response?.status,
+          headers: e.response?.headers,
+        })
+      }
+
       error.value = e instanceof Error ? e.message : 'Failed to fetch user data'
       throw error.value
     } finally {
