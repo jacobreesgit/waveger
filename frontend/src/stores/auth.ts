@@ -83,28 +83,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const testToken = async () => {
-    try {
-      if (!token.value) {
-        throw new Error('No token available')
-      }
-
-      console.log('Testing token:', token.value)
-
-      const response = await axios.get('https://wavegerpython.onrender.com/api/auth/verify-token', {
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      })
-
-      console.log('Token verification result:', response.data)
-      return response.data.valid
-    } catch (e) {
-      console.error('Token verification error:', e)
-      return false
-    }
-  }
-
   const logout = () => {
     user.value = null
     token.value = null
