@@ -129,3 +129,53 @@ def login():
     except Exception as e:
         logging.error(f"Login error: {e}")
         return jsonify({"error": "Login failed"}), 500
+
+
+@auth_bp.route("/user", methods=["GET"])
+@jwt_required()
+def get_user_data():
+    try:
+        # Get the user ID from the JWT token
+        user_id = get_jwt_identity()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        try:
+            # Fetch user details including additional fields
+            cursor.execute("""
+                SELECT 
+                    id, username, email, 
+                    created_at, last_login, 
+                    total_points, weekly_points, 
+                    predictions_made, correct_predictions 
+                FROM users 
+                WHERE id = %s
+            """, (user_id,))
+            
+            user = cursor.fetchone()
+
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+
+            # Convert to dictionary for easier JSON serialization
+            user_data = {
+                "id": user[0],
+                "username": user[1],
+                "email": user[2],
+                "created_at": user[3].isoformat() if user[3] else None,
+                "last_login": user[4].isoformat() if user[4] else None,
+                "total_points": user[5],
+                "weekly_points": user[6],
+                "predictions_made": user[7],
+                "correct_predictions": user[8]
+            }
+
+            return jsonify(user_data), 200
+
+        finally:
+            cursor.close()
+            conn.close()
+
+    except Exception as e:
+        logging.error(f"Error fetching user data: {e}")

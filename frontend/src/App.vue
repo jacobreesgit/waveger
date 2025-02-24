@@ -37,7 +37,7 @@ const handleLogout = () => {
       </RouterLink>
     </nav>
     <div v-if="authStore.user" class="user-menu">
-      <span>{{ authStore.user.username }}</span>
+      <span>{{ authStore.user }}</span>
       <button @click="handleLogout" class="logout-button">Logout</button>
     </div>
   </header>

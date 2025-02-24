@@ -1,4 +1,3 @@
-// src/stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
@@ -18,6 +17,42 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = JSON.parse(savedUser)
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
       console.log('Initialized with token:', savedToken)
+
+      // Attempt to fetch fresh user data
+      fetchUserData().catch((err) => {
+        console.error('Failed to fetch user data during initialization:', err)
+      })
+    }
+  }
+
+  const fetchUserData = async () => {
+    if (!token.value) {
+      throw new Error('No authentication token available')
+    }
+
+    try {
+      loading.value = true
+      const response = await axios.get<User>('https://wavegerpython.onrender.com/api/auth/user', {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      })
+
+      // Update user data
+      user.value = {
+        ...user.value,
+        ...response.data,
+      }
+
+      // Update localStorage with fresh user data
+      localStorage.setItem('user', JSON.stringify(user.value))
+
+      return response.data
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to fetch user data'
+      throw error.value
+    } finally {
+      loading.value = false
     }
   }
 
@@ -39,6 +74,9 @@ export const useAuthStore = defineStore('auth', () => {
       // Set the Authorization header after login
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
       console.log('Logged in with token:', response.data.access_token)
+
+      // Fetch additional user data
+      await fetchUserData()
 
       return response.data
     } catch (e) {
@@ -75,6 +113,9 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('user', JSON.stringify(response.data.user))
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
 
+      // Fetch additional user data
+      await fetchUserData()
+
       return response.data
     } catch (e) {
       console.error('Registration error:', e)
@@ -98,5 +139,6 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
+    fetchUserData,
   }
 })
