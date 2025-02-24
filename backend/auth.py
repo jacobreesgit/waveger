@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
+from flask_bcrypt import Bcrypt
 import psycopg2
 from datetime import datetime, timedelta
 import os
 import logging
-from __init__ import bcrypt
 
 auth_bp = Blueprint("auth", __name__)
+bcrypt = Bcrypt()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -17,11 +18,14 @@ def get_db_connection():
 def register():
     try:
         data = request.get_json()
+        logging.info(f"Received registration request: {data}")
+        
         username = data.get("username")
         email = data.get("email")
         password = data.get("password")
 
         if not all([username, email, password]):
+            logging.error("Missing required fields")
             return jsonify({"error": "All fields are required"}), 400
 
         password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -30,15 +34,18 @@ def register():
         cursor = conn.cursor()
 
         try:
+            logging.info("Attempting to insert new user")
             cursor.execute(
                 "INSERT INTO users (username, email, password_hash) VALUES (%s, %s, %s) RETURNING id",
                 (username, email, password_hash)
             )
             user_id = cursor.fetchone()[0]
             conn.commit()
+            logging.info(f"Successfully registered user {username}")
 
             access_token = create_access_token(identity=user_id)
-            return jsonify({
+            
+            response = jsonify({
                 "message": "Registration successful",
                 "access_token": access_token,
                 "user": {
@@ -46,23 +53,30 @@ def register():
                     "username": username,
                     "email": email
                 }
-            }), 201
+            })
+            
+            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            return response, 201
 
         except psycopg2.IntegrityError as e:
             conn.rollback()
+            logging.error(f"Database integrity error: {e}")
             if "username" in str(e):
                 return jsonify({"error": "Username already taken"}), 409
             if "email" in str(e):
                 return jsonify({"error": "Email already registered"}), 409
             return jsonify({"error": "Registration failed"}), 400
-
+        except Exception as e:
+            conn.rollback()
+            logging.error(f"Unexpected database error: {e}")
+            return jsonify({"error": "Registration failed"}), 500
         finally:
             cursor.close()
             conn.close()
 
     except Exception as e:
-        logging.error(f"Registration error: {e}")
-        return jsonify({"error": "Registration failed"}), 500
+        logging.error(f"General registration error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -93,14 +107,18 @@ def login():
                 conn.commit()
 
                 access_token = create_access_token(identity=user[0])
-                return jsonify({
+                
+                response = jsonify({
                     "access_token": access_token,
                     "user": {
                         "id": user[0],
                         "username": user[1],
                         "email": user[2]
                     }
-                }), 200
+                })
+                
+                response.headers.add('Access-Control-Allow-Credentials', 'true')
+                return response, 200
             else:
                 return jsonify({"error": "Invalid credentials"}), 401
 
@@ -117,6 +135,10 @@ def login():
 def get_profile():
     try:
         user_id = get_jwt_identity()
+        
+        if not user_id:
+            return jsonify({"error": "Invalid token or missing user ID"}), 401
+            
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -138,10 +160,10 @@ def get_profile():
                     "email": user[1],
                     "created_at": user[2],
                     "last_login": user[3],
-                    "total_points": user[4],
-                    "weekly_points": user[5],
-                    "predictions_made": user[6],
-                    "correct_predictions": user[7]
+                    "total_points": user[4] or 0,
+                    "weekly_points": user[5] or 0,
+                    "predictions_made": user[6] or 0,
+                    "correct_predictions": user[7] or 0
                 }), 200
             else:
                 return jsonify({"error": "User not found"}), 404
@@ -196,10 +218,10 @@ def update_profile():
                     "email": updated_user[1],
                     "created_at": updated_user[2],
                     "last_login": updated_user[3],
-                    "total_points": updated_user[4],
-                    "weekly_points": updated_user[5],
-                    "predictions_made": updated_user[6],
-                    "correct_predictions": updated_user[7]
+                    "total_points": updated_user[4] or 0,
+                    "weekly_points": updated_user[5] or 0,
+                    "predictions_made": updated_user[6] or 0,
+                    "correct_predictions": updated_user[7] or 0
                 }), 200
             else:
                 return jsonify({"error": "User not found"}), 404

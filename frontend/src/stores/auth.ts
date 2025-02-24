@@ -81,11 +81,28 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       error.value = null
+
+      // Check if token exists
+      if (!token.value) {
+        throw new Error('Not authenticated')
+      }
+
+      // Ensure the authorization header is set
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+
       const response = await axios.get<User>('https://wavegerpython.onrender.com/api/auth/profile')
+
       user.value = response.data
       return response.data
     } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
+      console.error('Profile fetch error:', e)
+      if (axios.isAxiosError(e) && e.response?.status === 422) {
+        // Invalid token - clear auth state
+        logout()
+        error.value = 'Session expired. Please log in again.'
+      } else {
+        error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
+      }
       throw error.value
     } finally {
       loading.value = false

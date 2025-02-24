@@ -81,6 +81,12 @@ onMounted(() => {
 
 <template>
   <div class="profile-container">
+    <div v-if="!authStore.token" class="auth-required">
+      <h2>Authentication Required</h2>
+      <p>Please log in to view your profile.</p>
+      <router-link to="/login" class="login-button">Log In</router-link>
+    </div>
+
     <div v-if="loading" class="loading">
       <div class="spinner"></div>
       Loading profile...
@@ -347,5 +353,24 @@ input:focus {
   border-radius: 4px;
   margin-top: 16px;
   cursor: pointer;
+}
+
+.auth-required {
+  text-align: center;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login-button {
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  margin-top: 20px;
+  font-weight: 500;
 }
 </style>
