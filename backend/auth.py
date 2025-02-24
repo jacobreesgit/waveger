@@ -134,8 +134,14 @@ def login():
 @jwt_required()
 def get_profile():
     try:
+        # Debug the JWT token
+        headers = dict(request.headers)
+        auth_header = headers.get('Authorization', '')
+        logging.info(f"Auth header: {auth_header}")
+        
         # Get the identity of the current user
         current_user_id = get_jwt_identity()
+        logging.info(f"Current user ID from JWT: {current_user_id}")
         
         if not current_user_id:
             logging.error("JWT identity not found")
@@ -244,3 +250,26 @@ def update_profile():
     except Exception as e:
         logging.error(f"Profile update error: {e}")
         return jsonify({"error": "Failed to update profile"}), 500
+
+@auth_bp.route("/verify-token", methods=["GET"])
+@jwt_required()
+def verify_token():
+    try:
+        # Debug the JWT token
+        headers = dict(request.headers)
+        auth_header = headers.get('Authorization', '')
+        logging.info(f"Auth header: {auth_header}")
+        
+        current_user_id = get_jwt_identity()
+        logging.info(f"Current user ID from JWT: {current_user_id}")
+        
+        return jsonify({
+            "valid": True,
+            "user_id": current_user_id
+        }), 200
+    except Exception as e:
+        logging.error(f"Token verification error: {e}")
+        return jsonify({
+            "valid": False,
+            "error": str(e)
+        }), 401

@@ -18,6 +18,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = JSON.parse(savedUser)
       // Set the Authorization header for all requests
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
+      console.log('Initialized with token:', savedToken)
     }
   }
 
@@ -38,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Set the Authorization header after login
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
+      console.log('Logged in with token:', response.data.access_token)
 
       return response.data
     } catch (e) {
@@ -46,39 +48,6 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       loading.value = false
     }
-  }
-
-  const register = async (credentials: RegisterCredentials) => {
-    try {
-      loading.value = true
-      error.value = null
-      const response = await axios.post<AuthResponse>(
-        'https://wavegerpython.onrender.com/api/auth/register',
-        credentials,
-      )
-
-      token.value = response.data.access_token
-      user.value = response.data.user
-
-      localStorage.setItem('token', response.data.access_token)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
-
-      return response.data
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to register'
-      throw error.value
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const logout = () => {
-    user.value = null
-    token.value = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    delete axios.defaults.headers.common['Authorization']
   }
 
   const fetchProfile = async () => {
@@ -90,6 +59,8 @@ export const useAuthStore = defineStore('auth', () => {
       if (!token.value) {
         throw new Error('Authentication required')
       }
+
+      console.log('Using token for profile request:', token.value)
 
       // Explicitly set the token in the request header for this call
       const response = await axios.get<User>(
@@ -105,12 +76,68 @@ export const useAuthStore = defineStore('auth', () => {
       return response.data
     } catch (e) {
       console.error('Profile fetch error:', e)
-      if (axios.isAxiosError(e) && e.response?.status === 422) {
-        // Token validation failed - clear auth state
-        logout()
-        error.value = 'Session expired. Please log in again.'
+      error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const testToken = async () => {
+    try {
+      if (!token.value) {
+        throw new Error('No token available')
+      }
+
+      console.log('Testing token:', token.value)
+
+      const response = await axios.get('https://wavegerpython.onrender.com/api/auth/verify-token', {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      })
+
+      console.log('Token verification result:', response.data)
+      return response.data.valid
+    } catch (e) {
+      console.error('Token verification error:', e)
+      return false
+    }
+  }
+
+  const logout = () => {
+    user.value = null
+    token.value = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    delete axios.defaults.headers.common['Authorization']
+  }
+
+  const register = async (credentials: RegisterCredentials) => {
+    try {
+      loading.value = true
+      error.value = null
+      console.log('Sending registration request:', credentials)
+      const response = await axios.post<AuthResponse>(
+        'https://wavegerpython.onrender.com/api/auth/register',
+        credentials,
+      )
+      console.log('Registration response:', response.data)
+
+      token.value = response.data.access_token
+      user.value = response.data.user
+
+      localStorage.setItem('token', response.data.access_token)
+      localStorage.setItem('user', JSON.stringify(response.data.user))
+      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
+
+      return response.data
+    } catch (e) {
+      console.error('Registration error:', e)
+      if (axios.isAxiosError(e)) {
+        error.value = e.response?.data?.error || 'Registration failed'
       } else {
-        error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
+        error.value = e instanceof Error ? e.message : 'Failed to register'
       }
       throw error.value
     } finally {
@@ -125,6 +152,11 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await axios.put<User>(
         'https://wavegerpython.onrender.com/api/auth/profile',
         data,
+        {
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+        },
       )
 
       // Update user data
@@ -153,5 +185,6 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     fetchProfile,
     updateProfile,
+    testToken,
   }
 })
