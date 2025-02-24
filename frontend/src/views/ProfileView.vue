@@ -20,11 +20,12 @@ const handleLogout = () => {
 
 const predictionAccuracy = computed(() => {
   const user = authStore.user
-  if (!user || user.predictions_made === 0) return '0%'
+  const predictionsMade = user?.predictions_made ?? 0
+  const correctPredictions = user?.correct_predictions ?? 0
 
-  const accuracy = user.correct_predictions
-    ? (user.correct_predictions / user.predictions_made) * 100
-    : 0
+  if (predictionsMade === 0) return '0%'
+
+  const accuracy = predictionsMade > 0 ? (correctPredictions / predictionsMade) * 100 : 0
 
   return `${accuracy.toFixed(1)}%`
 })
