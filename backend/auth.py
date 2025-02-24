@@ -1,13 +1,12 @@
 from flask import Blueprint, request, jsonify
-from flask_bcrypt import Bcrypt
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 import psycopg2
 from datetime import datetime, timedelta
 import os
 import logging
+from __init__ import bcrypt
 
 auth_bp = Blueprint("auth", __name__)
-bcrypt = Bcrypt()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
