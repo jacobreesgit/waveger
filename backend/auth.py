@@ -153,3 +153,68 @@ def get_profile():
     except Exception as e:
         logging.error(f"Profile fetch error: {e}")
         return jsonify({"error": "Failed to fetch profile"}), 500
+
+@auth_bp.route("/profile", methods=["PUT"])
+@jwt_required()
+def update_profile():
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        username = data.get("username")
+        email = data.get("email")
+        
+        if not all([username, email]):
+            return jsonify({"error": "All fields are required"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Check if username or email is already taken by another user
+            cursor.execute(
+                "SELECT id FROM users WHERE (username = %s OR email = %s) AND id != %s",
+                (username, email, user_id)
+            )
+            existing = cursor.fetchone()
+            
+            if existing:
+                return jsonify({"error": "Username or email already taken"}), 409
+                
+            # Update user profile
+            cursor.execute(
+                "UPDATE users SET username = %s, email = %s WHERE id = %s RETURNING username, email, created_at, last_login, total_points, weekly_points, predictions_made, correct_predictions",
+                (username, email, user_id)
+            )
+            
+            updated_user = cursor.fetchone()
+            conn.commit()
+            
+            if updated_user:
+                return jsonify({
+                    "username": updated_user[0],
+                    "email": updated_user[1],
+                    "created_at": updated_user[2],
+                    "last_login": updated_user[3],
+                    "total_points": updated_user[4],
+                    "weekly_points": updated_user[5],
+                    "predictions_made": updated_user[6],
+                    "correct_predictions": updated_user[7]
+                }), 200
+            else:
+                return jsonify({"error": "User not found"}), 404
+                
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if "username" in str(e):
+                return jsonify({"error": "Username already taken"}), 409
+            if "email" in str(e):
+                return jsonify({"error": "Email already registered"}), 409
+            return jsonify({"error": "Update failed"}), 400
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logging.error(f"Profile update error: {e}")
+        return jsonify({"error": "Failed to update profile"}), 500

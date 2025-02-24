@@ -10,6 +10,7 @@ const routes = [
   { path: '/', name: 'Home', title: 'Current Charts' },
   { path: '/login', name: 'Login', title: 'Login' },
   { path: '/register', name: 'Register', title: 'Register' },
+  { path: '/profile', name: 'Profile', title: 'Profile' },
 ]
 
 onMounted(() => {

@@ -92,6 +92,30 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const updateProfile = async (data: { username: string; email: string }) => {
+    try {
+      loading.value = true
+      error.value = null
+      const response = await axios.put<User>(
+        'https://wavegerpython.onrender.com/api/auth/profile',
+        data,
+      )
+
+      // Update user data
+      user.value = { ...user.value, ...response.data }
+
+      // Update localStorage
+      localStorage.setItem('user', JSON.stringify(user.value))
+
+      return response.data
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Failed to update profile'
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     token,
@@ -102,5 +126,6 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     fetchProfile,
+    updateProfile,
   }
 })
