@@ -2,9 +2,11 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useChartsStore } from '@/stores/charts'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const chartsStore = useChartsStore()
 
 const routes = computed(() => {
   const baseRoutes = [{ path: '/', name: 'Home', title: 'Current Charts' }]
@@ -20,8 +22,12 @@ const routes = computed(() => {
   return baseRoutes
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // Initialize auth store
   authStore.initialize()
+
+  // Initialize charts store
+  await chartsStore.initialize()
 })
 
 const handleLogout = () => {

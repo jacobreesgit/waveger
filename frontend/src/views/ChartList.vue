@@ -52,6 +52,27 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
+// Function to parse the chart week string into a standardized date
+const parseChartDate = (chartWeek: string): string => {
+  try {
+    // Extract the date part from format like "Week of February 22, 2025"
+    const dateMatch = chartWeek.match(/Week of ([A-Za-z]+ \d+, \d+)/)
+    if (!dateMatch || !dateMatch[1]) {
+      console.error('Failed to parse chart week format:', chartWeek)
+      return chartWeek // Return original if parsing fails
+    }
+
+    // Parse the extracted date into a Date object
+    const date = new Date(dateMatch[1])
+
+    // Return in YYYY-MM-DD format
+    return date.toISOString().split('T')[0]
+  } catch (e) {
+    console.error('Error parsing chart date:', e)
+    return chartWeek // Return original if parsing fails
+  }
+}
+
 const setupIntersectionObserver = () => {
   // Destroy existing observer if it exists
   if (observer.value) {
@@ -88,22 +109,77 @@ const setupIntersectionObserver = () => {
   })
 }
 
-onMounted(async () => {
-  await appleMusicStore.fetchToken()
+// Check if we need to reload data based on route changes or selections
+const shouldReloadData = (chartId: string, date: string): boolean => {
+  // If no chart data is loaded yet, we need to load
+  if (!store.currentChart) {
+    console.log('No current chart data, need to load')
+    return true
+  }
 
-  const initialDate = route.params.date
-    ? parseDateFromURL(route.params.date as string)
-    : new Date().toISOString().split('T')[0]
+  // Check if the chart ID has changed
+  const currentChartId = store.selectedChartId.replace('/', '')
+  if (chartId !== currentChartId) {
+    console.log(`Chart ID changed from ${currentChartId} to ${chartId}, need to reload`)
+    return true
+  }
 
-  console.log('Using initial date:', initialDate)
+  // Parse the current chart week to a comparable format
+  const currentChartDate = parseChartDate(store.currentChart.week)
 
-  await store.fetchChartDetails({
-    id: 'hot-100',
-    week: initialDate,
-    range: '1-10',
+  // Log both dates for debugging
+  console.log('Comparing dates:', {
+    currentChartWeek: store.currentChart.week,
+    parsedCurrentDate: currentChartDate,
+    requestedDate: date,
   })
 
-  // Setup intersection observer after initial fetch
+  // Check if the dates are different (allowing a small window for differences in week start/end)
+  // We'll consider dates within 3 days as the same chart week
+  try {
+    const currentDate = new Date(currentChartDate)
+    const requestedDate = new Date(date)
+    const diffTime = Math.abs(requestedDate.getTime() - currentDate.getTime())
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays > 3) {
+      console.log(
+        `Date changed from ${store.currentChart.week} to ${date} (${diffDays} days difference), need to reload`,
+      )
+      return true
+    }
+  } catch (e) {
+    console.error('Error comparing dates:', e)
+    // If date comparison fails, assume we need to reload to be safe
+    return true
+  }
+
+  console.log('No need to reload data, using existing data')
+  return false
+}
+
+onMounted(async () => {
+  // Initialize Apple Music token regardless
+  await appleMusicStore.fetchToken()
+
+  // Determine the chart ID and date to display
+  const urlDate = route.params.date as string | undefined
+  const formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
+
+  // Default to hot-100 if not specified
+  const chartId = (route.query.id as string) || 'hot-100'
+
+  // Check if we need to load new data
+  if (shouldReloadData(chartId, formattedDate)) {
+    console.log(`Loading data for chart: ${chartId}, date: ${formattedDate}`)
+    await store.fetchChartDetails({
+      id: chartId,
+      week: formattedDate,
+      range: '1-10',
+    })
+  }
+
+  // Setup intersection observer after ensuring data is loaded
   setupIntersectionObserver()
 })
 
@@ -146,6 +222,47 @@ watch(
   (newError) => {
     if (newError && observer.value) {
       observer.value.disconnect()
+    }
+  },
+)
+
+// Watch for route changes to reload data if necessary
+watch(
+  () => route.params.date,
+  async (newDate) => {
+    if (newDate) {
+      const formattedDate = parseDateFromURL(newDate as string)
+      const chartId = (route.query.id as string) || 'hot-100'
+
+      if (shouldReloadData(chartId, formattedDate)) {
+        await store.fetchChartDetails({
+          id: chartId,
+          week: formattedDate,
+          range: '1-10',
+        })
+      }
+    }
+  },
+)
+
+// Watch for chart ID changes via query params
+watch(
+  () => route.query.id,
+  async (newChartId) => {
+    if (newChartId) {
+      const chartId = newChartId as string
+      const urlDate = route.params.date as string | undefined
+      const formattedDate = urlDate
+        ? parseDateFromURL(urlDate)
+        : new Date().toISOString().split('T')[0]
+
+      if (shouldReloadData(chartId, formattedDate)) {
+        await store.fetchChartDetails({
+          id: chartId,
+          week: formattedDate,
+          range: '1-10',
+        })
+      }
     }
   },
 )
@@ -283,6 +400,7 @@ watch(
 </template>
 
 <style scoped>
+/* Styles remain unchanged */
 .chart-list {
   max-width: 1200px;
   margin: 0 auto;

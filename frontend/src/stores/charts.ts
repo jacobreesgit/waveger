@@ -1,3 +1,4 @@
+// charts.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChartData, ChartOption } from '@/types/api'
@@ -13,6 +14,40 @@ export const useChartsStore = defineStore('charts', () => {
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
   const topChartsSource = ref<'api' | 'database'>('api')
+  const initialized = ref(false)
+
+  // New initialize method to be called once in App.vue
+  const initialize = async () => {
+    if (initialized.value) {
+      console.log('Store - Charts already initialized, skipping')
+      return
+    }
+
+    try {
+      loading.value = true
+      error.value = null
+      console.log('Store - Initializing charts store')
+
+      // Fetch available charts
+      await fetchAvailableCharts()
+
+      // Fetch default chart data
+      const today = new Date().toISOString().split('T')[0]
+      await fetchChartDetails({
+        id: 'hot-100',
+        week: today,
+        range: '1-10',
+      })
+
+      initialized.value = true
+      console.log('Store - Charts initialized successfully')
+    } catch (e) {
+      console.error('Store - Failed to initialize charts:', e)
+      error.value = e instanceof Error ? e.message : 'Failed to initialize charts'
+    } finally {
+      loading.value = false
+    }
+  }
 
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
@@ -21,7 +56,7 @@ export const useChartsStore = defineStore('charts', () => {
       hasMore.value = true
       currentPage.value = 1
       selectedChartId.value = params.id || 'hot-100/'
-      console.log('Store - Initial fetch with params:', params)
+      console.log('Store - Fetching chart details with params:', params)
       const response = await getChartDetails(params)
       currentChart.value = response.data
       dataSource.value = response.source
@@ -105,8 +140,10 @@ export const useChartsStore = defineStore('charts', () => {
     hasMore,
     dataSource,
     topChartsSource,
+    initialize,
     fetchChartDetails,
     fetchMoreSongs,
     fetchAvailableCharts,
+    initialized,
   }
 })
