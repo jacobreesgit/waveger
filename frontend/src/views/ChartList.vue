@@ -18,6 +18,7 @@ const loadMoreTrigger = ref<HTMLElement | null>(null)
 const observer = ref<IntersectionObserver | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
+const isLoadingMore = ref(false)
 
 const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
@@ -63,13 +64,19 @@ const setupIntersectionObserver = () => {
       observer.value = new IntersectionObserver(
         async (entries) => {
           const target = entries[0]
-          if (target.isIntersecting && !store.loading && store.hasMore && !store.error) {
+          if (target.isIntersecting && !isLoadingMore.value && store.hasMore && !store.error) {
             console.log('Intersection observed, loading more songs')
-            await store.fetchMoreSongs()
+            isLoadingMore.value = true
+            try {
+              await store.fetchMoreSongs()
+            } catch (error) {
+              console.error('Error loading more songs:', error)
+            } finally {
+              isLoadingMore.value = false
+            }
           }
         },
         {
-          // Optional: add root margin or threshold if needed
           rootMargin: '200px', // Start loading before the element is fully in view
         },
       )
@@ -116,13 +123,16 @@ watch(
   },
 )
 
+// Optimize Apple Music data fetching
 watch(
   () => store.currentChart?.songs,
   async (newSongs) => {
     if (newSongs) {
-      songData.value.clear()
+      const existingSongPositions = new Set(songData.value.keys())
+
       for (const song of newSongs) {
-        if (!songData.value.has(`${song.position}`)) {
+        const songPosition = `${song.position}`
+        if (!existingSongPositions.has(songPosition)) {
           await fetchAppleMusicData(song)
         }
       }
@@ -146,7 +156,7 @@ watch(
     <ChartDatePicker />
     <ChartSelector />
 
-    <div v-if="store.loading" class="loading">
+    <div v-if="store.loading && !store.currentChart" class="loading">
       <div class="loading-spinner"></div>
       Loading charts...
     </div>
@@ -168,7 +178,7 @@ watch(
         <p class="chart-week">{{ store.currentChart.week }}</p>
       </div>
 
-      <div class="songs">
+      <transition-group name="song-list" tag="div" class="songs">
         <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
           <img
@@ -253,16 +263,21 @@ watch(
           </div>
         </div>
 
-        <div v-if="store.hasMore" ref="loadMoreTrigger" class="load-more-trigger">
-          <div v-if="store.loading" class="loading-more">
+        <div
+          v-if="store.hasMore"
+          ref="loadMoreTrigger"
+          :key="'load-more'"
+          class="load-more-trigger"
+        >
+          <div v-if="isLoadingMore" class="loading-more">
             <div class="loading-spinner"></div>
             Loading more songs...
           </div>
           <div v-else class="load-more-text">Scroll for more songs</div>
         </div>
 
-        <div v-else class="end-message">No more songs to load</div>
-      </div>
+        <div v-else :key="'end-message'" class="end-message">No more songs to load</div>
+      </transition-group>
     </div>
   </div>
 </template>
@@ -504,5 +519,20 @@ watch(
   padding: 20px;
   color: #6c757d;
   font-style: italic;
+}
+
+.song-list-enter-active,
+.song-list-leave-active {
+  transition: all 0.5s ease;
+}
+
+.song-list-enter-from,
+.song-list-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.song-list-move {
+  transition: transform 0.5s ease;
 }
 </style>

@@ -16,7 +16,6 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedToken && savedUser) {
       token.value = savedToken
       user.value = JSON.parse(savedUser)
-      // Set the Authorization header for all requests
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
       console.log('Initialized with token:', savedToken)
     }
@@ -44,39 +43,6 @@ export const useAuthStore = defineStore('auth', () => {
       return response.data
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to login'
-      throw error.value
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const fetchProfile = async () => {
-    try {
-      loading.value = true
-      error.value = null
-
-      // Check if token exists
-      if (!token.value) {
-        throw new Error('Authentication required')
-      }
-
-      console.log('Using token for profile request:', token.value)
-
-      // Explicitly set the token in the request header for this call
-      const response = await axios.get<User>(
-        'https://wavegerpython.onrender.com/api/auth/profile',
-        {
-          headers: {
-            Authorization: `Bearer ${token.value}`,
-          },
-        },
-      )
-
-      user.value = response.data
-      return response.data
-    } catch (e) {
-      console.error('Profile fetch error:', e)
-      error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
       throw error.value
     } finally {
       loading.value = false
@@ -123,55 +89,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const updateProfile = async (data: { username: string; email: string }) => {
-    try {
-      loading.value = true
-      error.value = null
-      const response = await axios.put<User>(
-        'https://wavegerpython.onrender.com/api/auth/profile',
-        data,
-        {
-          headers: {
-            Authorization: `Bearer ${token.value}`,
-          },
-        },
-      )
-
-      // Update user data
-      user.value = { ...user.value, ...response.data }
-
-      // Update localStorage
-      localStorage.setItem('user', JSON.stringify(user.value))
-
-      return response.data
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to update profile'
-      throw error.value
-    } finally {
-      loading.value = false
-    }
-  }
-
-  const testToken = async () => {
-    try {
-      if (!token.value) {
-        throw new Error('No token available')
-      }
-
-      const response = await axios.get('https://wavegerpython.onrender.com/api/auth/verify-token', {
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      })
-
-      console.log('Token verification result:', response.data)
-      return response.data.valid
-    } catch (e) {
-      console.error('Token verification error:', e)
-      return false
-    }
-  }
-
   return {
     user,
     token,
@@ -181,8 +98,5 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     logout,
-    fetchProfile,
-    updateProfile,
-    testToken,
   }
 })

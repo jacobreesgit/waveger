@@ -1,17 +1,22 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const routes = [
-  { path: '/', name: 'Home', title: 'Current Charts' },
-  { path: '/login', name: 'Login', title: 'Login' },
-  { path: '/register', name: 'Register', title: 'Register' },
-  { path: '/profile', name: 'Profile', title: 'Profile' },
-]
+const routes = computed(() => {
+  const baseRoutes = [{ path: '/', name: 'Home', title: 'Current Charts' }]
+  if (!authStore.user) {
+    baseRoutes.push(
+      { path: '/login', name: 'Login', title: 'Login' },
+      { path: '/register', name: 'Register', title: 'Register' },
+    )
+  }
+
+  return baseRoutes
+})
 
 onMounted(() => {
   authStore.initialize()
