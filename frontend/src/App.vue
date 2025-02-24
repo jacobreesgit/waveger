@@ -8,11 +8,13 @@ const authStore = useAuthStore()
 
 const routes = computed(() => {
   const baseRoutes = [{ path: '/', name: 'Home', title: 'Current Charts' }]
-  if (!authStore.user) {
-    baseRoutes.push(
-      { path: '/login', name: 'Login', title: 'Login' },
-      { path: '/register', name: 'Register', title: 'Register' },
-    )
+
+  if (authStore.user) {
+    // Add profile route when user is logged in
+    baseRoutes.push({ path: '/profile', name: 'Profile', title: 'Profile' })
+  } else {
+    // Add login/register routes when no user is logged in
+    baseRoutes.push({ path: '/login', name: 'Login', title: 'Login' })
   }
 
   return baseRoutes
@@ -36,10 +38,6 @@ const handleLogout = () => {
         {{ route.title }}
       </RouterLink>
     </nav>
-    <div v-if="authStore.user" class="user-menu">
-      <span>{{ authStore.user }}</span>
-      <button @click="handleLogout" class="logout-button">Logout</button>
-    </div>
   </header>
 
   <main>

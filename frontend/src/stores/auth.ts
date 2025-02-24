@@ -45,31 +45,6 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const refreshAccessToken = async () => {
-    if (!refreshToken.value) {
-      throw new Error('No refresh token available')
-    }
-
-    try {
-      const response = await axios.post<AuthResponse>(`${BASE_URL}/refresh`, {
-        refresh_token: refreshToken.value,
-      })
-
-      // Update tokens
-      token.value = response.data.access_token
-      localStorage.setItem('token', response.data.access_token)
-
-      // Set new Authorization header
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
-
-      return response.data
-    } catch (e) {
-      console.error('Token refresh error:', e)
-      logout()
-      throw e
-    }
-  }
-
   const fetchUserData = async () => {
     if (!token.value) {
       console.error('No token available for user data fetch')
@@ -150,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.data.access_token
       refreshToken.value = response.data.refresh_token
 
-      // Store user data
+      // Store initial user data from login response
       user.value = response.data.user
 
       // Persist in localStorage
@@ -160,6 +135,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Set the Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
+
+      // Fetch complete user data
+      try {
+        await fetchUserData()
+      } catch (fetchError) {
+        console.error('Failed to fetch full user data:', fetchError)
+        // Continue even if full user data fetch fails
+      }
 
       return response.data
     } catch (e) {
@@ -189,7 +172,7 @@ export const useAuthStore = defineStore('auth', () => {
       token.value = response.data.access_token
       refreshToken.value = response.data.refresh_token
 
-      // Store user data
+      // Store initial user data from register response
       user.value = response.data.user
 
       // Persist in localStorage
@@ -199,6 +182,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Set the Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
+
+      // Fetch complete user data
+      try {
+        await fetchUserData()
+      } catch (fetchError) {
+        console.error('Failed to fetch full user data:', fetchError)
+        // Continue even if full user data fetch fails
+      }
 
       return response.data
     } catch (e) {
@@ -214,6 +205,31 @@ export const useAuthStore = defineStore('auth', () => {
       throw error.value
     } finally {
       loading.value = false
+    }
+  }
+
+  const refreshAccessToken = async () => {
+    if (!refreshToken.value) {
+      throw new Error('No refresh token available')
+    }
+
+    try {
+      const response = await axios.post<AuthResponse>(`${BASE_URL}/refresh`, {
+        refresh_token: refreshToken.value,
+      })
+
+      // Update tokens
+      token.value = response.data.access_token
+      localStorage.setItem('token', response.data.access_token)
+
+      // Set new Authorization header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
+
+      return response.data
+    } catch (e) {
+      console.error('Token refresh error:', e)
+      logout()
+      throw e
     }
   }
 
