@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import type { AppleMusicData } from '@/types/appleMusic'
@@ -51,22 +51,38 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
-onMounted(async () => {
-  await appleMusicStore.fetchToken()
-
-  observer.value = new IntersectionObserver(async (entries) => {
-    const target = entries[0]
-    if (target.isIntersecting && !store.loading && store.hasMore && !store.error) {
-      console.log('Intersection observed, loading more songs')
-      await store.fetchMoreSongs()
-    }
-  })
-
-  if (loadMoreTrigger.value) {
-    observer.value.observe(loadMoreTrigger.value)
+const setupIntersectionObserver = () => {
+  // Destroy existing observer if it exists
+  if (observer.value) {
+    observer.value.disconnect()
   }
 
-  console.log('Route params:', route.params)
+  // Wait for the next tick to ensure the DOM is updated
+  nextTick(() => {
+    if (loadMoreTrigger.value) {
+      observer.value = new IntersectionObserver(
+        async (entries) => {
+          const target = entries[0]
+          if (target.isIntersecting && !store.loading && store.hasMore && !store.error) {
+            console.log('Intersection observed, loading more songs')
+            await store.fetchMoreSongs()
+          }
+        },
+        {
+          // Optional: add root margin or threshold if needed
+          rootMargin: '200px', // Start loading before the element is fully in view
+        },
+      )
+
+      observer.value.observe(loadMoreTrigger.value)
+    } else {
+      console.warn('Load more trigger element not found')
+    }
+  })
+}
+
+onMounted(async () => {
+  await appleMusicStore.fetchToken()
 
   const initialDate = route.params.date
     ? parseDateFromURL(route.params.date as string)
@@ -74,43 +90,32 @@ onMounted(async () => {
 
   console.log('Using initial date:', initialDate)
 
-  store.fetchChartDetails({
+  await store.fetchChartDetails({
     id: 'hot-100',
     week: initialDate,
     range: '1-10',
   })
+
+  // Setup intersection observer after initial fetch
+  setupIntersectionObserver()
 })
 
 onUnmounted(() => {
-  if (observer.value && loadMoreTrigger.value) {
-    observer.value.unobserve(loadMoreTrigger.value)
+  if (observer.value) {
+    observer.value.disconnect()
   }
 })
 
+// Watch for changes in chart data to setup observer
 watch(
-  () => store.currentChart?.songs,
-  async (newSongs) => {
-    if (newSongs) {
-      for (const song of newSongs) {
-        if (!songData.value.has(`${song.position}`)) {
-          await fetchAppleMusicData(song)
-        }
-      }
-    }
-  },
-  { deep: true },
-)
-
-watch(
-  () => store.error,
-  (newError) => {
-    if (newError && observer.value && loadMoreTrigger.value) {
-      observer.value.unobserve(loadMoreTrigger.value)
+  () => store.hasMore,
+  (hasMore) => {
+    if (hasMore) {
+      setupIntersectionObserver()
     }
   },
 )
 
-// Watch for changes in chart data (including date changes)
 watch(
   () => store.currentChart?.songs,
   async (newSongs) => {
@@ -124,6 +129,15 @@ watch(
     }
   },
   { deep: true },
+)
+
+watch(
+  () => store.error,
+  (newError) => {
+    if (newError && observer.value) {
+      observer.value.disconnect()
+    }
+  },
 )
 </script>
 
