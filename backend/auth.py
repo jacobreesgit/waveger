@@ -248,3 +248,49 @@ def get_user_data():
     except Exception as e:
         logger.error(f"Unexpected error in get_user_data: {e}")
         return jsonify({"error": "Unexpected server error", "details": str(e)}), 500
+
+@auth_bp.route("/check-availability", methods=["GET"])
+def check_availability():
+    """
+    Check if a username or email is already in use.
+    
+    Query parameters:
+    - username: username to check
+    - email: email to check
+    """
+    username = request.args.get('username')
+    email = request.args.get('email')
+
+    if not username and not email:
+        return jsonify({"error": "Please provide username or email to check"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        result = {}
+
+        # Check username availability
+        if username:
+            cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM users WHERE username = %s)",
+                (username,)
+            )
+            result['username_exists'] = cursor.fetchone()[0]
+
+        # Check email availability
+        if email:
+            cursor.execute(
+                "SELECT EXISTS(SELECT 1 FROM users WHERE email = %s)",
+                (email,)
+            )
+            result['email_exists'] = cursor.fetchone()[0]
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"Availability check error: {e}")
+        return jsonify({"error": "Error checking availability"}), 500
+    finally:
+        cursor.close()
+        conn.close()

@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import {
+  validateRegistrationForm,
+  checkUsernameAvailability,
+  checkEmailAvailability,
+} from '@/utils/validation'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -9,35 +14,57 @@ const authStore = useAuthStore()
 const username = ref('')
 const email = ref('')
 const password = ref('')
-const error = ref('')
+
+const formErrors = reactive({
+  username: '',
+  email: '',
+  password: '',
+  general: '',
+})
+
 const isSubmitting = ref(false)
+const checkingAvailability = ref(false)
 
-const validateForm = () => {
-  if (!username.value || !email.value || !password.value) {
-    error.value = 'All fields are required'
-    return false
-  }
-
-  if (!email.value.includes('@')) {
-    error.value = 'Please enter a valid email address'
-    return false
-  }
-
-  if (password.value.length < 6) {
-    error.value = 'Password must be at least 6 characters long'
-    return false
-  }
-
-  return true
+const clearErrors = () => {
+  formErrors.username = ''
+  formErrors.email = ''
+  formErrors.password = ''
+  formErrors.general = ''
 }
 
 const handleRegister = async () => {
+  // Clear previous errors
+  clearErrors()
+
   try {
-    if (!validateForm()) return
-
+    // Set submitting state
     isSubmitting.value = true
-    error.value = ''
 
+    // Validate form (now async)
+    const validationResult = await validateRegistrationForm(
+      username.value,
+      email.value,
+      password.value,
+    )
+
+    // If validation fails, set errors and return
+    if (!validationResult.isValid) {
+      if (validationResult.errors.username) {
+        formErrors.username = validationResult.errors.username
+      }
+      if (validationResult.errors.email) {
+        formErrors.email = validationResult.errors.email
+      }
+      if (validationResult.errors.password) {
+        formErrors.password = validationResult.errors.password
+      }
+      if (validationResult.errors.general) {
+        formErrors.general = validationResult.errors.general
+      }
+      return
+    }
+
+    // Proceed with registration
     await authStore.register({
       username: username.value,
       email: email.value,
@@ -47,24 +74,74 @@ const handleRegister = async () => {
     router.push('/')
   } catch (e) {
     if (e instanceof Error) {
-      error.value = e.message
+      formErrors.general = e.message
     } else {
-      error.value = 'Registration failed. Please try again.'
+      formErrors.general = 'Registration failed. Please try again.'
     }
   } finally {
     isSubmitting.value = false
   }
 }
+
+// Debounced availability checking
+const debouncedCheck = (() => {
+  let timeoutId: number | null = null
+  return async (type: 'username' | 'email', value: string) => {
+    // Clear previous timeout
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+
+    // Only check if there are no existing errors and value is not empty
+    if (!value) return
+
+    timeoutId = window.setTimeout(async () => {
+      try {
+        checkingAvailability.value = true
+
+        let isAvailable = false
+        if (type === 'username') {
+          isAvailable = await checkUsernameAvailability(value)
+          formErrors.username = isAvailable ? '' : 'Username is already taken'
+        } else if (type === 'email') {
+          isAvailable = await checkEmailAvailability(value)
+          formErrors.email = isAvailable ? '' : 'Email is already registered'
+        }
+      } catch (error) {
+        console.error(`Error checking ${type} availability:`, error)
+      } finally {
+        checkingAvailability.value = false
+      }
+    }, 500) // 500ms debounce
+  }
+})()
+
+// Watchers for live availability checking
+watch(username, (newValue) => {
+  if (newValue) {
+    debouncedCheck('username', newValue)
+  }
+})
+
+watch(email, (newValue) => {
+  if (newValue) {
+    debouncedCheck('email', newValue)
+  }
+})
 </script>
 
 <template>
   <div class="register-container">
     <div class="register-form">
       <h2>Register</h2>
-      <div v-if="error" class="error-message">
-        {{ error }}
+
+      <!-- General Error Message -->
+      <div v-if="formErrors.general" class="error-message">
+        {{ formErrors.general }}
       </div>
+
       <form @submit.prevent="handleRegister" autocomplete="off">
+        <!-- Username Field -->
         <div class="form-group">
           <label for="username">Username</label>
           <input
@@ -75,8 +152,19 @@ const handleRegister = async () => {
             autocomplete="username"
             :disabled="isSubmitting"
             class="form-input"
+            @input="formErrors.username = ''"
           />
+          <div class="input-hint">
+            <p v-if="formErrors.username" class="error-text">
+              {{ formErrors.username }}
+            </p>
+            <span v-if="checkingAvailability" class="checking-indicator">
+              Checking availability...
+            </span>
+          </div>
         </div>
+
+        <!-- Email Field -->
         <div class="form-group">
           <label for="email">Email</label>
           <input
@@ -87,8 +175,19 @@ const handleRegister = async () => {
             autocomplete="email"
             :disabled="isSubmitting"
             class="form-input"
+            @input="formErrors.email = ''"
           />
+          <div class="input-hint">
+            <p v-if="formErrors.email" class="error-text">
+              {{ formErrors.email }}
+            </p>
+            <span v-if="checkingAvailability" class="checking-indicator">
+              Checking availability...
+            </span>
+          </div>
         </div>
+
+        <!-- Password Field -->
         <div class="form-group">
           <label for="password">Password</label>
           <input
@@ -99,12 +198,23 @@ const handleRegister = async () => {
             autocomplete="new-password"
             :disabled="isSubmitting"
             class="form-input"
+            @input="formErrors.password = ''"
           />
+          <p v-if="formErrors.password" class="error-text">
+            {{ formErrors.password }}
+          </p>
         </div>
-        <button type="submit" :disabled="isSubmitting" class="submit-button">
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          :disabled="isSubmitting || checkingAvailability"
+          class="submit-button"
+        >
           {{ isSubmitting ? 'Registering...' : 'Register' }}
         </button>
       </form>
+
       <div class="login-link">
         Already have an account?
         <router-link to="/login">Login</router-link>
@@ -213,5 +323,22 @@ label {
 
 .login-link a:hover {
   text-decoration: underline;
+}
+
+.input-hint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.checking-indicator {
+  color: #007bff;
+  font-size: 0.75rem;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
 }
 </style>

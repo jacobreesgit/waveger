@@ -248,6 +248,30 @@ export const useAuthStore = defineStore('auth', () => {
     delete axios.defaults.headers.common['Authorization']
   }
 
+  const checkUsernameAvailability = async (username: string): Promise<boolean> => {
+    try {
+      const response = await axios.get(`${BASE_URL}/check-availability`, {
+        params: { username },
+      })
+      return !response.data.username_exists
+    } catch (error) {
+      console.error('Username availability check failed:', error)
+      throw error
+    }
+  }
+
+  const checkEmailAvailability = async (email: string): Promise<boolean> => {
+    try {
+      const response = await axios.get(`${BASE_URL}/check-availability`, {
+        params: { email },
+      })
+      return !response.data.email_exists
+    } catch (error) {
+      console.error('Email availability check failed:', error)
+      throw error
+    }
+  }
+
   return {
     user,
     token,
