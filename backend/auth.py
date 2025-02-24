@@ -134,10 +134,12 @@ def login():
 @jwt_required()
 def get_profile():
     try:
-        user_id = get_jwt_identity()
+        # Get the identity of the current user
+        current_user_id = get_jwt_identity()
         
-        if not user_id:
-            return jsonify({"error": "Invalid token or missing user ID"}), 401
+        if not current_user_id:
+            logging.error("JWT identity not found")
+            return jsonify({"error": "Invalid token"}), 401
             
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -147,23 +149,25 @@ def get_profile():
                 """
                 SELECT username, email, created_at, last_login, 
                        total_points, weekly_points, predictions_made, 
-                       correct_predictions
+                       correct_predictions, id
                 FROM users WHERE id = %s
                 """,
-                (user_id,)
+                (current_user_id,)
             )
             user = cursor.fetchone()
 
             if user:
+                logging.info(f"Profile retrieved for user: {user[0]}")
                 return jsonify({
                     "username": user[0],
                     "email": user[1],
-                    "created_at": user[2],
-                    "last_login": user[3],
+                    "created_at": user[2].isoformat() if user[2] else None,
+                    "last_login": user[3].isoformat() if user[3] else None,
                     "total_points": user[4] or 0,
                     "weekly_points": user[5] or 0,
                     "predictions_made": user[6] or 0,
-                    "correct_predictions": user[7] or 0
+                    "correct_predictions": user[7] or 0,
+                    "id": user[8]
                 }), 200
             else:
                 return jsonify({"error": "User not found"}), 404
@@ -174,7 +178,7 @@ def get_profile():
 
     except Exception as e:
         logging.error(f"Profile fetch error: {e}")
-        return jsonify({"error": "Failed to fetch profile"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @auth_bp.route("/profile", methods=["PUT"])
 @jwt_required()

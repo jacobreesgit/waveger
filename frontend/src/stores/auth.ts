@@ -1,7 +1,8 @@
+// src/stores/auth.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { User, AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/auth'
 import axios from 'axios'
+import type { User, AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -15,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedToken && savedUser) {
       token.value = savedToken
       user.value = JSON.parse(savedUser)
+      // Set the Authorization header for all requests
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
     }
   }
@@ -33,6 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       localStorage.setItem('token', response.data.access_token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
+
+      // Set the Authorization header after login
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
 
       return response.data
@@ -84,20 +88,25 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Check if token exists
       if (!token.value) {
-        throw new Error('Not authenticated')
+        throw new Error('Authentication required')
       }
 
-      // Ensure the authorization header is set
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
-
-      const response = await axios.get<User>('https://wavegerpython.onrender.com/api/auth/profile')
+      // Explicitly set the token in the request header for this call
+      const response = await axios.get<User>(
+        'https://wavegerpython.onrender.com/api/auth/profile',
+        {
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
+        },
+      )
 
       user.value = response.data
       return response.data
     } catch (e) {
       console.error('Profile fetch error:', e)
       if (axios.isAxiosError(e) && e.response?.status === 422) {
-        // Invalid token - clear auth state
+        // Token validation failed - clear auth state
         logout()
         error.value = 'Session expired. Please log in again.'
       } else {
