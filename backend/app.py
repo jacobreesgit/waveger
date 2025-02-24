@@ -6,6 +6,7 @@ import logging
 
 from charts import charts_bp
 from apple_music import apple_music_bp  
+from auth import auth_bp
 
 app = Flask(__name__)
 
@@ -20,9 +21,13 @@ if not JWT_SECRET_KEY:
 app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
 jwt = JWTManager(app)
 
+# Initialize Bcrypt
+bcrypt = Bcrypt(app)
+
 # Register blueprints
 app.register_blueprint(charts_bp, url_prefix="/api")
 app.register_blueprint(apple_music_bp, url_prefix="/api") 
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

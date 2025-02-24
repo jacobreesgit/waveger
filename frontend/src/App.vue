@@ -1,29 +1,57 @@
 <script setup lang="ts">
-import { RouterView, RouterLink } from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
+
+const routes = [
+  { path: '/', name: 'Home', title: 'Current Charts' },
+  { path: '/login', name: 'Login', title: 'Login' },
+  { path: '/register', name: 'Register', title: 'Register' },
+]
+
+onMounted(() => {
+  authStore.initialize()
+})
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
 
 <template>
   <header class="app-header">
     <h1>Billboard Charts</h1>
-    <nav class="main-nav">
-      <RouterLink to="/" class="nav-link">Current Charts</RouterLink>
+    <nav>
+      <RouterLink v-for="route in routes" :key="route.name" :to="route.path" class="nav-link">
+        {{ route.title }}
+      </RouterLink>
     </nav>
+    <div v-if="authStore.user" class="user-menu">
+      <span>{{ authStore.user.username }}</span>
+      <button @click="handleLogout" class="logout-button">Logout</button>
+    </div>
   </header>
 
-  <main class="app-main">
+  <main>
     <RouterView />
   </main>
 </template>
 
 <style scoped>
 .app-header {
-  background: #f8f9fa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.main-nav {
-  margin-top: 16px;
+nav {
   display: flex;
   gap: 20px;
 }
@@ -32,7 +60,7 @@ import { RouterView, RouterLink } from 'vue-router'
   color: #333;
   text-decoration: none;
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 4px;
   transition: background-color 0.2s;
 }
 
@@ -45,9 +73,22 @@ import { RouterView, RouterLink } from 'vue-router'
   color: white;
 }
 
-.app-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logout-button {
+  padding: 8px 16px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.logout-button:hover {
+  background: #c82333;
 }
 </style>
