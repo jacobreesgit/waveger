@@ -28,18 +28,33 @@ const accuracy = computed(() => {
 const fetchProfile = async () => {
   try {
     loading.value = true
-    error.value = ''
-    await authStore.fetchProfile()
-    // Set local refs for form data
-    username.value = authStore.user?.username || ''
-    email.value = authStore.user?.email || ''
+    error.value = null
+
+    // Check if token exists
+    if (!token.value) {
+      throw new Error('Authentication required')
+    }
+
+    console.log('Using token for profile request:', token.value)
+
+    // Explicitly set the token in the request header for this call
+    const response = await axios.get<User>('https://wavegerpython.onrender.com/api/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${token.value}`,
+      },
+    })
+
+    user.value = response.data
+    return response.data
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Failed to load profile'
+    console.error('Profile fetch error:', e)
+    // Don't automatically logout on 422
+    error.value = e instanceof Error ? e.message : 'Failed to fetch profile'
+    throw error.value
   } finally {
     loading.value = false
   }
 }
-
 const toggleEditMode = () => {
   editMode.value = !editMode.value
   if (!editMode.value) {
