@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const store = useChartsStore()
 const route = useRoute()
+const router = useRouter()
 
 // Create a local reactive reference for the selected chart ID
 const selectedChartId = ref('hot-100/')
 
 // Hardcoded chart options
 const chartOptions = [
-  { id: 'hot-100/', title: 'Billboard Hot 100™' },
-  { id: 'billboard-200/', title: 'Billboard 200™' },
+  { id: 'hot-100', title: 'Billboard Hot 100™' },
+  { id: 'billboard-200', title: 'Billboard 200™' },
   { id: 'artist-100', title: 'Billboard Artist 100' },
   { id: 'emerging-artists', title: 'Emerging Artists' },
   { id: 'streaming-songs', title: 'Streaming Songs' },
@@ -21,30 +22,41 @@ const chartOptions = [
   { id: 'summer-songs', title: 'Songs of the Summer' },
   { id: 'top-album-sales', title: 'Top Album Sales' },
   { id: 'tiktok-billboard-top-50', title: 'TikTok Billboard Top 50' },
-  { id: 'top-streaming-albums/', title: 'Top Streaming Albums' },
+  { id: 'top-streaming-albums', title: 'Top Streaming Albums' },
   { id: 'independent-albums', title: 'Independent Albums' },
   { id: 'vinyl-albums', title: 'Vinyl Albums' },
   { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
 
-const selectChart = async () => {
+// Update route and load chart data
+const updateRoute = async () => {
   console.log(`Chart changed to: ${selectedChartId.value}`)
 
   // Update the store's selected chart ID
   store.selectedChartId = selectedChartId.value
 
-  // Fetch the chart data for the selected chart
-  await store.fetchChartDetails({
-    id: selectedChartId.value,
-    range: '1-10',
+  // Get current date path or default to today's date in URL format
+  let datePath =
+    (route.params.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
+
+  // Update the URL
+  await router.push({
+    path: `/${datePath}`,
+    query: { id: selectedChartId.value.replace('/', '') },
   })
 }
 
-// Watch for changes to the selected chart ID and load data when it changes
-watch(selectedChartId, async (newChartId, oldChartId) => {
-  if (newChartId !== oldChartId) {
-    await selectChart()
+// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
+const formatDateForURL = (date: string): string => {
+  const [year, month, day] = date.split('-')
+  return `${day}-${month}-${year}`
+}
+
+// Watch for changes to the local selectedChartId and update route when it changes
+watch(selectedChartId, async (newValue, oldValue) => {
+  if (newValue !== oldValue) {
+    await updateRoute()
   }
 })
 
@@ -52,12 +64,9 @@ onMounted(() => {
   // Use the chart ID from the route if available
   const routeChartId = route.query.id as string
   if (routeChartId) {
-    selectedChartId.value = routeChartId
-    store.selectedChartId = routeChartId
-    // Only fetch initial data if we don't already have chart data
-    if (!store.currentChart) {
-      selectChart()
-    }
+    // Add slash at the end if needed to match our format
+    selectedChartId.value = routeChartId.endsWith('/') ? routeChartId : `${routeChartId}/`
+    store.selectedChartId = selectedChartId.value
   } else {
     // Make sure store ID matches local ID
     store.selectedChartId = selectedChartId.value

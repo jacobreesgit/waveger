@@ -6,6 +6,7 @@ import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import { useRoute } from 'vue-router'
+import { useIntersectionObserver } from '@vueuse/core'
 
 const route = useRoute()
 const props = defineProps<{
@@ -15,7 +16,6 @@ const props = defineProps<{
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
-const observer = ref<IntersectionObserver | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 const isLoadingMore = ref(false)
@@ -25,6 +25,28 @@ const isInitialLoad = ref(true)
 const isLoading = computed(() => {
   return store.loading && !isLoadingMore.value
 })
+
+// Setup VueUse intersection observer
+const { stop: stopObserver } = useIntersectionObserver(
+  loadMoreTrigger,
+  async ([{ isIntersecting }]) => {
+    if (isIntersecting && !isLoadingMore.value && store.hasMore && !store.error) {
+      console.log('Intersection observed, loading more songs')
+      isLoadingMore.value = true
+      try {
+        await store.fetchMoreSongs()
+      } catch (error) {
+        console.error('Error loading more songs:', error)
+      } finally {
+        isLoadingMore.value = false
+      }
+    }
+  },
+  {
+    rootMargin: '200px', // Start loading before the element is fully in view
+    threshold: 0.1, // Trigger when at least 10% of the element is visible
+  },
+)
 
 const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
@@ -77,42 +99,6 @@ const parseChartDate = (chartWeek: string): string => {
     console.error('Error parsing chart date:', e)
     return chartWeek // Return original if parsing fails
   }
-}
-
-const setupIntersectionObserver = () => {
-  // Destroy existing observer if it exists
-  if (observer.value) {
-    observer.value.disconnect()
-  }
-
-  // Wait for the next tick to ensure the DOM is updated
-  nextTick(() => {
-    if (loadMoreTrigger.value) {
-      observer.value = new IntersectionObserver(
-        async (entries) => {
-          const target = entries[0]
-          if (target.isIntersecting && !isLoadingMore.value && store.hasMore && !store.error) {
-            console.log('Intersection observed, loading more songs')
-            isLoadingMore.value = true
-            try {
-              await store.fetchMoreSongs()
-            } catch (error) {
-              console.error('Error loading more songs:', error)
-            } finally {
-              isLoadingMore.value = false
-            }
-          }
-        },
-        {
-          rootMargin: '200px', // Start loading before the element is fully in view
-        },
-      )
-
-      observer.value.observe(loadMoreTrigger.value)
-    } else {
-      console.warn('Load more trigger element not found')
-    }
-  })
 }
 
 // Check if we need to reload data based on route changes or selections
@@ -179,8 +165,6 @@ onMounted(async () => {
   if (!store.initialized && isInitialLoad.value) {
     console.log('Store initialization in progress, waiting for it to complete')
     isInitialLoad.value = false
-    // Setup intersection observer after ensuring data is loaded
-    setupIntersectionObserver()
     return
   }
 
@@ -195,26 +179,12 @@ onMounted(async () => {
   } else {
     console.log('Using existing chart data from store')
   }
-
-  // Setup intersection observer after ensuring data is loaded
-  setupIntersectionObserver()
 })
 
 onUnmounted(() => {
-  if (observer.value) {
-    observer.value.disconnect()
-  }
+  // Clean up the intersection observer
+  stopObserver()
 })
-
-// Watch for changes in chart data to setup observer
-watch(
-  () => store.hasMore,
-  (hasMore) => {
-    if (hasMore) {
-      setupIntersectionObserver()
-    }
-  },
-)
 
 // Watch for the initialized status of the store
 watch(
@@ -223,7 +193,6 @@ watch(
     if (isInitialized && isInitialLoad.value) {
       isInitialLoad.value = false
       console.log('Store initialization completed, using existing data')
-      setupIntersectionObserver()
     }
   },
   { immediate: true },
@@ -250,8 +219,8 @@ watch(
 watch(
   () => store.error,
   (newError) => {
-    if (newError && observer.value) {
-      observer.value.disconnect()
+    if (newError) {
+      stopObserver()
     }
   },
 )

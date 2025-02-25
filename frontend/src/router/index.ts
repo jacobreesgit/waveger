@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import ChartList from '@/views/ChartList.vue'
+import ChartView from '@/views/ChartView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
@@ -11,7 +11,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: ChartList,
+      component: ChartView,
     },
     {
       path: '/login',
@@ -32,7 +32,7 @@ const router = createRouter({
     {
       path: '/:date',
       name: 'chart-date',
-      component: ChartList,
+      component: ChartView,
     },
   ],
 })

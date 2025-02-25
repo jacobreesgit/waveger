@@ -24,8 +24,30 @@ const formatDateForURL = (date: string): string => {
 }
 
 const parseDateFromURL = (urlDate: string): string => {
-  const [day, month, year] = urlDate.split('-')
-  return `${year}-${month}-${day}`
+  try {
+    const [day, month, year] = urlDate.split('-')
+    return `${year}-${month}-${day}`
+  } catch (e) {
+    console.error('Date parsing error:', e)
+    return new Date().toISOString().split('T')[0]
+  }
+}
+
+// Update the route when the date changes
+const updateRoute = async (newDate: string) => {
+  const formattedDate = formatDate(newDate)
+  const urlDate = formatDateForURL(formattedDate)
+
+  // Get current chart ID or default to hot-100
+  const chartId = route.query.id || 'hot-100'
+
+  console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
+
+  // Update the URL with new date while preserving chart ID
+  await router.push({
+    path: `/${urlDate}`,
+    query: { id: chartId },
+  })
 }
 
 // Watch for route changes to update the date picker
@@ -33,6 +55,7 @@ watch(
   () => route.params.date,
   (newDate) => {
     if (newDate) {
+      console.log(`Route date param changed to: ${newDate}`)
       selectedDate.value = parseDateFromURL(newDate as string)
     }
   },
@@ -41,25 +64,24 @@ watch(
 
 // Handle date picker changes
 watch(selectedDate, async (newDate) => {
-  store.loading = true
-  const formattedDate = formatDate(newDate)
-  const urlDate = formatDateForURL(formattedDate)
+  console.log(`Date picker changed to: ${newDate}`)
 
-  try {
-    await router.push(`/${urlDate}`)
-    await store.fetchChartDetails({
-      id: store.selectedChartId,
-      week: formattedDate,
-      range: '1-10',
-    })
-  } finally {
-    store.loading = false
+  // Only update route if the date actually changed
+  const currentUrlDate = route.params.date
+  const newUrlDate = formatDateForURL(formatDate(newDate))
+
+  if (!currentUrlDate || currentUrlDate !== newUrlDate) {
+    await updateRoute(newDate)
   }
 })
 
 onMounted(() => {
+  // Initialize the date picker from the URL or today's date
   if (route.params.date) {
     selectedDate.value = parseDateFromURL(route.params.date as string)
+  } else {
+    // If no date in URL, update the route to today's date
+    updateRoute(today)
   }
 })
 </script>
