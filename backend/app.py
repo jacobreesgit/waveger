@@ -9,7 +9,7 @@ app.register_blueprint(apple_music_bp, url_prefix="/api")
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 # Add this to app.py after registering blueprints
-@app.route("/api/test-rate-limit", methods=["GET"])
+@app.route("/api/test-limiter", methods=["GET"])
 @limiter.limit("3 per minute")
 def test_rate_limit():
     return jsonify({"status": "ok", "message": "Rate limit test endpoint"})
