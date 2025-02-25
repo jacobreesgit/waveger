@@ -12,8 +12,8 @@ const selectedChartId = ref('hot-100/')
 
 // Hardcoded chart options
 const chartOptions = [
-  { id: 'hot-100', title: 'Billboard Hot 100™' },
-  { id: 'billboard-200', title: 'Billboard 200™' },
+  { id: 'hot-100/', title: 'Billboard Hot 100™' },
+  { id: 'billboard-200/', title: 'Billboard 200™' },
   { id: 'artist-100', title: 'Billboard Artist 100' },
   { id: 'emerging-artists', title: 'Emerging Artists' },
   { id: 'streaming-songs', title: 'Streaming Songs' },
@@ -22,16 +22,35 @@ const chartOptions = [
   { id: 'summer-songs', title: 'Songs of the Summer' },
   { id: 'top-album-sales', title: 'Top Album Sales' },
   { id: 'tiktok-billboard-top-50', title: 'TikTok Billboard Top 50' },
-  { id: 'top-streaming-albums', title: 'Top Streaming Albums' },
+  { id: 'top-streaming-albums/', title: 'Top Streaming Albums' },
   { id: 'independent-albums', title: 'Independent Albums' },
   { id: 'vinyl-albums', title: 'Vinyl Albums' },
   { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
 
-// Update route and load chart data
+// Parse date format from URL (DD-MM-YYYY to YYYY-MM-DD)
+const parseDateFromURL = (urlDate: string): string => {
+  try {
+    const [day, month, year] = urlDate.split('-')
+    return `${year}-${month}-${day}`
+  } catch (e) {
+    console.error('Date parsing error:', e)
+    return new Date().toISOString().split('T')[0]
+  }
+}
+
+// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
+const formatDateForURL = (date: string): string => {
+  const [year, month, day] = date.split('-')
+  return `${day}-${month}-${year}`
+}
+
+// Update route and ALWAYS load chart data
 const updateRoute = async () => {
-  console.log(`Chart changed to: ${selectedChartId.value}`)
+  // Normalize chart ID for consistency (remove trailing slash if needed)
+  const chartId = selectedChartId.value.replace(/\/$/, '')
+  console.log(`Chart changed to: ${chartId} - FORCING data reload`)
 
   // Update the store's selected chart ID
   store.selectedChartId = selectedChartId.value
@@ -40,17 +59,23 @@ const updateRoute = async () => {
   let datePath =
     (route.params.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
 
-  // Update the URL
+  // Get the current date in YYYY-MM-DD format for API call
+  const formattedDate = route.params.date
+    ? parseDateFromURL(route.params.date as string)
+    : new Date().toISOString().split('T')[0]
+
+  // Always force a data reload with new chart ID
+  await store.fetchChartDetails({
+    id: chartId,
+    week: formattedDate,
+    range: '1-10',
+  })
+
+  // Update the URL after fetching data
   await router.push({
     path: `/${datePath}`,
-    query: { id: selectedChartId.value.replace('/', '') },
+    query: { id: chartId },
   })
-}
-
-// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
-const formatDateForURL = (date: string): string => {
-  const [year, month, day] = date.split('-')
-  return `${day}-${month}-${year}`
 }
 
 // Watch for changes to the local selectedChartId and update route when it changes

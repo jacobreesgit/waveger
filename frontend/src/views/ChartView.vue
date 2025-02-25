@@ -101,7 +101,6 @@ const parseChartDate = (chartWeek: string): string => {
   }
 }
 
-// Check if we need to reload data based on route changes or selections
 const shouldReloadData = (chartId: string, date: string): boolean => {
   // If no chart data is loaded yet, we need to load
   if (!store.currentChart) {
@@ -109,10 +108,21 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
     return true
   }
 
-  // Check if the chart ID has changed
-  const currentChartId = store.selectedChartId.replace('/', '')
-  if (chartId !== currentChartId) {
-    console.log(`Chart ID changed from ${currentChartId} to ${chartId}, need to reload`)
+  // Normalize chart IDs by removing trailing slashes for consistent comparison
+  const normalizedCurrentChartId = store.selectedChartId.replace(/\/$/, '')
+  const normalizedRequestedChartId = chartId.replace(/\/$/, '')
+
+  // Debug logging to help diagnose comparison issues
+  console.log('Comparing chart IDs:', {
+    currentChartId: normalizedCurrentChartId,
+    requestedChartId: normalizedRequestedChartId,
+    areEqual: normalizedCurrentChartId === normalizedRequestedChartId,
+  })
+
+  if (normalizedCurrentChartId !== normalizedRequestedChartId) {
+    console.log(
+      `Chart ID changed from ${normalizedCurrentChartId} to ${normalizedRequestedChartId}, need to reload`,
+    )
     return true
   }
 
