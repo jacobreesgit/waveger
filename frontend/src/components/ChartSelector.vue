@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
+import { useRoute } from 'vue-router'
 
 const store = useChartsStore()
+const route = useRoute()
+const initialLoadDone = ref(false)
 
 const selectChart = async (event: Event) => {
   const select = event.target as HTMLSelectElement
@@ -10,14 +13,40 @@ const selectChart = async (event: Event) => {
 }
 
 onMounted(async () => {
-  await store.fetchAvailableCharts()
-  const hotChart = store.availableCharts.find(
-    (chart) => chart.title === 'Billboard Hot 100™' || chart.id === 'hot-100/',
-  )
-  if (hotChart) {
-    store.selectedChartId = hotChart.id
+  // Only fetch available charts if they haven't been loaded yet
+  if (store.availableCharts.length === 0) {
+    await store.fetchAvailableCharts()
   }
+
+  // Use the chart ID from the route if available
+  const routeChartId = route.query.id as string
+
+  // Set the selected chart based on route or default to Hot 100
+  if (routeChartId) {
+    store.selectedChartId = routeChartId
+  } else {
+    const hotChart = store.availableCharts.find(
+      (chart) => chart.title === 'Billboard Hot 100™' || chart.id === 'hot-100/',
+    )
+    if (hotChart) {
+      store.selectedChartId = hotChart.id
+    }
+  }
+
+  initialLoadDone.value = true
 })
+
+// Watch for changes to the selected chart ID
+watch(
+  () => store.selectedChartId,
+  (newChartId, oldChartId) => {
+    // Only trigger a chart refresh if this isn't the initial load
+    // and the chart ID has actually changed
+    if (initialLoadDone.value && newChartId !== oldChartId) {
+      console.log(`Chart selected changed from ${oldChartId} to ${newChartId}`)
+    }
+  },
+)
 </script>
 
 <template>

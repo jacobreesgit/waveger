@@ -19,6 +19,7 @@ const observer = ref<IntersectionObserver | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 const isLoadingMore = ref(false)
+const isInitialLoad = ref(true)
 
 const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
@@ -169,7 +170,16 @@ onMounted(async () => {
   // Default to hot-100 if not specified
   const chartId = (route.query.id as string) || 'hot-100'
 
-  // Check if we need to load new data
+  // Wait for store initialization if it's in progress
+  if (!store.initialized && isInitialLoad.value) {
+    console.log('Store initialization in progress, waiting for it to complete')
+    isInitialLoad.value = false
+    // Setup intersection observer after ensuring data is loaded
+    setupIntersectionObserver()
+    return
+  }
+
+  // Only fetch data if it's needed (chart changed or date changed)
   if (shouldReloadData(chartId, formattedDate)) {
     console.log(`Loading data for chart: ${chartId}, date: ${formattedDate}`)
     await store.fetchChartDetails({
@@ -177,6 +187,8 @@ onMounted(async () => {
       week: formattedDate,
       range: '1-10',
     })
+  } else {
+    console.log('Using existing chart data from store')
   }
 
   // Setup intersection observer after ensuring data is loaded
@@ -197,6 +209,19 @@ watch(
       setupIntersectionObserver()
     }
   },
+)
+
+// Watch for the initialized status of the store
+watch(
+  () => store.initialized,
+  (isInitialized) => {
+    if (isInitialized && isInitialLoad.value) {
+      isInitialLoad.value = false
+      console.log('Store initialization completed, using existing data')
+      setupIntersectionObserver()
+    }
+  },
+  { immediate: true },
 )
 
 // Optimize Apple Music data fetching
@@ -400,7 +425,6 @@ watch(
 </template>
 
 <style scoped>
-/* Styles remain unchanged */
 .chart-list {
   max-width: 1200px;
   margin: 0 auto;

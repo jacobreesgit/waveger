@@ -15,6 +15,8 @@ export const useChartsStore = defineStore('charts', () => {
   const dataSource = ref<'api' | 'database'>('api')
   const topChartsSource = ref<'api' | 'database'>('api')
   const initialized = ref(false)
+  // Add a new state to track if initialization is in progress
+  const initializing = ref(false)
 
   // New initialize method to be called once in App.vue
   const initialize = async () => {
@@ -23,7 +25,13 @@ export const useChartsStore = defineStore('charts', () => {
       return
     }
 
+    if (initializing.value) {
+      console.log('Store - Initialization already in progress, skipping')
+      return
+    }
+
     try {
+      initializing.value = true
       loading.value = true
       error.value = null
       console.log('Store - Initializing charts store')
@@ -46,19 +54,36 @@ export const useChartsStore = defineStore('charts', () => {
       error.value = e instanceof Error ? e.message : 'Failed to initialize charts'
     } finally {
       loading.value = false
+      initializing.value = false
     }
   }
 
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
-      loading.value = true
-      error.value = null
-      hasMore.value = true
-      currentPage.value = 1
+      // Don't set loading to true if we're just loading more songs from the same chart
+      // This prevents unnecessary loading indicators
+      const isInitialLoad = !(currentChart.value && params.id === selectedChartId.value)
+
+      if (isInitialLoad) {
+        loading.value = true
+        error.value = null
+        hasMore.value = true
+        currentPage.value = 1
+      }
+
       selectedChartId.value = params.id || 'hot-100/'
       console.log('Store - Fetching chart details with params:', params)
+
       const response = await getChartDetails(params)
-      currentChart.value = response.data
+
+      // If this is just loading more songs, append them
+      if (!isInitialLoad && currentChart.value && response.data.songs) {
+        currentChart.value.songs = [...currentChart.value.songs, ...response.data.songs]
+      } else {
+        // Otherwise replace the current chart completely
+        currentChart.value = response.data
+      }
+
       dataSource.value = response.source
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch chart details'
@@ -145,5 +170,6 @@ export const useChartsStore = defineStore('charts', () => {
     fetchMoreSongs,
     fetchAvailableCharts,
     initialized,
+    initializing,
   }
 })
