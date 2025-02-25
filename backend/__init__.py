@@ -90,6 +90,9 @@ def get_real_ip():
     logging.debug(f"Using remote address: {request.remote_addr}")
     return request.remote_addr
 
+# Make sure get_real_ip is available for import in other modules
+__all__ = ['app', 'bcrypt', 'limiter', 'get_real_ip', 'jwt']
+
 # Before request logging to debug rate limiting
 @app.before_request
 def debug_request():
