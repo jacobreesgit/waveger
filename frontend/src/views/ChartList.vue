@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch, nextTick } from 'vue'
+import { onMounted, onUnmounted, ref, watch, nextTick, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import type { AppleMusicData } from '@/types/appleMusic'
@@ -20,6 +20,11 @@ const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 const isLoadingMore = ref(false)
 const isInitialLoad = ref(true)
+
+// Use a computed prop to determine if we should show the loading indicator
+const isLoading = computed(() => {
+  return store.loading && !isLoadingMore.value
+})
 
 const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
@@ -298,9 +303,10 @@ watch(
     <ChartDatePicker />
     <ChartSelector />
 
-    <div v-if="store.loading && !store.currentChart" class="loading">
+    <!-- Show loading indicator for the entire chart when loading (but not when just loading more songs) -->
+    <div v-if="isLoading" class="loading">
       <div class="loading-spinner"></div>
-      Loading charts...
+      <div class="loading-text">Loading chart data...</div>
     </div>
 
     <div v-else-if="store.error" class="error">
@@ -595,8 +601,17 @@ watch(
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  padding: 24px;
+  padding: 40px;
   color: #6c757d;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.loading-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #495057;
 }
 
 .loading-spinner {
@@ -628,6 +643,9 @@ watch(
   text-align: center;
   padding: 24px;
   color: #dc3545;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .retry-button {
