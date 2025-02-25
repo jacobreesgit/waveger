@@ -2,6 +2,8 @@ import requests
 import time
 import pytest
 from datetime import datetime
+import random
+import string
 
 # Base API URL
 BASE_URL = "https://wavegerpython.onrender.com/api/auth"
@@ -15,7 +17,7 @@ TEST_USER = {
 
 # ---------------------- Helper Functions ----------------------
 
-def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5):
+def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5, headers=None):
     """Make multiple requests to an endpoint and return the status codes."""
     url = f"{BASE_URL}/{endpoint}"
     responses = []
@@ -26,9 +28,9 @@ def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5):
         start_time = time.time()
         
         if method.upper() == "GET":
-            resp = requests.get(url, params=data)
+            resp = requests.get(url, params=data, headers=headers)
         elif method.upper() == "POST":
-            resp = requests.post(url, json=data)
+            resp = requests.post(url, json=data, headers=headers)
         else:
             raise ValueError(f"Unsupported method: {method}")
         
@@ -46,6 +48,10 @@ def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5):
         time.sleep(delay)  # Add delay between requests
     
     return responses
+
+def random_string(length=8):
+    """Generate a random string for unique test data."""
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 # ---------------------- Test Functions ----------------------
 
@@ -81,9 +87,9 @@ def test_register_rate_limit():
         endpoint="register",
         method="POST",
         data={
-            "username": f"test_user_{int(time.time())}",  # Unique usernames
+            "username": f"test_user_{random_string()}",  # Unique usernames
             "password": "Test123!",
-            "email": f"test_{int(time.time())}@example.com"  # Unique emails
+            "email": f"test_{random_string()}@example.com"  # Unique emails
         },
         count=4,
         delay=1.0  # Longer delay for registration
@@ -106,7 +112,7 @@ def test_check_availability_rate_limit():
     responses = make_requests(
         endpoint="check-availability",
         method="GET",
-        data={"username": "test_username"},
+        data={"username": f"test_{random_string()}"},  # Use random usernames
         count=22,
         delay=0.2  # Shorter delay for this higher-limit endpoint
     )
@@ -122,23 +128,49 @@ def test_check_availability_rate_limit():
     print("Check-availability rate limit test: PASSED")
 
 def test_user_endpoint_rate_limit():
-    """Test user endpoint rate limit (30 per minute)."""
+    """Test user endpoint rate limit (30 per minute) with valid authentication."""
     print("\n=== TESTING USER ENDPOINT RATE LIMIT (30 per minute) ===")
     
-    # We need an auth token for this test, but we'll use an invalid one
-    # to test rate limits without needing valid credentials
-    invalid_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTYxMjM3NjY3NiwianRpIjoiNDA3MjE3YmUtZTY3ZS00NGIzLTkzZTMtNmZlMzVkMTAyMmYwIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6IjEyMzQ1Njc4OSIsIm5iZiI6MTYxMjM3NjY3Nn0.invalid_signature"
+    # First, register a new test user
+    username = f"test_rate_limit_{random_string()}"
+    email = f"test_rate_limit_{random_string()}@example.com"
+    password = "TestPassword123!"
     
-    # Make 32 requests (2 more than the limit)
+    # Register the user
+    register_response = requests.post(
+        f"{BASE_URL}/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+    
+    if register_response.status_code != 201:
+        print(f"Failed to register test user: {register_response.json()}")
+        raise Exception("Cannot create test user for rate limit testing")
+    
+    # Extract the token from the response
+    register_data = register_response.json()
+    token = register_data.get("access_token")
+    
+    if not token:
+        print("No access token in registration response")
+        raise Exception("Missing access token for rate limit testing")
+    
+    print(f"Created test user: {username} with valid token")
+    
+    # Now make 32 requests (2 more than the limit) with the valid token
     count = 32
     responses = []
+    auth_header = {"Authorization": f"Bearer {token}"}
     
-    print(f"\nTesting GET {BASE_URL}/user with {count} requests...")
+    print(f"\nTesting GET {BASE_URL}/user with {count} requests and valid token...")
     
     for i in range(count):
         resp = requests.get(
             f"{BASE_URL}/user",
-            headers={"Authorization": f"Bearer {invalid_token}"}
+            headers=auth_header
         )
         
         # Extract rate limit headers if present
@@ -152,9 +184,9 @@ def test_user_endpoint_rate_limit():
         responses.append(resp.status_code)
         time.sleep(0.1)  # Very short delay for this high-limit endpoint
     
-    # First 30 should return 401 (invalid token) or 422 (invalid token format)
+    # First 30 should return 200 (valid authenticated request)
     for i, code in enumerate(responses[:30]):
-        assert code in (401, 422), f"Request {i+1} should return 401 or 422, got {code}"
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
     
     # Last 2 should be rate limited (429)
     for i, code in enumerate(responses[30:], 31):
