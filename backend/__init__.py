@@ -5,6 +5,8 @@ from flask_bcrypt import Bcrypt
 from datetime import timedelta
 import os
 import logging
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -62,3 +64,12 @@ def handle_needs_fresh_token():
 def handle_revoked_token(jwt_header, jwt_payload):
     logging.error(f"Revoked token. Header: {jwt_header}, Payload: {jwt_payload}")
     return {"msg": "Token has been revoked"}, 401
+
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",  # For production, consider using Redis
+    strategy="fixed-window",  # Options: fixed-window, moving-window, etc.
+)
