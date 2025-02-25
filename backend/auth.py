@@ -1,12 +1,12 @@
-from flask import Blueprint, request, jsonify, g
-from __init__ import limiter
+from flask import Blueprint, request, jsonify, g, current_app
+from __init__ import limiter, bcrypt 
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
     jwt_required, 
     create_refresh_token
 )
-from flask import Blueprint, request, jsonify, g, current_app
+from flask_limiter.util import get_remote_address  
 import psycopg2
 from datetime import datetime, timedelta
 import os
