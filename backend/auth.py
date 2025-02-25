@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify, current_app, g
+from flask import Blueprint, request, jsonify, g
+from __init__ import limiter
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
@@ -20,8 +21,6 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def get_limiter():
-    return current_app.extensions['limiter']
 
 def get_db_connection():
     try:
@@ -35,7 +34,7 @@ def generate_unique_token_id():
     return str(uuid.uuid4())
 
 @auth_bp.route("/register", methods=["POST"])
-@get_limiter().limit("3 per hour")
+@limiter.limit("3 per hour")
 def register():
     try:
         data = request.get_json()
@@ -118,7 +117,7 @@ def register():
         return jsonify({"error": str(e)}), 500
 
 @auth_bp.route("/login", methods=["POST"])
-@get_limiter().limit("5 per minute")
+@limiter.limit("5 per minute")
 def login():
     try:
         data = request.get_json()
@@ -190,7 +189,7 @@ def login():
 
 @auth_bp.route("/user", methods=["GET"])
 @jwt_required()
-@get_limiter().limit("30 per minute")
+@limiter.limit("30 per minute")
 def get_user_data():
     try:
         # Get the user ID from the JWT token
@@ -257,7 +256,7 @@ def get_user_data():
         return jsonify({"error": "Unexpected server error", "details": str(e)}), 500
 
 @auth_bp.route("/check-availability", methods=["GET"])
-@get_limiter().limit("20 per minute")
+@limiter.limit("20 per minute")
 def check_availability():
     """
     Check if a username or email is already in use.
@@ -304,7 +303,7 @@ def check_availability():
         conn.close()
 
 @auth_bp.route("/refresh", methods=["POST"])
-@get_limiter().limit("10 per minute")
+@limiter.limit("10 per minute")
 def refresh():
     try:
         data = request.get_json()

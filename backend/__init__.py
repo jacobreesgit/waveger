@@ -67,9 +67,11 @@ def handle_revoked_token(jwt_header, jwt_payload):
 
 # Initialize rate limiter
 limiter = Limiter(
-    get_remote_address,
-    app=app,
+    key_func=get_remote_address,
     default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",  # For production, consider using Redis
-    strategy="fixed-window",  # Options: fixed-window, moving-window, etc.
+    storage_uri="memory://",
+    strategy="fixed-window",
 )
+
+# Register limiter with app
+limiter.init_app(app)
