@@ -14,28 +14,39 @@ export const useAuthStore = defineStore('auth', () => {
   const BASE_URL = 'https://wavegerpython.onrender.com/api/auth'
 
   const initialize = () => {
-    // Check if we're in a restored session by adding a session marker
-    const sessionMarker = sessionStorage.getItem('session_marker')
-    const savedRememberMe = localStorage.getItem('remember_me') === 'true'
-
-    // If we don't have a session marker and don't have Remember Me,
-    // this is likely a restored browser session that should be logged out
-    if (!sessionMarker && !savedRememberMe) {
-      // Clear any potentially persisted data
-      logout()
-
-      // Set a new session marker to indicate a fresh session
-      sessionStorage.setItem('session_marker', Date.now().toString())
-
-      console.log('Session restored without Remember Me - logged out')
+    // Check if there's an explicit logged out flag
+    if (
+      sessionStorage.getItem('logged_out') === 'true' ||
+      localStorage.getItem('logged_out') === 'true'
+    ) {
+      console.log('Explicit logout detected - staying logged out')
+      // Clear the flags but keep logged out state
+      sessionStorage.removeItem('logged_out')
+      localStorage.removeItem('logged_out')
       return
     }
 
-    // Set a session marker if it doesn't exist
-    if (!sessionMarker) {
-      sessionStorage.setItem('session_marker', Date.now().toString())
+    // First, check if this is a fresh page load by setting/checking a timestamp
+    const now = Date.now()
+    const lastVisit = parseInt(sessionStorage.getItem('last_visit') || '0')
+    sessionStorage.setItem('last_visit', now.toString())
+
+    // If gap is more than 5 seconds, consider it a new session
+    const isNewSession = now - lastVisit > 5000
+
+    // Get remember me preference
+    const savedRememberMe = localStorage.getItem('remember_me') === 'true'
+    console.log('Is new session:', isNewSession)
+    console.log('Remember Me:', savedRememberMe)
+
+    // If it's a new session and remember me is not checked, clear everything
+    if (isNewSession && !savedRememberMe) {
+      console.log('New session detected without Remember Me - logging out')
+      logout()
+      return
     }
 
+    // Determine where to look for credentials based on remember me preference
     const savedToken = savedRememberMe
       ? localStorage.getItem('token')
       : sessionStorage.getItem('token')
@@ -58,7 +69,14 @@ export const useAuthStore = defineStore('auth', () => {
       if (savedRememberMe && savedRefreshToken) {
         refreshToken.value = savedRefreshToken
       }
-      user.value = JSON.parse(savedUser)
+
+      try {
+        user.value = JSON.parse(savedUser)
+      } catch (e) {
+        console.error('Failed to parse user data:', e)
+        logout()
+        return
+      }
 
       // Set default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
@@ -163,6 +181,13 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = true
       error.value = null
 
+      // Clear any existing tokens to start fresh
+      localStorage.removeItem('token')
+      localStorage.removeItem('refresh_token')
+      localStorage.removeItem('user')
+      sessionStorage.removeItem('token')
+      sessionStorage.removeItem('user')
+
       const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, credentials)
 
       // Store whether to remember the user
@@ -173,33 +198,27 @@ export const useAuthStore = defineStore('auth', () => {
         rememberMe.value = response.data.remember_me
       }
 
-      localStorage.setItem('remember_me', rememberMe.value.toString())
+      // Set the last visit time for session tracking
+      sessionStorage.setItem('last_visit', Date.now().toString())
 
-      // Create a session marker
-      sessionStorage.setItem('session_marker', Date.now().toString())
+      // Store the remember me preference
+      localStorage.setItem('remember_me', rememberMe.value.toString())
 
       // Store tokens
       token.value = response.data.access_token
 
       // If remember me is checked, also store the refresh token
       if (rememberMe.value) {
+        console.log('Storing credentials in localStorage (Remember Me)')
         refreshToken.value = response.data.refresh_token
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('refresh_token', response.data.refresh_token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
-
-        // Clear any session storage to avoid confusion
-        sessionStorage.removeItem('token')
-        sessionStorage.removeItem('user')
       } else {
+        console.log('Storing credentials in sessionStorage (No Remember Me)')
         // If not remembering, use session storage (cleared when browser closes)
         sessionStorage.setItem('token', response.data.access_token)
         sessionStorage.setItem('user', JSON.stringify(response.data.user))
-
-        // Ensure no data is in localStorage when remember me is off
-        localStorage.removeItem('token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
       }
 
       // Store initial user data from login response
@@ -316,6 +335,8 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = () => {
+    console.log('Logging out and clearing all auth data')
+
     // Clear all authentication-related data
     user.value = null
     token.value = null
@@ -332,11 +353,14 @@ export const useAuthStore = defineStore('auth', () => {
     sessionStorage.removeItem('token')
     sessionStorage.removeItem('user')
     sessionStorage.removeItem('session_marker')
+    sessionStorage.removeItem('last_visit')
 
     // Remove Authorization header
     delete axios.defaults.headers.common['Authorization']
 
-    console.log('Logged out - all auth data cleared')
+    // Add an explicit "logged out" flag
+    sessionStorage.setItem('logged_out', 'true')
+    localStorage.setItem('logged_out', 'true')
   }
 
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {
