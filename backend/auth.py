@@ -34,7 +34,7 @@ def generate_unique_token_id():
     return str(uuid.uuid4())
 
 @auth_bp.route("/register", methods=["POST"])
-@limiter.limit("3 per hour")
+@limiter.limit("3 per hour", exempt_when=lambda: False, key_func=get_remote_address)
 def register():
     try:
         data = request.get_json()
@@ -117,7 +117,7 @@ def register():
         return jsonify({"error": str(e)}), 500
 
 @auth_bp.route("/login", methods=["POST"])
-@limiter.limit("5 per minute")
+@limiter.limit("5 per minute", exempt_when=lambda: False, key_func=get_remote_address)
 def login():
     try:
         data = request.get_json()
@@ -189,7 +189,7 @@ def login():
 
 @auth_bp.route("/user", methods=["GET"])
 @jwt_required()
-@limiter.limit("30 per minute")
+@limiter.limit("30 per minute", exempt_when=lambda: False, key_func=get_remote_address)
 def get_user_data():
     try:
         # Get the user ID from the JWT token
@@ -256,7 +256,7 @@ def get_user_data():
         return jsonify({"error": "Unexpected server error", "details": str(e)}), 500
 
 @auth_bp.route("/check-availability", methods=["GET"])
-@limiter.limit("20 per minute")
+@limiter.limit("20 per minute", exempt_when=lambda: False, key_func=get_remote_address)
 def check_availability():
     """
     Check if a username or email is already in use.
@@ -303,7 +303,7 @@ def check_availability():
         conn.close()
 
 @auth_bp.route("/refresh", methods=["POST"])
-@limiter.limit("10 per minute")
+@limiter.limit("10 per minute", exempt_when=lambda: False, key_func=get_remote_address)
 def refresh():
     try:
         data = request.get_json()
