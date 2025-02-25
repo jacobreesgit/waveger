@@ -8,6 +8,7 @@ const authStore = useAuthStore()
 
 const username = ref('')
 const password = ref('')
+const rememberMe = ref(false)
 const error = ref('')
 
 const handleLogin = async () => {
@@ -15,6 +16,7 @@ const handleLogin = async () => {
     await authStore.login({
       username: username.value,
       password: password.value,
+      remember_me: rememberMe.value,
     })
     router.push('/')
   } catch (e) {
@@ -38,6 +40,13 @@ const handleLogin = async () => {
         <div class="form-group">
           <label for="password">Password</label>
           <input id="password" v-model="password" type="password" required />
+        </div>
+        <div class="form-group remember-me">
+          <label class="checkbox-container">
+            <input type="checkbox" v-model="rememberMe" />
+            <span class="checkmark"></span>
+            Remember me
+          </label>
         </div>
         <button type="submit" :disabled="authStore.loading">
           {{ authStore.loading ? 'Logging in...' : 'Login' }}
@@ -90,6 +99,23 @@ input {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
+}
+
+.remember-me {
+  display: flex;
+  align-items: center;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-container input {
+  width: auto;
+  margin-right: 8px;
 }
 
 button {

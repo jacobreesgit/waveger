@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 import os
 import logging
 import uuid
+import jwt as pyjwt  
 
 auth_bp = Blueprint("auth", __name__)
 bcrypt = Bcrypt()
@@ -294,3 +295,91 @@ def check_availability():
     finally:
         cursor.close()
         conn.close()
+
+@auth_bp.route("/refresh", methods=["POST"])
+def refresh():
+    try:
+        data = request.get_json()
+        refresh_token = data.get("refresh_token")
+        
+        if not refresh_token:
+            logger.error("Refresh token missing")
+            return jsonify({"error": "Refresh token is required"}), 400
+            
+        # Get the JWT secret key
+        jwt_secret_key = current_app.config.get("JWT_SECRET_KEY")
+        if not jwt_secret_key:
+            jwt_secret_key = current_app.config.get("SECRET_KEY")
+        
+        if not jwt_secret_key:
+            logger.error("JWT secret key not configured")
+            return jsonify({"error": "Server configuration error"}), 500
+            
+        # Verify the refresh token using PyJWT directly
+        try:
+            # First, decode without verification to get the token_id
+            unverified_payload = pyjwt.decode(
+                refresh_token, 
+                options={"verify_signature": False}
+            )
+            token_id = unverified_payload.get("token_id")
+            
+            # Now properly decode and verify
+            decoded_token = pyjwt.decode(
+                refresh_token,
+                jwt_secret_key,
+                algorithms=["HS256"]
+            )
+            
+            # Extract user information
+            user_id = decoded_token.get('sub')
+            if not user_id:
+                raise ValueError("Missing user ID in token")
+                
+            # Connect to DB to get user details
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            
+            cursor.execute(
+                "SELECT username, email FROM users WHERE id = %s",
+                (int(user_id),)
+            )
+            
+            db_user = cursor.fetchone()
+            if not db_user:
+                cursor.close()
+                conn.close()
+                raise ValueError("User not found")
+                
+            username = db_user[0]
+            email = db_user[1]
+            
+            cursor.close()
+            conn.close()
+            
+            # Generate a new access token
+            access_token = create_access_token(
+                identity=user_id,
+                additional_claims={
+                    "username": username,
+                    "email": email,
+                    "token_id": token_id  # Keep the same token_id for tracking
+                }
+            )
+            
+            return jsonify({
+                "access_token": access_token,
+                "user": {
+                    "id": int(user_id),
+                    "username": username,
+                    "email": email
+                }
+            }), 200
+            
+        except Exception as e:
+            logger.error(f"Token validation error: {e}")
+            return jsonify({"error": "Invalid refresh token"}), 401
+            
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        return jsonify({"error": "Failed to refresh token"}), 500
