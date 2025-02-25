@@ -1,5 +1,6 @@
 from __init__ import app, bcrypt, limiter
 from charts import charts_bp
+from flask import jsonify
 from apple_music import apple_music_bp
 from auth import auth_bp
 
