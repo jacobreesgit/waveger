@@ -14,11 +14,13 @@ export interface AuthResponse {
   access_token: string
   refresh_token: string
   user: User
+  remember_me?: boolean
 }
 
 export interface LoginCredentials {
   username: string
   password: string
+  remember_me?: boolean
 }
 
 export interface RegisterCredentials {

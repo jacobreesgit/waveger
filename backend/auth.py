@@ -1,9 +1,10 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
     jwt_required, 
-    create_refresh_token
+    create_refresh_token,
+    jwt
 )
 from flask_bcrypt import Bcrypt
 import psycopg2
@@ -294,3 +295,60 @@ def check_availability():
     finally:
         cursor.close()
         conn.close()
+
+@auth_bp.route("/refresh", methods=["POST"])
+def refresh():
+    try:
+        data = request.get_json()
+        refresh_token = data.get("refresh_token")
+        
+        if not refresh_token:
+            logger.error("Refresh token missing")
+            return jsonify({"error": "Refresh token is required"}), 400
+            
+        # Verify the refresh token
+        try:
+            # Decode without verification to get token_id
+            unverified_payload = jwt.decode(
+                refresh_token, 
+                options={"verify_signature": False}
+            )
+            token_id = unverified_payload.get("token_id")
+            
+            # Now properly decode and verify
+            decoded_token = jwt.decode(
+                refresh_token,
+                current_app.config["JWT_SECRET_KEY"],
+                algorithms=["HS256"]
+            )
+            
+            user_id = decoded_token['sub']
+            username = decoded_token['username']
+            email = decoded_token['email']
+            
+        except Exception as e:
+            logger.error(f"Invalid refresh token: {e}")
+            return jsonify({"error": "Invalid refresh token"}), 401
+            
+        # Generate a new access token
+        access_token = create_access_token(
+            identity=user_id,
+            additional_claims={
+                "username": username,
+                "email": email,
+                "token_id": token_id  # Keep the same token_id for tracking
+            }
+        )
+        
+        return jsonify({
+            "access_token": access_token,
+            "user": {
+                "id": int(user_id),
+                "username": username,
+                "email": email
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Token refresh error: {e}")
+        return jsonify({"error": "Failed to refresh token"}), 500

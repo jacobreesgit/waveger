@@ -9,21 +9,28 @@ export const useAuthStore = defineStore('auth', () => {
   const refreshToken = ref<string | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const rememberMe = ref(false)
 
   const BASE_URL = 'https://wavegerpython.onrender.com/api/auth'
 
   const initialize = () => {
-    const savedToken = localStorage.getItem('token')
+    const savedToken = localStorage.getItem('token') || sessionStorage.getItem('token')
     const savedRefreshToken = localStorage.getItem('refresh_token')
-    const savedUser = localStorage.getItem('user')
+    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user')
+    const savedRememberMe = localStorage.getItem('remember_me') === 'true'
 
     console.log('Initialize method called')
     console.log('Saved Token:', !!savedToken)
     console.log('Saved User:', savedUser)
+    console.log('Remember Me:', savedRememberMe)
+
+    rememberMe.value = savedRememberMe
 
     if (savedToken && savedUser) {
       token.value = savedToken
-      refreshToken.value = savedRefreshToken
+      if (savedRememberMe && savedRefreshToken) {
+        refreshToken.value = savedRefreshToken
+      }
       user.value = JSON.parse(savedUser)
 
       // Set default Authorization header
@@ -34,12 +41,14 @@ export const useAuthStore = defineStore('auth', () => {
         console.error('Detailed initialization fetch error:', err)
         console.error('Error response:', err.response)
 
-        // If fetch fails, try to refresh token
-        if (savedRefreshToken) {
+        // If fetch fails and we have a refresh token, try to refresh
+        if (savedRememberMe && savedRefreshToken) {
           refreshAccessToken().catch((refreshErr) => {
             console.error('Token refresh failed:', refreshErr)
             logout()
           })
+        } else {
+          logout()
         }
       })
     }
@@ -80,8 +89,12 @@ export const useAuthStore = defineStore('auth', () => {
 
       user.value = validatedUser
 
-      // Update localStorage with validated user data
-      localStorage.setItem('user', JSON.stringify(validatedUser))
+      // Update storage with validated user data
+      if (rememberMe.value) {
+        localStorage.setItem('user', JSON.stringify(validatedUser))
+      } else {
+        sessionStorage.setItem('user', JSON.stringify(validatedUser))
+      }
 
       return validatedUser
     } catch (e) {
@@ -97,11 +110,15 @@ export const useAuthStore = defineStore('auth', () => {
 
         // Handle specific error scenarios
         if (e.response?.status === 401) {
-          // Token might be expired, try to refresh
-          try {
-            await refreshAccessToken()
-            return await fetchUserData()
-          } catch (refreshError) {
+          // Token might be expired, try to refresh if remember me is on
+          if (rememberMe.value && refreshToken.value) {
+            try {
+              await refreshAccessToken()
+              return await fetchUserData()
+            } catch (refreshError) {
+              logout()
+            }
+          } else {
             logout()
           }
         }
@@ -121,17 +138,27 @@ export const useAuthStore = defineStore('auth', () => {
 
       const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, credentials)
 
+      // Store whether to remember the user
+      rememberMe.value = !!response.data.remember_me
+      localStorage.setItem('remember_me', rememberMe.value.toString())
+
       // Store tokens
       token.value = response.data.access_token
-      refreshToken.value = response.data.refresh_token
+
+      // If remember me is checked, also store the refresh token
+      if (rememberMe.value) {
+        refreshToken.value = response.data.refresh_token
+        localStorage.setItem('token', response.data.access_token)
+        localStorage.setItem('refresh_token', response.data.refresh_token)
+        localStorage.setItem('user', JSON.stringify(response.data.user))
+      } else {
+        // If not remembering, use session storage (cleared when browser closes)
+        sessionStorage.setItem('token', response.data.access_token)
+        sessionStorage.setItem('user', JSON.stringify(response.data.user))
+      }
 
       // Store initial user data from login response
       user.value = response.data.user
-
-      // Persist in localStorage
-      localStorage.setItem('token', response.data.access_token)
-      localStorage.setItem('refresh_token', response.data.refresh_token)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
 
       // Set the Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
@@ -168,17 +195,21 @@ export const useAuthStore = defineStore('auth', () => {
 
       const response = await axios.post<AuthResponse>(`${BASE_URL}/register`, credentials)
 
+      // For new registrations, default to remember me = true
+      rememberMe.value = true
+      localStorage.setItem('remember_me', 'true')
+
       // Store tokens
       token.value = response.data.access_token
       refreshToken.value = response.data.refresh_token
-
-      // Store initial user data from register response
-      user.value = response.data.user
 
       // Persist in localStorage
       localStorage.setItem('token', response.data.access_token)
       localStorage.setItem('refresh_token', response.data.refresh_token)
       localStorage.setItem('user', JSON.stringify(response.data.user))
+
+      // Store initial user data from register response
+      user.value = response.data.user
 
       // Set the Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
@@ -220,7 +251,13 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Update tokens
       token.value = response.data.access_token
-      localStorage.setItem('token', response.data.access_token)
+
+      // Store token in the appropriate storage based on remember me setting
+      if (rememberMe.value) {
+        localStorage.setItem('token', response.data.access_token)
+      } else {
+        sessionStorage.setItem('token', response.data.access_token)
+      }
 
       // Set new Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token.value}`
@@ -238,11 +275,17 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     token.value = null
     refreshToken.value = null
+    rememberMe.value = false
 
     // Remove from localStorage
     localStorage.removeItem('token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem('user')
+    localStorage.removeItem('remember_me')
+
+    // Remove from sessionStorage
+    sessionStorage.removeItem('token')
+    sessionStorage.removeItem('user')
 
     // Remove Authorization header
     delete axios.defaults.headers.common['Authorization']
@@ -277,11 +320,14 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     loading,
     error,
+    rememberMe,
     initialize,
     login,
     register,
     logout,
     fetchUserData,
     refreshAccessToken,
+    checkUsernameAvailability,
+    checkEmailAvailability,
   }
 })
