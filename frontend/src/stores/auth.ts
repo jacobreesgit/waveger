@@ -26,24 +26,37 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    // First, check if this is a fresh page load by setting/checking a timestamp
-    const now = Date.now()
-    const lastVisit = parseInt(sessionStorage.getItem('last_visit') || '0')
-    sessionStorage.setItem('last_visit', now.toString())
-
-    // If gap is more than 5 seconds, consider it a new session
-    const isNewSession = now - lastVisit > 5000
-
     // Get remember me preference
     const savedRememberMe = localStorage.getItem('remember_me') === 'true'
-    console.log('Is new session:', isNewSession)
     console.log('Remember Me:', savedRememberMe)
 
-    // If it's a new session and remember me is not checked, clear everything
-    if (isNewSession && !savedRememberMe) {
-      console.log('New session detected without Remember Me - logging out')
-      logout()
-      return
+    // If remember me is enabled, we should use localStorage regardless of session
+    // If remember me is not enabled, we need to check if this is a new session
+    let shouldStayLoggedIn = false
+
+    if (savedRememberMe) {
+      // With Remember Me, always stay logged in if we have a token
+      shouldStayLoggedIn = true
+      console.log('Remember Me is enabled - attempting to restore session')
+    } else {
+      // Without Remember Me, only stay logged in if it's the same session
+      // First, check if this is a fresh page load by setting/checking a timestamp
+      const now = Date.now()
+      const lastVisit = parseInt(sessionStorage.getItem('last_visit') || '0')
+      sessionStorage.setItem('last_visit', now.toString())
+
+      // If gap is more than 5 seconds, consider it a new session
+      const isNewSession = now - lastVisit > 5000
+      console.log('Is new session:', isNewSession)
+
+      // Only stay logged in if it's the same session
+      shouldStayLoggedIn = !isNewSession
+
+      if (isNewSession) {
+        console.log('New session detected without Remember Me - logging out')
+        logout()
+        return
+      }
     }
 
     // Determine where to look for credentials based on remember me preference
@@ -60,7 +73,6 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('Initialize method called')
     console.log('Saved Token:', !!savedToken)
     console.log('Saved User:', savedUser)
-    console.log('Remember Me:', savedRememberMe)
 
     rememberMe.value = savedRememberMe
 
@@ -188,37 +200,50 @@ export const useAuthStore = defineStore('auth', () => {
       sessionStorage.removeItem('token')
       sessionStorage.removeItem('user')
 
+      // Clear any logged out flags
+      localStorage.removeItem('logged_out')
+      sessionStorage.removeItem('logged_out')
+
       const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, credentials)
 
-      // Store whether to remember the user
-      rememberMe.value = !!credentials.remember_me
+      // Store whether to remember the user (prioritize credentials, fallback to response)
+      rememberMe.value =
+        credentials.remember_me !== undefined
+          ? !!credentials.remember_me
+          : !!response.data.remember_me
 
-      // Use response data as fallback if no explicit remember_me in credentials
-      if (credentials.remember_me === undefined && response.data.remember_me !== undefined) {
-        rememberMe.value = response.data.remember_me
-      }
+      console.log(`Login with Remember Me: ${rememberMe.value}`)
 
       // Set the last visit time for session tracking
       sessionStorage.setItem('last_visit', Date.now().toString())
 
-      // Store the remember me preference
+      // Store the remember me preference - IMPORTANT for session restoration
       localStorage.setItem('remember_me', rememberMe.value.toString())
 
       // Store tokens
       token.value = response.data.access_token
 
-      // If remember me is checked, also store the refresh token
+      // If remember me is checked, store in localStorage for persistence
       if (rememberMe.value) {
-        console.log('Storing credentials in localStorage (Remember Me)')
+        console.log('Storing credentials in localStorage (Remember Me enabled)')
         refreshToken.value = response.data.refresh_token
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('refresh_token', response.data.refresh_token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // Ensure sessionStorage is clean
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('user')
       } else {
-        console.log('Storing credentials in sessionStorage (No Remember Me)')
+        console.log('Storing credentials in sessionStorage (Remember Me disabled)')
         // If not remembering, use session storage (cleared when browser closes)
         sessionStorage.setItem('token', response.data.access_token)
         sessionStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // Ensure localStorage is clean of auth data
+        localStorage.removeItem('token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user')
       }
 
       // Store initial user data from login response
