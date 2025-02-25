@@ -11,6 +11,10 @@ from flask_limiter.util import get_remote_address
 # Initialize Flask app
 app = Flask(__name__)
 
+# Configure logging more explicitly
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Initialize Bcrypt
 bcrypt = Bcrypt(app)
 
@@ -65,8 +69,24 @@ def handle_revoked_token(jwt_header, jwt_payload):
     logging.error(f"Revoked token. Header: {jwt_header}, Payload: {jwt_payload}")
     return {"msg": "Token has been revoked"}, 401
 
-# Add after the limiter initialization and before the end of the file
+# Before request logging to debug rate limiting
+@app.before_request
+def debug_request():
+    logging.info(f"Request: {request.method} {request.path} from {get_remote_address()}")
 
+# Initialize rate limiter
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+    strategy="fixed-window",
+    headers_enabled=True,  # Enable rate limit headers in responses
+)
+
+# Register limiter with app
+limiter.init_app(app)
+
+# Add rate limit exceeded handler
 @app.errorhandler(429)
 def ratelimit_handler(e):
     logging.warning(f"Rate limit exceeded: {e.description}")
@@ -75,6 +95,7 @@ def ratelimit_handler(e):
         "message": "Rate limit exceeded. Please try again later."
     }), 429
 
+# Add rate limit headers to responses
 @app.after_request
 def inject_rate_limit_headers(response):
     try:
@@ -86,28 +107,5 @@ def inject_rate_limit_headers(response):
                 response.headers.add('X-RateLimit-Reset', str(window_stats.reset))
     except Exception as e:
         logging.error(f"Error injecting rate limit headers: {e}")
+    
     return response
-
-limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://",
-    strategy="fixed-window",
-    headers_enabled=True,  # Enable rate limit headers in responses
-    auto_check=False,      # Don't check limits automatically, we'll use decorators
-    application_limits=["300 per day"],  # Apply to entire application
-)
-
-# Add to __init__.py
-@app.before_request
-def debug_request():
-    logging.debug(f"Request: {request.method} {request.path} from {get_remote_address()}")
-    
-# Add a debug handler to limiter
-def on_breach(limit):
-    logging.warning(f"Rate limit breached: {limit}")
-    
-limiter.on_breach(on_breach)
-
-# Register limiter with app
-limiter.init_app(app)
