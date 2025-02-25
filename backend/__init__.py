@@ -69,22 +69,43 @@ def handle_revoked_token(jwt_header, jwt_payload):
     logging.error(f"Revoked token. Header: {jwt_header}, Payload: {jwt_payload}")
     return {"msg": "Token has been revoked"}, 401
 
+# Custom function to get the client's real IP address from behind proxies
+def get_real_ip():
+    """Get the real IP address, accounting for proxies and load balancers."""
+    # Check X-Forwarded-For header (common for proxies)
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    if x_forwarded_for:
+        # Get the first address in the chain (client's original IP)
+        ip = x_forwarded_for.split(',')[0].strip()
+        logging.debug(f"Using X-Forwarded-For IP: {ip}")
+        return ip
+    
+    # Check X-Real-IP header (used by some reverse proxies)
+    x_real_ip = request.headers.get('X-Real-IP')
+    if x_real_ip:
+        logging.debug(f"Using X-Real-IP: {x_real_ip}")
+        return x_real_ip
+    
+    # Fall back to the remote address
+    logging.debug(f"Using remote address: {request.remote_addr}")
+    return request.remote_addr
+
 # Before request logging to debug rate limiting
 @app.before_request
 def debug_request():
-    logging.info(f"Request: {request.method} {request.path} from {get_remote_address()}")
+    client_ip = get_real_ip()
+    logging.info(f"Request: {request.method} {request.path} from {client_ip}")
+    logging.debug(f"Headers: {request.headers}")
 
-# Initialize rate limiter
+# Initialize rate limiter with custom key function
 limiter = Limiter(
-    key_func=get_remote_address,
+    app=app,  # Pass app directly here
+    key_func=get_real_ip,  # Use our custom function
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://",
     strategy="fixed-window",
     headers_enabled=True,  # Enable rate limit headers in responses
 )
-
-# Register limiter with app
-limiter.init_app(app)
 
 # Add rate limit exceeded handler
 @app.errorhandler(429)
