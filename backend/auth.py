@@ -1,12 +1,12 @@
 from flask import Blueprint, request, jsonify, g, current_app
-from __init__ import limiter, bcrypt 
+from __init__ import limiter, bcrypt  # Import bcrypt from __init__.py
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
     jwt_required, 
     create_refresh_token
 )
-from flask_limiter.util import get_remote_address  
+from flask_limiter.util import get_remote_address
 import psycopg2
 from datetime import datetime, timedelta
 import os
@@ -15,7 +15,6 @@ import uuid
 import jwt as pyjwt
 
 auth_bp = Blueprint("auth", __name__)
-bcrypt = Bcrypt()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 logging.basicConfig(level=logging.DEBUG)
