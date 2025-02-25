@@ -14,10 +14,37 @@ export const useAuthStore = defineStore('auth', () => {
   const BASE_URL = 'https://wavegerpython.onrender.com/api/auth'
 
   const initialize = () => {
-    const savedToken = localStorage.getItem('token') || sessionStorage.getItem('token')
-    const savedRefreshToken = localStorage.getItem('refresh_token')
-    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user')
+    // Check if we're in a restored session by adding a session marker
+    const sessionMarker = sessionStorage.getItem('session_marker')
     const savedRememberMe = localStorage.getItem('remember_me') === 'true'
+
+    // If we don't have a session marker and don't have Remember Me,
+    // this is likely a restored browser session that should be logged out
+    if (!sessionMarker && !savedRememberMe) {
+      // Clear any potentially persisted data
+      logout()
+
+      // Set a new session marker to indicate a fresh session
+      sessionStorage.setItem('session_marker', Date.now().toString())
+
+      console.log('Session restored without Remember Me - logged out')
+      return
+    }
+
+    // Set a session marker if it doesn't exist
+    if (!sessionMarker) {
+      sessionStorage.setItem('session_marker', Date.now().toString())
+    }
+
+    const savedToken = savedRememberMe
+      ? localStorage.getItem('token')
+      : sessionStorage.getItem('token')
+
+    const savedRefreshToken = localStorage.getItem('refresh_token')
+
+    const savedUser = savedRememberMe
+      ? localStorage.getItem('user')
+      : sessionStorage.getItem('user')
 
     console.log('Initialize method called')
     console.log('Saved Token:', !!savedToken)
@@ -139,8 +166,17 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, credentials)
 
       // Store whether to remember the user
-      rememberMe.value = !!response.data.remember_me
+      rememberMe.value = !!credentials.remember_me
+
+      // Use response data as fallback if no explicit remember_me in credentials
+      if (credentials.remember_me === undefined && response.data.remember_me !== undefined) {
+        rememberMe.value = response.data.remember_me
+      }
+
       localStorage.setItem('remember_me', rememberMe.value.toString())
+
+      // Create a session marker
+      sessionStorage.setItem('session_marker', Date.now().toString())
 
       // Store tokens
       token.value = response.data.access_token
@@ -151,10 +187,19 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('token', response.data.access_token)
         localStorage.setItem('refresh_token', response.data.refresh_token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // Clear any session storage to avoid confusion
+        sessionStorage.removeItem('token')
+        sessionStorage.removeItem('user')
       } else {
         // If not remembering, use session storage (cleared when browser closes)
         sessionStorage.setItem('token', response.data.access_token)
         sessionStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // Ensure no data is in localStorage when remember me is off
+        localStorage.removeItem('token')
+        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('user')
       }
 
       // Store initial user data from login response
@@ -286,9 +331,12 @@ export const useAuthStore = defineStore('auth', () => {
     // Remove from sessionStorage
     sessionStorage.removeItem('token')
     sessionStorage.removeItem('user')
+    sessionStorage.removeItem('session_marker')
 
     // Remove Authorization header
     delete axios.defaults.headers.common['Authorization']
+
+    console.log('Logged out - all auth data cleared')
   }
 
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {
