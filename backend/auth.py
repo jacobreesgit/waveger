@@ -6,7 +6,7 @@ from flask_jwt_extended import (
     jwt_required, 
     create_refresh_token
 )
-from flask_bcrypt import Bcrypt
+from flask import Blueprint, request, jsonify, g, current_app
 import psycopg2
 from datetime import datetime, timedelta
 import os

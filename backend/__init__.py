@@ -73,5 +73,28 @@ limiter = Limiter(
     strategy="fixed-window",
 )
 
+# Add after the limiter initialization and before the end of the file
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    logging.warning(f"Rate limit exceeded: {e.description}")
+    return jsonify({
+        "error": "Too many requests",
+        "message": "Rate limit exceeded. Please try again later."
+    }), 429
+
+@app.after_request
+def inject_rate_limit_headers(response):
+    try:
+        if hasattr(limiter, 'current_limit'):
+            window_stats = limiter.get_window_stats(*limiter.current_limit)
+            if window_stats:
+                response.headers.add('X-RateLimit-Remaining', str(window_stats.remaining))
+                response.headers.add('X-RateLimit-Limit', str(window_stats.limit))
+                response.headers.add('X-RateLimit-Reset', str(window_stats.reset))
+    except Exception as e:
+        logging.error(f"Error injecting rate limit headers: {e}")
+    return response
+
 # Register limiter with app
 limiter.init_app(app)
