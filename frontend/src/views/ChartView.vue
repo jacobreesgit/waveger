@@ -208,6 +208,18 @@ watch(
   { immediate: true },
 )
 
+// Watch for chart changes to clear Apple Music data cache
+watch(
+  () => store.currentChart,
+  (newChart) => {
+    if (newChart) {
+      console.log('Chart changed, clearing Apple Music data cache')
+      songData.value.clear()
+      appleDataLoading.value.clear()
+    }
+  },
+)
+
 // Optimize Apple Music data fetching
 watch(
   () => store.currentChart?.songs,
