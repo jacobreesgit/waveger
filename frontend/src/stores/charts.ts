@@ -1,24 +1,21 @@
 // charts.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { ChartData, ChartOption } from '@/types/api'
-import { getTopCharts, getChartDetails } from '@/services/api'
+import type { ChartData } from '@/types/api'
+import { getChartDetails } from '@/services/api'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
-  const availableCharts = ref<ChartOption[]>([])
   const selectedChartId = ref('hot-100/')
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasMore = ref(true)
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
-  const topChartsSource = ref<'api' | 'database'>('api')
   const initialized = ref(false)
-  // Add a new state to track if initialization is in progress
   const initializing = ref(false)
 
-  // New initialize method to be called once in App.vue
+  // Simplified initialize method that only fetches chart data
   const initialize = async () => {
     if (initialized.value) {
       console.log('Store - Charts already initialized, skipping')
@@ -36,11 +33,9 @@ export const useChartsStore = defineStore('charts', () => {
       error.value = null
       console.log('Store - Initializing charts store')
 
-      // Fetch available charts
-      await fetchAvailableCharts()
-
-      // Fetch default chart data
+      // Fetch default chart data only
       const today = new Date().toISOString().split('T')[0]
+      console.log(`Store initialization - Using today's date: ${today}`)
       await fetchChartDetails({
         id: 'hot-100',
         week: today,
@@ -60,32 +55,29 @@ export const useChartsStore = defineStore('charts', () => {
 
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
     try {
-      // Don't set loading to true if we're just loading more songs from the same chart
-      // This prevents unnecessary loading indicators
-      const isInitialLoad = !(currentChart.value && params.id === selectedChartId.value)
+      // Always set loading state when fetching a different chart
+      loading.value = true
+      error.value = null
+      hasMore.value = true
+      currentPage.value = 1
 
-      if (isInitialLoad) {
-        loading.value = true
-        error.value = null
-        hasMore.value = true
-        currentPage.value = 1
-      }
+      const chartId = params.id || 'hot-100/'
 
-      selectedChartId.value = params.id || 'hot-100/'
+      // Store the selected chart ID
+      selectedChartId.value = chartId
+
       console.log('Store - Fetching chart details with params:', params)
+      console.log(`Store - Requesting chart data for date: ${params.week || 'current date'}`)
 
       const response = await getChartDetails(params)
 
-      // If this is just loading more songs, append them
-      if (!isInitialLoad && currentChart.value && response.data.songs) {
-        currentChart.value.songs = [...currentChart.value.songs, ...response.data.songs]
-      } else {
-        // Otherwise replace the current chart completely
-        currentChart.value = response.data
-      }
-
+      // Always replace the current chart completely when explicitly requesting chart details
+      currentChart.value = response.data
       dataSource.value = response.source
+
+      console.log(`Store - Loaded chart data for ${chartId}:`, response.data.title)
     } catch (e) {
+      console.error('Store - Error fetching chart details:', e)
       error.value = e instanceof Error ? e.message : 'Failed to fetch chart details'
       hasMore.value = false
     } finally {
@@ -146,29 +138,16 @@ export const useChartsStore = defineStore('charts', () => {
     }
   }
 
-  const fetchAvailableCharts = async () => {
-    try {
-      const response = await getTopCharts()
-      availableCharts.value = response.data
-      topChartsSource.value = response.source
-    } catch (e) {
-      console.error('Failed to fetch available charts:', e)
-    }
-  }
-
   return {
     currentChart,
-    availableCharts,
     selectedChartId,
     loading,
     error,
     hasMore,
     dataSource,
-    topChartsSource,
     initialize,
     fetchChartDetails,
     fetchMoreSongs,
-    fetchAvailableCharts,
     initialized,
     initializing,
   }

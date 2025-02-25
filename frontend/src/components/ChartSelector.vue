@@ -1,66 +1,79 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute } from 'vue-router'
 
 const store = useChartsStore()
 const route = useRoute()
-const initialLoadDone = ref(false)
 
-const selectChart = async (event: Event) => {
-  const select = event.target as HTMLSelectElement
-  await store.fetchChartDetails({ id: select.value, range: '1-10' })
+// Create a local reactive reference for the selected chart ID
+const selectedChartId = ref('hot-100/')
+
+// Hardcoded chart options
+const chartOptions = [
+  { id: 'hot-100/', title: 'Billboard Hot 100™' },
+  { id: 'billboard-200/', title: 'Billboard 200™' },
+  { id: 'artist-100', title: 'Billboard Artist 100' },
+  { id: 'emerging-artists', title: 'Emerging Artists' },
+  { id: 'streaming-songs', title: 'Streaming Songs' },
+  { id: 'radio-songs', title: 'Radio Songs' },
+  { id: 'digital-song-sales', title: 'Digital Song Sales' },
+  { id: 'summer-songs', title: 'Songs of the Summer' },
+  { id: 'top-album-sales', title: 'Top Album Sales' },
+  { id: 'tiktok-billboard-top-50', title: 'TikTok Billboard Top 50' },
+  { id: 'top-streaming-albums/', title: 'Top Streaming Albums' },
+  { id: 'independent-albums', title: 'Independent Albums' },
+  { id: 'vinyl-albums', title: 'Vinyl Albums' },
+  { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
+  { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
+]
+
+const selectChart = async () => {
+  console.log(`Chart changed to: ${selectedChartId.value}`)
+
+  // Update the store's selected chart ID
+  store.selectedChartId = selectedChartId.value
+
+  // Fetch the chart data for the selected chart
+  await store.fetchChartDetails({
+    id: selectedChartId.value,
+    range: '1-10',
+  })
 }
 
-onMounted(async () => {
-  // Only fetch available charts if they haven't been loaded yet
-  if (store.availableCharts.length === 0) {
-    await store.fetchAvailableCharts()
+// Watch for changes to the selected chart ID and load data when it changes
+watch(selectedChartId, async (newChartId, oldChartId) => {
+  if (newChartId !== oldChartId) {
+    await selectChart()
   }
-
-  // Use the chart ID from the route if available
-  const routeChartId = route.query.id as string
-
-  // Set the selected chart based on route or default to Hot 100
-  if (routeChartId) {
-    store.selectedChartId = routeChartId
-  } else {
-    const hotChart = store.availableCharts.find(
-      (chart) => chart.title === 'Billboard Hot 100™' || chart.id === 'hot-100/',
-    )
-    if (hotChart) {
-      store.selectedChartId = hotChart.id
-    }
-  }
-
-  initialLoadDone.value = true
 })
 
-// Watch for changes to the selected chart ID
-watch(
-  () => store.selectedChartId,
-  (newChartId, oldChartId) => {
-    // Only trigger a chart refresh if this isn't the initial load
-    // and the chart ID has actually changed
-    if (initialLoadDone.value && newChartId !== oldChartId) {
-      console.log(`Chart selected changed from ${oldChartId} to ${newChartId}`)
+onMounted(() => {
+  // Use the chart ID from the route if available
+  const routeChartId = route.query.id as string
+  if (routeChartId) {
+    selectedChartId.value = routeChartId
+    store.selectedChartId = routeChartId
+    // Only fetch initial data if we don't already have chart data
+    if (!store.currentChart) {
+      selectChart()
     }
-  },
-)
+  } else {
+    // Make sure store ID matches local ID
+    store.selectedChartId = selectedChartId.value
+  }
+})
 </script>
 
 <template>
   <div class="chart-selector">
     <div class="selector-header">
-      <select v-model="store.selectedChartId" @change="selectChart" class="chart-select">
-        <option v-for="chart in store.availableCharts" :key="chart.id" :value="chart.id">
+      <select v-model="selectedChartId" class="chart-select">
+        <option v-for="chart in chartOptions" :key="chart.id" :value="chart.id">
           {{ chart.title }}
         </option>
       </select>
       <div class="source-badges">
-        <span class="source-badge" :class="store.topChartsSource" title="Charts list source">
-          Lists: {{ store.topChartsSource }}
-        </span>
         <span
           v-if="store.currentChart"
           class="source-badge"
