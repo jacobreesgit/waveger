@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify, g, current_app
-from __init__ import limiter, bcrypt  # Import bcrypt from __init__.py
+from __init__ import limiter, bcrypt 
 from flask_jwt_extended import (
     create_access_token, 
     get_jwt_identity, 
