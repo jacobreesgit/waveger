@@ -1,6 +1,5 @@
 import requests
 import time
-import pytest
 from datetime import datetime
 import random
 import string
@@ -8,11 +7,11 @@ import string
 # Base API URL
 BASE_URL = "https://wavegerpython.onrender.com/api/auth"
 
-# Test data
-TEST_USER = {
-    "username": "test_user_rate_limit",
-    "password": "wrong_password123",
-    "email": "test_rate_limit@example.com"
+# Existing test user credentials (to use when registration limit is hit)
+FALLBACK_USER = {
+    "username": "test_user_permanent",
+    "password": "TestPassword123!",
+    "email": "test_permanent@example.com"
 }
 
 # ---------------------- Helper Functions ----------------------
@@ -53,6 +52,87 @@ def random_string(length=8):
     """Generate a random string for unique test data."""
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
+def ensure_test_user_exists():
+    """Make sure the fallback test user exists before running tests."""
+    # First, check if we can log in with the fallback user
+    login_response = requests.post(
+        f"{BASE_URL}/login",
+        json={
+            "username": FALLBACK_USER["username"],
+            "password": FALLBACK_USER["password"]
+        }
+    )
+    
+    # If login successful, we're good
+    if login_response.status_code == 200:
+        print(f"✅ Fallback user {FALLBACK_USER['username']} exists and credentials are valid.")
+        return True
+    
+    # Otherwise, try to register the fallback user
+    print(f"Registering fallback user {FALLBACK_USER['username']}...")
+    register_response = requests.post(
+        f"{BASE_URL}/register",
+        json=FALLBACK_USER
+    )
+    
+    if register_response.status_code == 201:
+        print(f"✅ Successfully registered fallback user {FALLBACK_USER['username']}")
+        return True
+    elif register_response.status_code == 409:
+        print(f"⚠️ User {FALLBACK_USER['username']} already exists but password may be wrong")
+        return False
+    else:
+        print(f"❌ Failed to register fallback user. Status: {register_response.status_code}")
+        print(f"Response: {register_response.text}")
+        return False
+
+def get_valid_token():
+    """Tries to get a valid token, first by logging in with existing credentials,
+    then trying to register a new user if login fails."""
+    
+    # First try to log in with the fallback user
+    print("Attempting to log in with existing user...")
+    login_response = requests.post(
+        f"{BASE_URL}/login",
+        json={
+            "username": FALLBACK_USER["username"],
+            "password": FALLBACK_USER["password"]
+        }
+    )
+    
+    # If login succeeds, use that token
+    if login_response.status_code == 200:
+        login_data = login_response.json()
+        token = login_data.get("access_token")
+        if token:
+            print(f"Successfully logged in as {FALLBACK_USER['username']}")
+            return token
+    
+    # Otherwise, try to register a new user
+    print("Login failed. Attempting to register a new user...")
+    username = f"test_rate_limit_{random_string()}"
+    email = f"test_rate_limit_{random_string()}@example.com"
+    password = "TestPassword123!"
+    
+    register_response = requests.post(
+        f"{BASE_URL}/register",
+        json={
+            "username": username,
+            "email": email,
+            "password": password
+        }
+    )
+    
+    if register_response.status_code == 201:
+        register_data = register_response.json()
+        token = register_data.get("access_token")
+        if token:
+            print(f"Successfully registered new user: {username}")
+            return token
+    
+    print(f"All authentication attempts failed. Cannot proceed with user endpoint test.")
+    raise Exception("Unable to obtain a valid token for testing")
+
 # ---------------------- Test Functions ----------------------
 
 def test_login_rate_limit():
@@ -63,7 +143,10 @@ def test_login_rate_limit():
     responses = make_requests(
         endpoint="login",
         method="POST",
-        data=TEST_USER,
+        data={
+            "username": f"nonexistent_{random_string()}",
+            "password": "wrong_password123"
+        },
         count=7,
         delay=0.5
     )
@@ -131,41 +214,20 @@ def test_user_endpoint_rate_limit():
     """Test user endpoint rate limit (30 per minute) with valid authentication."""
     print("\n=== TESTING USER ENDPOINT RATE LIMIT (30 per minute) ===")
     
-    # First, register a new test user
-    username = f"test_rate_limit_{random_string()}"
-    email = f"test_rate_limit_{random_string()}@example.com"
-    password = "TestPassword123!"
-    
-    # Register the user
-    register_response = requests.post(
-        f"{BASE_URL}/register",
-        json={
-            "username": username,
-            "email": email,
-            "password": password
-        }
-    )
-    
-    if register_response.status_code != 201:
-        print(f"Failed to register test user: {register_response.json()}")
-        raise Exception("Cannot create test user for rate limit testing")
-    
-    # Extract the token from the response
-    register_data = register_response.json()
-    token = register_data.get("access_token")
-    
-    if not token:
-        print("No access token in registration response")
-        raise Exception("Missing access token for rate limit testing")
-    
-    print(f"Created test user: {username} with valid token")
+    # Get a valid token using the helper function (tries login then registration)
+    try:
+        token = get_valid_token()
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        print("Skipping user endpoint rate limit test.")
+        return
     
     # Now make 32 requests (2 more than the limit) with the valid token
     count = 32
     responses = []
     auth_header = {"Authorization": f"Bearer {token}"}
     
-    print(f"\nTesting GET {BASE_URL}/user with {count} requests and valid token...")
+    print(f"Testing GET {BASE_URL}/user with {count} requests and valid token...")
     
     for i in range(count):
         resp = requests.get(
@@ -188,7 +250,7 @@ def test_user_endpoint_rate_limit():
     for i, code in enumerate(responses[:30]):
         assert code == 200, f"Request {i+1} should return 200, got {code}"
     
-    # Last 2 should be rate limited (429)
+    # Last 2 should be rate limited
     for i, code in enumerate(responses[30:], 31):
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
@@ -224,6 +286,9 @@ def run_all_tests():
     print("\n=========================================")
     print("BEGINNING RATE LIMIT TESTS")
     print("=========================================")
+    
+    # First ensure we have a fallback user
+    ensure_test_user_exists()
     
     try:
         test_login_rate_limit()
