@@ -162,10 +162,10 @@ def test_login_rate_limit():
     print("Login rate limit test: PASSED")
 
 def test_register_rate_limit():
-    """Test register endpoint rate limit (3 per hour)."""
-    print("\n=== TESTING REGISTER RATE LIMIT (3 per hour) ===")
+    """Test register endpoint rate limit (2 per hour)."""
+    print("\n=== TESTING REGISTER RATE LIMIT (2 per hour) ===")
     
-    # Make 4 requests (1 more than the limit)
+    # Make 3 requests (1 more than the limit)
     responses = make_requests(
         endpoint="register",
         method="POST",
@@ -174,16 +174,16 @@ def test_register_rate_limit():
             "password": "Test123!",
             "email": f"test_{random_string()}@example.com"  # Unique emails
         },
-        count=4,
+        count=3,
         delay=1.0  # Longer delay for registration
     )
     
-    # First 3 should succeed with either 201 (created) or 409 (conflict) or 400 (validation error)
-    for i, code in enumerate(responses[:3]):
+    # First 2 should succeed with either 201 (created) or 409 (conflict) or 400 (validation error)
+    for i, code in enumerate(responses[:2]):
         assert code in (201, 409, 400), f"Request {i+1} should return 201, 409, or 400, got {code}"
     
-    # 4th should be rate limited
-    assert responses[3] == 429, f"Request 4 should be rate limited with 429, got {responses[3]}"
+    # 3rd should be rate limited
+    assert responses[2] == 429, f"Request 3 should be rate limited with 429, got {responses[2]}"
     
     print("Register rate limit test: PASSED")
 
