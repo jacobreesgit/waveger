@@ -32,7 +32,7 @@ def generate_unique_token_id():
     return str(uuid.uuid4())
 
 @auth_bp.route("/register", methods=["POST"])
-@limiter.limit("3 per hour", key_func=get_real_ip)
+@limiter.limit("20 per hour", key_func=get_real_ip)
 def register():
     try:
         data = request.get_json()
