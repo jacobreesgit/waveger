@@ -136,10 +136,10 @@ def get_valid_token():
 # ---------------------- Test Functions ----------------------
 
 def test_login_rate_limit():
-    """Test login endpoint rate limit (5 per minute)."""
-    print("\n=== TESTING LOGIN RATE LIMIT (5 per minute) ===")
+    """Test login endpoint rate limit (4 per minute)."""
+    print("\n=== TESTING LOGIN RATE LIMIT (4 per minute) ===")
     
-    # Make 7 requests (2 more than the limit)
+    # Make 6 requests (2 more than the limit)
     responses = make_requests(
         endpoint="login",
         method="POST",
@@ -147,16 +147,16 @@ def test_login_rate_limit():
             "username": f"nonexistent_{random_string()}",
             "password": "wrong_password123"
         },
-        count=7,
+        count=6,
         delay=0.5
     )
     
-    # Assert first 5 should be either 401 or 400 (authentication failure, not rate limited)
-    for i, code in enumerate(responses[:5]):
+    # Assert first 4 should be either 401 or 400 (authentication failure, not rate limited)
+    for i, code in enumerate(responses[:4]):
         assert code in (401, 400), f"Request {i+1} should return 401 or 400, got {code}"
     
     # Assert last 2 should be rate limited (429)
-    for i, code in enumerate(responses[5:], 6):
+    for i, code in enumerate(responses[4:], 5):
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
     print("Login rate limit test: PASSED")
