@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { validateLoginForm } from '@/utils/validation'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -9,18 +10,63 @@ const authStore = useAuthStore()
 const username = ref('')
 const password = ref('')
 const rememberMe = ref(false)
-const error = ref('')
+
+const formErrors = reactive({
+  username: '',
+  password: '',
+  general: '',
+})
+
+const isSubmitting = ref(false)
+
+const clearErrors = () => {
+  formErrors.username = ''
+  formErrors.password = ''
+  formErrors.general = ''
+}
 
 const handleLogin = async () => {
+  // Clear previous errors
+  clearErrors()
+
   try {
+    // Set submitting state
+    isSubmitting.value = true
+
+    // Validate the form
+    const validationResult = validateLoginForm(username.value, password.value)
+
+    // If validation fails, set errors and return
+    if (!validationResult.isValid) {
+      if (validationResult.errors.username) {
+        formErrors.username = validationResult.errors.username
+      }
+      if (validationResult.errors.password) {
+        formErrors.password = validationResult.errors.password
+      }
+      if (validationResult.errors.general) {
+        formErrors.general = validationResult.errors.general
+      }
+      isSubmitting.value = false
+      return
+    }
+
+    // Proceed with login
     await authStore.login({
       username: username.value,
       password: password.value,
       remember_me: rememberMe.value,
     })
+
     router.push('/')
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Login failed'
+    if (e instanceof Error) {
+      formErrors.general = e.message
+    } else {
+      formErrors.general = 'Login failed. Please try again.'
+    }
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -29,29 +75,60 @@ const handleLogin = async () => {
   <div class="login-container">
     <div class="login-form">
       <h2>Login</h2>
-      <div v-if="error" class="error-message">
-        {{ error }}
+
+      <!-- General Error Message -->
+      <div v-if="formErrors.general" class="error-message">
+        {{ formErrors.general }}
       </div>
+
       <form @submit.prevent="handleLogin">
+        <!-- Username Field -->
         <div class="form-group">
           <label for="username">Username</label>
-          <input id="username" v-model="username" type="text" required />
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            required
+            :disabled="isSubmitting"
+            @input="formErrors.username = ''"
+          />
+          <p v-if="formErrors.username" class="error-text">
+            {{ formErrors.username }}
+          </p>
         </div>
+
+        <!-- Password Field -->
         <div class="form-group">
           <label for="password">Password</label>
-          <input id="password" v-model="password" type="password" required />
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            required
+            :disabled="isSubmitting"
+            @input="formErrors.password = ''"
+          />
+          <p v-if="formErrors.password" class="error-text">
+            {{ formErrors.password }}
+          </p>
         </div>
+
+        <!-- Remember Me Checkbox -->
         <div class="form-group remember-me">
           <label class="checkbox-container">
-            <input type="checkbox" v-model="rememberMe" />
+            <input type="checkbox" v-model="rememberMe" :disabled="isSubmitting" />
             <span class="checkmark"></span>
             Remember me
           </label>
         </div>
-        <button type="submit" :disabled="authStore.loading">
-          {{ authStore.loading ? 'Logging in...' : 'Login' }}
+
+        <!-- Submit Button -->
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Logging in...' : 'Login' }}
         </button>
       </form>
+
       <div class="register-link">
         Don't have an account?
         <router-link to="/register">Register</router-link>
@@ -101,6 +178,11 @@ input {
   font-size: 16px;
 }
 
+input:disabled {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
 .remember-me {
   display: flex;
   align-items: center;
@@ -140,6 +222,13 @@ button:disabled {
   padding: 10px;
   background: #ffe6e6;
   border-radius: 4px;
+}
+
+.error-text {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 
 .register-link {

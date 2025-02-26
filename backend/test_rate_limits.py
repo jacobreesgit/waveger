@@ -162,8 +162,8 @@ def test_login_rate_limit():
     print("Login rate limit test: PASSED")
 
 def test_register_rate_limit():
-    """Test register endpoint rate limit."""
-    print("\n=== TESTING REGISTER RATE LIMIT ===")
+    """Test register endpoint rate limit (3 per hour)."""
+    print("\n=== TESTING REGISTER RATE LIMIT (3 per hour) ===")
     
     # Make 5 requests (more than enough to trigger rate limiting eventually)
     responses = make_requests(

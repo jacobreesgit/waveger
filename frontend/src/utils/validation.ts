@@ -1,4 +1,3 @@
-import { useAuthStore } from '@/stores/auth'
 import axios from 'axios'
 
 export interface ValidationResult {
@@ -8,6 +7,46 @@ export interface ValidationResult {
     email?: string
     password?: string
     general?: string
+  }
+}
+
+export interface LoginValidationResult {
+  isValid: boolean
+  errors: {
+    username?: string
+    password?: string
+    general?: string
+  }
+}
+
+/**
+ * Validates login form inputs
+ * @param username The username to validate
+ * @param password The password to validate
+ * @returns A validation result object
+ */
+export function validateLoginForm(username: string, password: string): LoginValidationResult {
+  const errors: LoginValidationResult['errors'] = {}
+
+  // Username validation
+  if (!username) {
+    errors.username = 'Username is required'
+  } else if (username.length < 3) {
+    errors.username = 'Username must be at least 3 characters long'
+  } else if (username.length > 20) {
+    errors.username = 'Username cannot exceed 20 characters'
+  }
+
+  // Password validation
+  if (!password) {
+    errors.password = 'Password is required'
+  } else if (password.length < 8) {
+    errors.password = 'Password must be at least 8 characters long'
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
   }
 }
 
