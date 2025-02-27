@@ -340,6 +340,59 @@ def test_username_email_availability():
     
     print("✅ Username and email availability checks working correctly")
 
+def test_user_info():
+    """Test the user-info endpoint for retrieving public user information."""
+    print("\n=== TESTING USER INFO ENDPOINT ===")
+    
+    # Create a test user first to have known user data
+    test_user = create_test_user()
+    username = test_user["username"]
+    
+    # Test with valid username
+    response = requests.get(f"{BASE_URL}/user-info", params={"username": username})
+    assert response.status_code == 200, f"User info request failed with status {response.status_code}: {response.text}"
+    
+    data = response.json()
+    assert "success" in data, "Response missing success flag"
+    assert data["success"] is True, "Success flag should be true"
+    assert "user" in data, "Response missing user data"
+    
+    user_data = data["user"]
+    assert user_data is not None, "User data should not be null for existing user"
+    assert user_data["username"] == username, "Username in response doesn't match request"
+    
+    # Check that the response includes all the expected fields
+    expected_fields = [
+        "id", "username", "email", "created_at", "last_login",
+        "total_points", "weekly_points", "predictions_made", "correct_predictions"
+    ]
+    
+    for field in expected_fields:
+        assert field in user_data, f"User data missing '{field}' field"
+    
+    print("✅ User info endpoint returns correct data for existing user")
+    
+    # Test with non-existent username
+    non_existent = f"nonexistent_{random_string()}"
+    response = requests.get(f"{BASE_URL}/user-info", params={"username": non_existent})
+    
+    # Should still return 200 but with empty/null user data for security reasons
+    assert response.status_code == 200, f"User info request for non-existent user failed with status {response.status_code}"
+    
+    data = response.json()
+    assert "success" in data, "Response missing success flag"
+    assert data["success"] is True, "Success flag should be true even for non-existent users"
+    assert "user" in data, "Response missing user field"
+    assert data["user"] is None, "User data should be null for non-existent user"
+    
+    print("✅ User info endpoint correctly handles non-existent users")
+    
+    # Test without providing a username
+    response = requests.get(f"{BASE_URL}/user-info")
+    assert response.status_code == 400, f"Expected 400 for missing username, got {response.status_code}"
+    
+    print("✅ User info endpoint correctly requires username parameter")
+
 def run_all_tests():
     """Run all authentication tests in sequence."""
     print("\n=========================================")
@@ -354,6 +407,7 @@ def run_all_tests():
         test_token_structure_and_claims()
         test_authorization_required()
         test_username_email_availability()
+        test_user_info()  # Added the new test
         
         print("\n=========================================")
         print("ALL AUTHENTICATION TESTS PASSED!")

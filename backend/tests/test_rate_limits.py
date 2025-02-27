@@ -294,6 +294,33 @@ def test_refresh_token_rate_limit():
     
     print("Refresh token rate limit test: PASSED")
 
+def test_user_info_rate_limit():
+    """Test user-info endpoint rate limit (20 per minute)."""
+    print("\n=== TESTING USER-INFO RATE LIMIT (20 per minute) ===")
+    
+    # Make sure we have a valid username to test with
+    ensure_test_user_exists()
+    username = FALLBACK_USER["username"]
+    
+    # Make 22 requests (2 more than the limit)
+    responses = make_requests(
+        endpoint="user-info",
+        method="GET",
+        data={"username": username},
+        count=22,
+        delay=0.2  # Shorter delay for this higher-limit endpoint
+    )
+    
+    # First 20 should succeed with 200
+    for i, code in enumerate(responses[:20]):
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
+    
+    # Last 2 should be rate limited
+    for i, code in enumerate(responses[20:], 21):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("User-info rate limit test: PASSED")
+
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -311,6 +338,7 @@ def run_all_tests():
         test_check_availability_rate_limit()
         test_user_endpoint_rate_limit()
         test_refresh_token_rate_limit()
+        test_user_info_rate_limit()
         
         print("\n=========================================")
         print("ALL RATE LIMIT TESTS PASSED!")
