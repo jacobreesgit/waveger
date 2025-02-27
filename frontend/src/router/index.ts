@@ -4,6 +4,8 @@ import ChartView from '@/views/ChartView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +35,16 @@ const router = createRouter({
       path: '/:date',
       name: 'chart-date',
       component: ChartView,
+    },
+    {
+      path: '/forgot-password',
+      name: 'forgot-password',
+      component: ForgotPasswordView,
+    },
+    {
+      path: '/reset-password/:token',
+      name: 'reset-password',
+      component: ResetPasswordView,
     },
   ],
 })

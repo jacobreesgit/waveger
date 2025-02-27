@@ -12,6 +12,11 @@ import os
 import logging
 import uuid
 import jwt as pyjwt
+import secrets
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -392,3 +397,271 @@ def refresh():
     except Exception as e:
         logger.error(f"Token refresh error: {e}")
         return jsonify({"error": "Failed to refresh token"}), 500
+
+def send_password_reset_email(email, token):
+    """Sends a password reset email with a reset link."""
+    if not all([SMTP_SERVER, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD]):
+        logger.error("Missing email configuration variables")
+        return False
+    
+    try:
+        reset_link = f"{APP_URL}/reset-password/{token}"
+        
+        message = MIMEMultipart("alternative")
+        message["Subject"] = "Password Reset Request"
+        message["From"] = SENDER_EMAIL
+        message["To"] = email
+        
+        text = f"""
+        Hello,
+        
+        You have requested to reset your password. Please click the link below to reset your password:
+        
+        {reset_link}
+        
+        This link will expire in 1 hour.
+        
+        If you did not request this password reset, please ignore this email.
+        
+        Best regards,
+        Waveger Team
+        """
+        
+        html = f"""
+        <html>
+        <body>
+            <h2>Password Reset Request</h2>
+            <p>Hello,</p>
+            <p>You have requested to reset your password. Please click the link below to reset your password:</p>
+            <p><a href="{reset_link}">Reset Password</a></p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you did not request this password reset, please ignore this email.</p>
+            <p>Best regards,<br>Waveger Team</p>
+        </body>
+        </html>
+        """
+        
+        part1 = MIMEText(text, "plain")
+        part2 = MIMEText(html, "html")
+        
+        message.attach(part1)
+        message.attach(part2)
+        
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(SENDER_EMAIL, email, message.as_string())
+        server.quit()
+        
+        logger.info(f"Password reset email sent to {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send password reset email: {e}")
+        return False
+
+@auth_bp.route("/forgot-password", methods=["POST"])
+@limiter.limit("5 per hour", key_func=get_real_ip)
+def forgot_password():
+    """Handles forgot password requests by sending a reset email."""
+    try:
+        data = request.get_json()
+        email = data.get("email")
+        
+        if not email:
+            return jsonify({"error": "Email address is required"}), 400
+            
+        # Log the request for monitoring
+        client_ip = get_real_ip()
+        logger.info(f"Password reset requested for {email} from IP: {client_ip}")
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Check if email exists
+            cursor.execute("SELECT id, username FROM users WHERE email = %s", (email,))
+            user = cursor.fetchone()
+            
+            if not user:
+                # For security reasons, still return success even if email is not found
+                # This prevents user enumeration
+                logger.info(f"Password reset requested for non-existent email: {email}")
+                return jsonify({"message": "If your email is registered, you will receive reset instructions"}), 200
+                
+            user_id, username = user
+                
+            # Generate a secure random token
+            reset_token = secrets.token_urlsafe(32)
+            token_expiry = datetime.utcnow() + RESET_TOKEN_EXPIRY
+            
+            # Store the reset token
+            cursor.execute(
+                """
+                INSERT INTO password_reset_tokens (user_id, token, expiry, used)
+                VALUES (%s, %s, %s, %s)
+                """,
+                (user_id, reset_token, token_expiry, False)
+            )
+            conn.commit()
+            
+            # Send the reset email
+            email_sent = send_password_reset_email(email, reset_token)
+            
+            if not email_sent:
+                # If email fails, still allow alternative reset methods
+                logger.error(f"Failed to send password reset email to {email}")
+                return jsonify({
+                    "message": "Password reset initiated but email could not be sent. Please contact support."
+                }), 202
+                
+            return jsonify({
+                "message": "Password reset instructions have been sent to your email"
+            }), 200
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Database error during password reset: {e}")
+            return jsonify({"error": "Failed to process password reset request"}), 500
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Unexpected error in forgot_password: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
+
+@auth_bp.route("/verify-reset-token", methods=["GET"])
+@limiter.limit("20 per hour", key_func=get_real_ip)
+def verify_reset_token():
+    """Verifies if a password reset token is valid."""
+    try:
+        token = request.args.get("token")
+        
+        if not token:
+            return jsonify({"error": "Token is required"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Check if the token exists and is valid
+            cursor.execute(
+                """
+                SELECT t.id, t.user_id, t.expiry, t.used, u.username, u.email
+                FROM password_reset_tokens t
+                JOIN users u ON t.user_id = u.id
+                WHERE t.token = %s
+                """,
+                (token,)
+            )
+            token_data = cursor.fetchone()
+            
+            if not token_data:
+                return jsonify({"valid": False, "error": "Invalid or expired token"}), 401
+                
+            token_id, user_id, expiry, used, username, email = token_data
+            
+            # Check if token is expired
+            if expiry < datetime.utcnow():
+                return jsonify({"valid": False, "error": "Token has expired"}), 401
+                
+            # Check if token has been used
+            if used:
+                return jsonify({"valid": False, "error": "Token has already been used"}), 401
+                
+            return jsonify({
+                "valid": True, 
+                "username": username,
+                "email": email
+            }), 200
+            
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Error verifying reset token: {e}")
+        return jsonify({"error": "Failed to verify token"}), 500
+
+@auth_bp.route("/reset-password", methods=["POST"])
+@limiter.limit("5 per hour", key_func=get_real_ip)
+def reset_password():
+    """Resets a user's password using a valid reset token."""
+    try:
+        data = request.get_json()
+        token = data.get("token")
+        new_password = data.get("password")
+        
+        if not token or not new_password:
+            return jsonify({"error": "Token and new password are required"}), 400
+            
+        if len(new_password) < 8:
+            return jsonify({"error": "Password must be at least 8 characters long"}), 400
+            
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Begin transaction
+            # Check if the token exists and is valid
+            cursor.execute(
+                """
+                SELECT t.id, t.user_id, t.expiry, t.used, u.username
+                FROM password_reset_tokens t
+                JOIN users u ON t.user_id = u.id
+                WHERE t.token = %s
+                FOR UPDATE
+                """,
+                (token,)
+            )
+            token_data = cursor.fetchone()
+            
+            if not token_data:
+                return jsonify({"error": "Invalid or expired token"}), 401
+                
+            token_id, user_id, expiry, used, username = token_data
+            
+            # Check if token is expired
+            if expiry < datetime.utcnow():
+                return jsonify({"error": "Token has expired"}), 401
+                
+            # Check if token has been used
+            if used:
+                return jsonify({"error": "Token has already been used"}), 401
+                
+            # Hash the new password
+            password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+            
+            # Update the user's password
+            cursor.execute(
+                "UPDATE users SET password_hash = %s WHERE id = %s",
+                (password_hash, user_id)
+            )
+            
+            # Mark the token as used
+            cursor.execute(
+                "UPDATE password_reset_tokens SET used = %s WHERE id = %s",
+                (True, token_id)
+            )
+            
+            # Commit the transaction
+            conn.commit()
+            
+            # Log the successful password reset
+            logger.info(f"Password reset successful for user {username}")
+            
+            return jsonify({
+                "message": "Password has been reset successfully. You can now log in with your new password."
+            }), 200
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Database error during password reset: {e}")
+            return jsonify({"error": "Failed to reset password"}), 500
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Unexpected error in reset_password: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500

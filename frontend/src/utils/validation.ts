@@ -163,3 +163,65 @@ export async function checkEmailAvailability(email: string): Promise<boolean> {
     throw error
   }
 }
+
+// Add these functions to frontend/src/utils/validation.ts
+
+export interface PasswordValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
+/**
+ * Validates a password for strength and security
+ * @param password The password to validate
+ * @returns Validation result with errors if invalid
+ */
+export function validatePassword(password: string): PasswordValidationResult {
+  const errors: string[] = []
+
+  if (!password) {
+    errors.push('Password is required')
+    return { isValid: false, errors }
+  }
+
+  if (password.length < 8) {
+    errors.push('Password must be at least 8 characters long')
+  }
+
+  // Check for password strength
+  const hasUppercase = /[A-Z]/.test(password)
+  const hasLowercase = /[a-z]/.test(password)
+  const hasNumber = /[0-9]/.test(password)
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password)
+
+  if (!(hasUppercase && hasLowercase && hasNumber && hasSpecialChar)) {
+    errors.push('Password must include uppercase, lowercase, number, and special character')
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
+/**
+ * Validates email format
+ * @param email Email to validate
+ * @returns True if email format is valid
+ */
+export function validateEmail(email: string): boolean {
+  if (!email) return false
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+/**
+ * Validates that passwords match for password confirmation
+ * @param password The password
+ * @param confirmPassword The confirmation password
+ * @returns True if passwords match
+ */
+export function passwordsMatch(password: string, confirmPassword: string): boolean {
+  return password === confirmPassword
+}
