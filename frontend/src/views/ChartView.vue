@@ -160,6 +160,31 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
   return false
 }
 
+// Load or fetch Apple Music data for current songs
+const loadAppleMusicData = async () => {
+  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
+    console.log('No songs available to fetch Apple Music data')
+    return
+  }
+
+  console.log('Loading Apple Music data for current songs')
+
+  // Ensure we have an Apple Music token
+  if (!appleMusicStore.token) {
+    console.log('No Apple Music token, fetching one')
+    await appleMusicStore.fetchToken()
+  }
+
+  // Process each song
+  for (const song of store.currentChart.songs) {
+    const songPosition = `${song.position}`
+    // Only fetch data if we don't already have it
+    if (!songData.value.has(songPosition) && !appleDataLoading.value.has(songPosition)) {
+      await fetchAppleMusicData(song)
+    }
+  }
+}
+
 onMounted(async () => {
   // Initialize Apple Music token regardless
   await appleMusicStore.fetchToken()
@@ -189,6 +214,9 @@ onMounted(async () => {
   } else {
     console.log('Using existing chart data from store')
   }
+
+  // Load Apple Music data after chart data is available
+  await loadAppleMusicData()
 })
 
 onUnmounted(() => {
@@ -199,10 +227,13 @@ onUnmounted(() => {
 // Watch for the initialized status of the store
 watch(
   () => store.initialized,
-  (isInitialized) => {
+  async (isInitialized) => {
     if (isInitialized && isInitialLoad.value) {
       isInitialLoad.value = false
       console.log('Store initialization completed, using existing data')
+
+      // Try to load Apple Music data once store is initialized
+      await loadAppleMusicData()
     }
   },
   { immediate: true },
@@ -211,28 +242,25 @@ watch(
 // Watch for chart changes to clear Apple Music data cache
 watch(
   () => store.currentChart,
-  (newChart) => {
+  async (newChart) => {
     if (newChart) {
       console.log('Chart changed, clearing Apple Music data cache')
       songData.value.clear()
       appleDataLoading.value.clear()
+
+      // Load Apple Music data for the new chart
+      await nextTick()
+      await loadAppleMusicData()
     }
   },
 )
 
-// Optimize Apple Music data fetching
+// Optimize Apple Music data fetching - keep this as a backup
 watch(
   () => store.currentChart?.songs,
   async (newSongs) => {
     if (newSongs) {
-      const existingSongPositions = new Set(songData.value.keys())
-
-      for (const song of newSongs) {
-        const songPosition = `${song.position}`
-        if (!existingSongPositions.has(songPosition)) {
-          await fetchAppleMusicData(song)
-        }
-      }
+      await loadAppleMusicData()
     }
   },
   { deep: true },
