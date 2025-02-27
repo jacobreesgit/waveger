@@ -116,7 +116,7 @@ def register():
         return jsonify({"error": str(e)}), 500
 
 @auth_bp.route("/login", methods=["POST"])
-@limiter.limit("4 per minute", key_func=get_real_ip)
+@limiter.limit("5 per minute", key_func=get_real_ip)
 def login():
     try:
         data = request.get_json()
