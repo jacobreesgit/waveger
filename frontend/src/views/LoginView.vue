@@ -112,6 +112,9 @@ const handleLogin = async () => {
           <p v-if="formErrors.password" class="error-text">
             {{ formErrors.password }}
           </p>
+          <div class="forgot-password">
+            <router-link to="/forgot-password">Forgot password?</router-link>
+          </div>
         </div>
 
         <!-- Remember Me Checkbox -->
@@ -243,5 +246,21 @@ button:disabled {
 
 .register-link a:hover {
   text-decoration: underline;
+}
+
+.forgot-password {
+  text-align: right;
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+.forgot-password a {
+  color: #6c757d;
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+  color: #007bff;
 }
 </style>

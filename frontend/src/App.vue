@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useChartsStore } from '@/stores/charts'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const chartsStore = useChartsStore()
 
@@ -21,6 +22,16 @@ const routes = computed(() => {
 
   return baseRoutes
 })
+
+// Custom function to determine if a link should be active
+const isActive = (path: string) => {
+  if (path === '/') {
+    // Home link should be active on both / and /:date routes, but not on /login or /profile
+    return route.path === '/' || route.name === 'chart-date'
+  }
+  // For other routes, just check if the current path starts with the link path
+  return route.path.startsWith(path)
+}
 
 onMounted(async () => {
   // Initialize auth store
@@ -40,9 +51,16 @@ const handleLogout = () => {
   <header class="app-header">
     <h1>Billboard Charts</h1>
     <nav>
-      <RouterLink v-for="route in routes" :key="route.name" :to="route.path" class="nav-link">
+      <RouterLink
+        v-for="route in routes"
+        :key="route.name"
+        :to="route.path"
+        class="nav-link"
+        :class="{ 'router-link-active': isActive(route.path) }"
+      >
         {{ route.title }}
       </RouterLink>
+      <button v-if="authStore.user" @click="handleLogout" class="logout-button">Logout</button>
     </nav>
   </header>
 
@@ -64,6 +82,7 @@ const handleLogout = () => {
 nav {
   display: flex;
   gap: 20px;
+  align-items: center;
 }
 
 .nav-link {
@@ -83,12 +102,6 @@ nav {
   color: white;
 }
 
-.user-menu {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .logout-button {
   padding: 8px 16px;
   background: #dc3545;
@@ -96,6 +109,8 @@ nav {
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
 }
 
 .logout-button:hover {

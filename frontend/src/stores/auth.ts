@@ -412,6 +412,74 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const forgotPassword = async (email: string) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await axios.post(`${BASE_URL}/forgot-password`, { email })
+      return response.data
+    } catch (e) {
+      console.error('Password reset request error:', e)
+
+      if (axios.isAxiosError(e)) {
+        error.value = e.response?.data?.error || 'Failed to process password reset request'
+      } else {
+        error.value = e instanceof Error ? e.message : 'Failed to process password reset request'
+      }
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const verifyResetToken = async (token: string) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await axios.get(`${BASE_URL}/verify-reset-token`, {
+        params: { token },
+      })
+      return response.data
+    } catch (e) {
+      console.error('Token verification error:', e)
+
+      if (axios.isAxiosError(e)) {
+        error.value = e.response?.data?.error || 'Invalid or expired token'
+      } else {
+        error.value = e instanceof Error ? e.message : 'Failed to verify token'
+      }
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await axios.post(`${BASE_URL}/reset-password`, {
+        token,
+        password,
+      })
+      return response.data
+    } catch (e) {
+      console.error('Password reset error:', e)
+
+      if (axios.isAxiosError(e)) {
+        error.value = e.response?.data?.error || 'Failed to reset password'
+      } else {
+        error.value = e instanceof Error ? e.message : 'Failed to reset password'
+      }
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     user,
     token,
@@ -426,5 +494,8 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAccessToken,
     checkUsernameAvailability,
     checkEmailAvailability,
+    forgotPassword,
+    verifyResetToken,
+    resetPassword,
   }
 })
