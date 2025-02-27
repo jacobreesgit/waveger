@@ -21,6 +21,7 @@ export interface LoginCredentials {
   username: string
   password: string
   remember_me?: boolean
+  preLoadedUserData?: any
 }
 
 export interface RegisterCredentials {

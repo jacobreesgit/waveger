@@ -675,3 +675,72 @@ def reset_password():
     except Exception as e:
         logger.error(f"Unexpected error in reset_password: {e}")
         return jsonify({"error": "An unexpected error occurred"}), 500
+
+@auth_bp.route("/user-info", methods=["GET"])
+@limiter.limit("20 per minute", key_func=get_real_ip)
+def get_user_info():
+    """
+    Get basic user information by username (without requiring authentication).
+    This endpoint is used for prefetching user data during login.
+    Returns minimal information needed for faster login experience.
+    """
+    try:
+        username = request.args.get('username')
+        if not username:
+            return jsonify({"error": "Username is required"}), 400
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            # Query to fetch only necessary user info, excluding sensitive data like password
+            query = """
+                SELECT 
+                    id, username, email, 
+                    created_at, last_login, 
+                    total_points, weekly_points, 
+                    predictions_made, correct_predictions 
+                FROM users 
+                WHERE username = %s
+            """
+            logger.debug(f"Fetching user info for username: {username}")
+            
+            cursor.execute(query, (username,))
+            user = cursor.fetchone()
+            
+            if not user:
+                # For security reasons, don't indicate whether the user exists or not
+                # Just return a generic success response with empty data
+                return jsonify({
+                    "success": True,
+                    "user": None
+                }), 200
+            
+            # Convert to a dictionary with proper field names
+            user_data = {
+                "id": int(user[0]) if user[0] is not None else None,
+                "username": str(user[1]) if user[1] is not None else None,
+                "email": str(user[2]) if user[2] is not None else None,
+                "created_at": user[3].isoformat() if user[3] is not None else None,
+                "last_login": user[4].isoformat() if user[4] is not None else None,
+                "total_points": int(user[5]) if user[5] is not None else 0,
+                "weekly_points": int(user[6]) if user[6] is not None else 0,
+                "predictions_made": int(user[7]) if user[7] is not None else 0,
+                "correct_predictions": int(user[8]) if user[8] is not None else 0
+            }
+            
+            return jsonify({
+                "success": True,
+                "user": user_data
+            }), 200
+            
+        except Exception as e:
+            logger.error(f"Database error in user_info: {e}")
+            return jsonify({"error": "Database error", "details": str(e)}), 500
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Unexpected error in user_info: {e}")
+        return jsonify({"error": "Server error", "details": str(e)}), 500

@@ -204,7 +204,11 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('logged_out')
       sessionStorage.removeItem('logged_out')
 
-      const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, credentials)
+      const response = await axios.post<AuthResponse>(`${BASE_URL}/login`, {
+        username: credentials.username,
+        password: credentials.password,
+        remember_me: credentials.remember_me,
+      })
 
       // Store whether to remember the user (prioritize credentials, fallback to response)
       rememberMe.value =
@@ -252,12 +256,39 @@ export const useAuthStore = defineStore('auth', () => {
       // Set the Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
 
-      // Fetch complete user data
-      try {
-        await fetchUserData()
-      } catch (fetchError) {
-        console.error('Failed to fetch full user data:', fetchError)
-        // Continue even if full user data fetch fails
+      // If we have pre-loaded user data, use it instead of fetching
+      if (credentials.preLoadedUserData) {
+        console.log('Using pre-loaded user data instead of fetching')
+
+        // Validate and set user data
+        const validatedUser: User = {
+          id: credentials.preLoadedUserData.id ?? 0,
+          username: credentials.preLoadedUserData.username ?? '',
+          email: credentials.preLoadedUserData.email ?? '',
+          created_at: credentials.preLoadedUserData.created_at ?? undefined,
+          last_login: credentials.preLoadedUserData.last_login ?? undefined,
+          total_points: credentials.preLoadedUserData.total_points ?? 0,
+          weekly_points: credentials.preLoadedUserData.weekly_points ?? 0,
+          predictions_made: credentials.preLoadedUserData.predictions_made ?? 0,
+          correct_predictions: credentials.preLoadedUserData.correct_predictions ?? 0,
+        }
+
+        user.value = validatedUser
+
+        // Update storage with validated user data
+        if (rememberMe.value) {
+          localStorage.setItem('user', JSON.stringify(validatedUser))
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(validatedUser))
+        }
+      } else {
+        // Fetch complete user data if we don't have pre-loaded data
+        try {
+          await fetchUserData()
+        } catch (fetchError) {
+          console.error('Failed to fetch full user data:', fetchError)
+          // Continue even if full user data fetch fails
+        }
       }
 
       return response.data

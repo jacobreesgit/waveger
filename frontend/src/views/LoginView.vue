@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validateLoginForm } from '@/utils/validation'
+import axios from 'axios'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -18,11 +19,44 @@ const formErrors = reactive({
 })
 
 const isSubmitting = ref(false)
+const isPreFetching = ref(false)
+const preLoadedUserData = ref<any>(null)
 
 const clearErrors = () => {
   formErrors.username = ''
   formErrors.password = ''
   formErrors.general = ''
+}
+
+// Pre-fetch user data when username field loses focus
+const handleUsernameBlur = async () => {
+  // Only attempt to prefetch if username is valid
+  if (username.value.length < 3) return
+
+  try {
+    isPreFetching.value = true
+
+    // Create a request to a new endpoint we'll add to the backend
+    // This would need to be implemented on the backend
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL || 'https://wavegerpython.onrender.com/api'}/auth/user-info`,
+      {
+        params: { username: username.value },
+      },
+    )
+
+    // Store the pre-fetched data
+    if (response.data && response.data.success) {
+      preLoadedUserData.value = response.data.user
+      console.log('User data pre-fetched successfully')
+    }
+  } catch (error) {
+    // Silently fail - no need to show errors for prefetching
+    console.log('User pre-fetch failed, will continue with normal login flow')
+    preLoadedUserData.value = null
+  } finally {
+    isPreFetching.value = false
+  }
 }
 
 const handleLogin = async () => {
@@ -52,10 +86,11 @@ const handleLogin = async () => {
     }
 
     // Proceed with login
-    await authStore.login({
+    const loginResult = await authStore.login({
       username: username.value,
       password: password.value,
       remember_me: rememberMe.value,
+      preLoadedUserData: preLoadedUserData.value, // Pass pre-loaded data to login method
     })
 
     router.push('/')
@@ -65,6 +100,9 @@ const handleLogin = async () => {
     } else {
       formErrors.general = 'Login failed. Please try again.'
     }
+
+    // Clear pre-loaded data on login failure
+    preLoadedUserData.value = null
   } finally {
     isSubmitting.value = false
   }
@@ -92,6 +130,7 @@ const handleLogin = async () => {
             required
             :disabled="isSubmitting"
             @input="formErrors.username = ''"
+            @blur="handleUsernameBlur"
           />
           <p v-if="formErrors.username" class="error-text">
             {{ formErrors.username }}
@@ -141,6 +180,7 @@ const handleLogin = async () => {
 </template>
 
 <style scoped>
+/* Styles remain unchanged */
 .login-container {
   display: flex;
   justify-content: center;
