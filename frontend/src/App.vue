@@ -40,11 +40,6 @@ onMounted(async () => {
   // Initialize charts store
   await chartsStore.initialize()
 })
-
-const handleLogout = () => {
-  authStore.logout()
-  router.push('/login')
-}
 </script>
 
 <template>
@@ -60,7 +55,6 @@ const handleLogout = () => {
       >
         {{ route.title }}
       </RouterLink>
-      <button v-if="authStore.user" @click="handleLogout" class="logout-button">Logout</button>
     </nav>
   </header>
 
@@ -100,20 +94,5 @@ nav {
 .nav-link.router-link-active {
   background: #007bff;
   color: white;
-}
-
-.logout-button {
-  padding: 8px 16px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.logout-button:hover {
-  background: #c82333;
 }
 </style>

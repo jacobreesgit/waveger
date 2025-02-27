@@ -30,6 +30,7 @@ const clearErrors = () => {
 
 // Pre-fetch user data when username field loses focus
 const handleUsernameBlur = async () => {
+  console.log('Blur Username')
   // Only attempt to prefetch if username is valid
   if (username.value.length < 3) return
 
