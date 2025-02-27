@@ -24,6 +24,16 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+# Define a token expiration time (1 hour)
+RESET_TOKEN_EXPIRY = timedelta(hours=1)
+
+# SMTP configuration
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL", SMTP_USERNAME)
+APP_URL = os.getenv("APP_URL", "https://www.waveger.com")
 
 def get_db_connection():
     try:
