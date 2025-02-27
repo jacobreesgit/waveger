@@ -23,7 +23,10 @@ const formErrors = reactive({
 })
 
 const isSubmitting = ref(false)
-const checkingAvailability = ref(false)
+const checkingUsername = ref(false)
+const checkingEmail = ref(false)
+const usernameAvailable = ref<boolean | null>(null)
+const emailAvailable = ref<boolean | null>(null)
 
 const clearErrors = () => {
   formErrors.username = ''
@@ -51,9 +54,11 @@ const handleRegister = async () => {
     if (!validationResult.isValid) {
       if (validationResult.errors.username) {
         formErrors.username = validationResult.errors.username
+        usernameAvailable.value = false
       }
       if (validationResult.errors.email) {
         formErrors.email = validationResult.errors.email
+        emailAvailable.value = false
       }
       if (validationResult.errors.password) {
         formErrors.password = validationResult.errors.password
@@ -85,48 +90,70 @@ const handleRegister = async () => {
 
 // Debounced availability checking
 const debouncedCheck = (() => {
-  let timeoutId: number | null = null
+  let usernameTimeoutId: number | null = null
+  let emailTimeoutId: number | null = null
+
   return async (type: 'username' | 'email', value: string) => {
     // Clear previous timeout
-    if (timeoutId) {
-      clearTimeout(timeoutId)
+    if (type === 'username' && usernameTimeoutId) {
+      clearTimeout(usernameTimeoutId)
+    } else if (type === 'email' && emailTimeoutId) {
+      clearTimeout(emailTimeoutId)
     }
 
-    // Only check if there are no existing errors and value is not empty
-    if (!value) return
+    // Only check if value is not empty
+    if (!value) {
+      if (type === 'username') {
+        usernameAvailable.value = null
+      } else {
+        emailAvailable.value = null
+      }
+      return
+    }
 
-    timeoutId = window.setTimeout(async () => {
+    const timeoutId = window.setTimeout(async () => {
       try {
-        checkingAvailability.value = true
-
-        let isAvailable = false
         if (type === 'username') {
-          isAvailable = await checkUsernameAvailability(value)
+          checkingUsername.value = true
+          const isAvailable = await checkUsernameAvailability(value)
+          usernameAvailable.value = isAvailable
           formErrors.username = isAvailable ? '' : 'Username is already taken'
         } else if (type === 'email') {
-          isAvailable = await checkEmailAvailability(value)
+          checkingEmail.value = true
+          const isAvailable = await checkEmailAvailability(value)
+          emailAvailable.value = isAvailable
           formErrors.email = isAvailable ? '' : 'Email is already registered'
         }
       } catch (error) {
         console.error(`Error checking ${type} availability:`, error)
       } finally {
-        checkingAvailability.value = false
+        if (type === 'username') {
+          checkingUsername.value = false
+        } else {
+          checkingEmail.value = false
+        }
       }
     }, 500) // 500ms debounce
+
+    if (type === 'username') {
+      usernameTimeoutId = timeoutId
+      checkingUsername.value = true
+      usernameAvailable.value = null
+    } else {
+      emailTimeoutId = timeoutId
+      checkingEmail.value = true
+      emailAvailable.value = null
+    }
   }
 })()
 
 // Watchers for live availability checking
 watch(username, (newValue) => {
-  if (newValue) {
-    debouncedCheck('username', newValue)
-  }
+  debouncedCheck('username', newValue)
 })
 
 watch(email, (newValue) => {
-  if (newValue) {
-    debouncedCheck('email', newValue)
-  }
+  debouncedCheck('email', newValue)
 })
 </script>
 
@@ -158,9 +185,17 @@ watch(email, (newValue) => {
             <p v-if="formErrors.username" class="error-text">
               {{ formErrors.username }}
             </p>
-            <span v-if="checkingAvailability" class="checking-indicator">
-              Checking availability...
-            </span>
+            <div v-else-if="username" class="availability-status">
+              <span v-if="checkingUsername" class="checking-indicator">
+                <span class="checking-spinner"></span> Checking availability...
+              </span>
+              <span v-else-if="usernameAvailable === true" class="available-indicator">
+                ✓ Username is available
+              </span>
+              <span v-else-if="usernameAvailable === false" class="unavailable-indicator">
+                ✗ Username is already taken
+              </span>
+            </div>
           </div>
         </div>
 
@@ -181,9 +216,17 @@ watch(email, (newValue) => {
             <p v-if="formErrors.email" class="error-text">
               {{ formErrors.email }}
             </p>
-            <span v-if="checkingAvailability" class="checking-indicator">
-              Checking availability...
-            </span>
+            <div v-else-if="email" class="availability-status">
+              <span v-if="checkingEmail" class="checking-indicator">
+                <span class="checking-spinner"></span> Checking availability...
+              </span>
+              <span v-else-if="emailAvailable === true" class="available-indicator">
+                ✓ Email is available
+              </span>
+              <span v-else-if="emailAvailable === false" class="unavailable-indicator">
+                ✗ Email is already registered
+              </span>
+            </div>
           </div>
         </div>
 
@@ -208,7 +251,7 @@ watch(email, (newValue) => {
         <!-- Submit Button -->
         <button
           type="submit"
-          :disabled="isSubmitting || checkingAvailability"
+          :disabled="isSubmitting || checkingUsername || checkingEmail"
           class="submit-button"
         >
           {{ isSubmitting ? 'Registering...' : 'Register' }}
@@ -326,19 +369,54 @@ label {
 }
 
 .input-hint {
+  min-height: 24px;
+  margin-top: 4px;
+}
+
+.availability-status {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  font-size: 0.875rem;
 }
 
 .checking-indicator {
-  color: #007bff;
-  font-size: 0.75rem;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+}
+
+.checking-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #6c757d;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 6px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.available-indicator {
+  color: #28a745;
+}
+
+.unavailable-indicator {
+  color: #dc3545;
 }
 
 .error-text {
   color: #dc3545;
   font-size: 0.875rem;
   margin-top: 0.5rem;
+  margin-bottom: 0;
 }
 </style>
