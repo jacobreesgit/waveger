@@ -66,7 +66,14 @@ export const useFavouritesStore = defineStore('favourites', () => {
   // Load all favourites for the current user
   // Add these debugging lines to the loadFavourites function in your favouritesStore
 
+  // In favourites.ts
   const loadFavourites = async () => {
+    // Skip if already loaded or loading in progress
+    if (favourites.value.length > 0 || loading.value) {
+      console.debug('Skipping favourites load - already loaded or in progress')
+      return
+    }
+
     if (!axios.defaults.headers.common['Authorization']) {
       console.log('No auth token, skipping favourites load')
       return
@@ -76,13 +83,13 @@ export const useFavouritesStore = defineStore('favourites', () => {
       loading.value = true
       error.value = null
 
-      // Log before API call
-      console.log('Fetching favourites from API...')
+      // Log before API call - change to debug level
+      console.debug('Fetching favourites from API...')
 
       const response = await axios.get('/favourites')
 
-      // Log raw response
-      console.log('Favourites API raw response:', response)
+      // Log raw response at debug level only
+      console.debug('Favourites API raw response:', response)
 
       // Check if the expected data structure is present
       if (!response.data || !response.data.favourites) {
@@ -93,11 +100,11 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
       favourites.value = response.data.favourites || []
 
-      console.log(`Loaded ${favourites.value.length} favourite songs`, favourites.value)
+      console.debug(`Loaded ${favourites.value.length} favourite songs`)
 
-      // Log the structure of the first favourite item if available
+      // Log the structure of the first favourite item at debug level only
       if (favourites.value.length > 0) {
-        console.log('First favourite structure:', JSON.stringify(favourites.value[0], null, 2))
+        console.debug('First favourite structure:', JSON.stringify(favourites.value[0], null, 2))
       }
     } catch (e) {
       console.error('Error loading favourites:', e)
