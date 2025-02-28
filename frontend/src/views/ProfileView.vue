@@ -66,26 +66,46 @@ const sortOptions = [
 ]
 
 onMounted(async () => {
+  console.log('ProfileView mounted')
   isLoading.value = false
   // Initialize form values with current user data
   if (authStore.user) {
     newUsername.value = authStore.user.username
     newEmail.value = authStore.user.email
 
-    // Load favourites data
+    // Load favourites data and log status
+    console.log('Loading favourites from onMounted...')
     await favouritesStore.loadFavourites()
+    console.log('After loadFavourites call - Store state:', {
+      favouritesCount: favouritesStore.favouritesCount,
+      loading: favouritesStore.loading,
+      hasError: !!favouritesStore.error,
+      error: favouritesStore.error,
+    })
+  } else {
+    console.log('No user found in authStore')
   }
 })
 
 // Watch for tab changes to trigger data loading if needed
 watch(activeTab, async (newTab) => {
-  if (
-    newTab === 'favourites' &&
-    authStore.user &&
-    !favouritesStore.favourites.length &&
-    !favouritesStore.loading
-  ) {
-    await favouritesStore.loadFavourites()
+  console.log(`Tab changed to: ${newTab}`)
+  if (newTab === 'favourites') {
+    console.log('Favourites tab activated, current state:', {
+      favouritesCount: favouritesStore.favouritesCount,
+      loading: favouritesStore.loading,
+      hasError: !!favouritesStore.error,
+    })
+
+    if (authStore.user && !favouritesStore.favourites.length && !favouritesStore.loading) {
+      console.log('No favourites found, triggering load...')
+      await favouritesStore.loadFavourites()
+      console.log('After loadFavourites call in tab change:', {
+        favouritesCount: favouritesStore.favouritesCount,
+        loading: favouritesStore.loading,
+        hasError: !!favouritesStore.error,
+      })
+    }
   }
 })
 
@@ -377,6 +397,12 @@ const updatePassword = async () => {
 
 // Computed property for filtered and sorted favourites
 const filteredFavourites = computed(() => {
+  console.log('Computing filteredFavourites:', {
+    originalCount: favouritesStore.favourites.length,
+    searchQuery: searchQuery.value,
+    sortBy: selectedSort.value,
+  })
+
   let result = [...favouritesStore.favourites]
 
   // Apply search filter if provided
@@ -407,6 +433,7 @@ const filteredFavourites = computed(() => {
       break
   }
 
+  console.log(`Filtered favourites result: ${result.length} items`)
   return result
 })
 

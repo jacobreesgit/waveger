@@ -74,12 +74,34 @@ export const useFavouritesStore = defineStore('favourites', () => {
       loading.value = true
       error.value = null
 
+      // Log before API call
+      console.log('Fetching favourites from API...')
+
       const response = await axios.get('/favourites')
+
+      // Log raw response
+      console.log('Favourites API raw response:', response)
+
+      // Check if the expected data structure is present
+      if (!response.data || !response.data.favourites) {
+        console.error('API response missing "favourites" key:', response.data)
+        error.value = 'Invalid response format from API'
+        return
+      }
+
       favourites.value = response.data.favourites || []
 
-      console.log(`Loaded ${favourites.value.length} favourite songs`)
+      console.log(`Loaded ${favourites.value.length} favourite songs`, favourites.value)
+
+      // Log the structure of the first favourite item if available
+      if (favourites.value.length > 0) {
+        console.log('First favourite structure:', JSON.stringify(favourites.value[0], null, 2))
+      }
     } catch (e) {
       console.error('Error loading favourites:', e)
+      if (axios.isAxiosError(e)) {
+        console.error('Axios error details:', e.response?.data)
+      }
       error.value = e instanceof Error ? e.message : 'Failed to load favourites'
     } finally {
       loading.value = false
