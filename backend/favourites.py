@@ -210,7 +210,7 @@ def remove_favourite(favourite_id):
 
 @favourites_bp.route("/favourites/check", methods=["GET"])
 @jwt_required()
-@limiter.limit("50 per minute", key_func=get_real_ip)
+@limiter.limit("1000 per minute", key_func=get_real_ip)
 def check_favourite():
     """Check if a song is already favourited by the user."""
     user_id = get_jwt_identity()

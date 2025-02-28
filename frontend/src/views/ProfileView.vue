@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, reactive } from 'vue'
+import { ref, onMounted, computed, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useFavouritesStore } from '@/stores/favourites'
 import {
   checkUsernameAvailability,
   checkEmailAvailability,
   validatePassword,
 } from '@/utils/validation'
 import PasswordInput from '@/components/PasswordInput.vue'
+import FavouriteButton from '@/components/FavouriteButton.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const favouritesStore = useFavouritesStore()
 
 const isLoading = ref(true)
 const error = ref('')
 const successMessage = ref('')
+const activeTab = ref('profile') // 'profile' or 'favourites'
 
 // Edit mode states
 const editingUsername = ref(false)
@@ -49,12 +53,39 @@ const submittingUsername = ref(false)
 const submittingEmail = ref(false)
 const submittingPassword = ref(false)
 
-onMounted(() => {
+// Favourites-related states
+const searchQuery = ref('')
+const selectedSort = ref('latest')
+
+// Sorting options
+const sortOptions = [
+  { value: 'latest', label: 'Recently Added' },
+  { value: 'alphabetical', label: 'Alphabetically (A-Z)' },
+  { value: 'artist', label: 'By Artist' },
+  { value: 'mostCharts', label: 'Most Chart Appearances' },
+]
+
+onMounted(async () => {
   isLoading.value = false
   // Initialize form values with current user data
   if (authStore.user) {
     newUsername.value = authStore.user.username
     newEmail.value = authStore.user.email
+
+    // Load favourites data
+    await favouritesStore.loadFavourites()
+  }
+})
+
+// Watch for tab changes to trigger data loading if needed
+watch(activeTab, async (newTab) => {
+  if (
+    newTab === 'favourites' &&
+    authStore.user &&
+    !favouritesStore.favourites.length &&
+    !favouritesStore.loading
+  ) {
+    await favouritesStore.loadFavourites()
   }
 })
 
@@ -341,6 +372,67 @@ const updatePassword = async () => {
     submittingPassword.value = false
   }
 }
+
+// FAVOURITES TAB FUNCTIONALITY
+
+// Computed property for filtered and sorted favourites
+const filteredFavourites = computed(() => {
+  let result = [...favouritesStore.favourites]
+
+  // Apply search filter if provided
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    result = result.filter(
+      (favourite) =>
+        favourite.song_name.toLowerCase().includes(query) ||
+        favourite.artist.toLowerCase().includes(query),
+    )
+  }
+
+  // Apply sorting
+  switch (selectedSort.value) {
+    case 'latest':
+      result.sort(
+        (a, b) => new Date(b.first_added_at).getTime() - new Date(a.first_added_at).getTime(),
+      )
+      break
+    case 'alphabetical':
+      result.sort((a, b) => a.song_name.localeCompare(b.song_name))
+      break
+    case 'artist':
+      result.sort((a, b) => a.artist.localeCompare(b.artist))
+      break
+    case 'mostCharts':
+      result.sort((a, b) => b.charts.length - a.charts.length)
+      break
+  }
+
+  return result
+})
+
+// The FavouriteButton component now handles favouriting/unfavouriting
+
+// Navigate to a specific chart
+const navigateToChart = (chartId: string, added_at: string) => {
+  // Extract date from added_at string if available
+  let dateParam = ''
+  try {
+    const date = new Date(added_at)
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+    dateParam = `${day}-${month}-${year}`
+  } catch (e) {
+    console.error('Error parsing date:', e)
+    // If date parsing fails, don't use a date param
+  }
+
+  if (dateParam) {
+    router.push(`/${dateParam}?id=${chartId}`)
+  } else {
+    router.push(`/?id=${chartId}`)
+  }
+}
 </script>
 
 <template>
@@ -356,7 +448,7 @@ const updatePassword = async () => {
     </div>
 
     <div v-else-if="authStore.user" class="profile-form">
-      <h2>User Profile</h2>
+      <h2>Your Account</h2>
 
       <!-- Success message -->
       <div v-if="successMessage" class="success-message">
@@ -368,221 +460,354 @@ const updatePassword = async () => {
         <p>{{ formErrors.general }}</p>
       </div>
 
-      <div class="profile-section">
-        <h3>Account Details</h3>
+      <!-- Tab Navigation -->
+      <div class="tab-navigation">
+        <button
+          @click="activeTab = 'profile'"
+          :class="['tab-button', { active: activeTab === 'profile' }]"
+        >
+          Profile
+        </button>
+        <button
+          @click="activeTab = 'favourites'"
+          :class="['tab-button', { active: activeTab === 'favourites' }]"
+        >
+          Favourites
+        </button>
+      </div>
 
-        <!-- Username section -->
-        <div class="profile-detail" v-if="!editingUsername">
-          <label>Username</label>
-          <div class="detail-value-with-action">
-            <span>{{ authStore.user.username }}</span>
-            <button @click="toggleEditUsername" class="edit-button">Edit</button>
+      <!-- PROFILE TAB -->
+      <div v-if="activeTab === 'profile'" class="tab-content">
+        <div class="profile-section">
+          <h3>Account Details</h3>
+
+          <!-- Username section -->
+          <div class="profile-detail" v-if="!editingUsername">
+            <label>Username</label>
+            <div class="detail-value-with-action">
+              <span>{{ authStore.user.username }}</span>
+              <button @click="toggleEditUsername" class="edit-button">Edit</button>
+            </div>
+          </div>
+          <div class="edit-form" v-else>
+            <h4>Change Username</h4>
+            <div class="form-group">
+              <label for="newUsername">New Username</label>
+              <input
+                id="newUsername"
+                v-model="newUsername"
+                type="text"
+                :disabled="submittingUsername"
+                @input="onUsernameInput"
+                class="form-input"
+              />
+              <div class="input-hint">
+                <p v-if="formErrors.username" class="error-text">
+                  {{ formErrors.username }}
+                </p>
+                <div
+                  v-else-if="newUsername && newUsername !== authStore.user.username"
+                  class="availability-status"
+                >
+                  <span v-if="checkingUsername" class="checking-indicator">
+                    <span class="checking-spinner"></span> Checking availability...
+                  </span>
+                  <span v-else-if="usernameAvailable === true" class="available-indicator">
+                    ✓ Username is available
+                  </span>
+                  <span v-else-if="usernameAvailable === false" class="unavailable-indicator">
+                    ✗ Username is already taken
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button
+                @click="toggleEditUsername"
+                class="cancel-button"
+                :disabled="submittingUsername"
+              >
+                Cancel
+              </button>
+              <button
+                @click="updateUsername"
+                class="save-button"
+                :disabled="
+                  submittingUsername ||
+                  checkingUsername ||
+                  usernameAvailable === false ||
+                  !newUsername
+                "
+              >
+                {{ submittingUsername ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Email section -->
+          <div class="profile-detail" v-if="!editingEmail">
+            <label>Email</label>
+            <div class="detail-value-with-action">
+              <span>{{ authStore.user.email }}</span>
+              <button @click="toggleEditEmail" class="edit-button">Edit</button>
+            </div>
+          </div>
+          <div class="edit-form" v-else>
+            <h4>Change Email</h4>
+            <div class="form-group">
+              <label for="newEmail">New Email</label>
+              <input
+                id="newEmail"
+                v-model="newEmail"
+                type="email"
+                :disabled="submittingEmail"
+                @input="onEmailInput"
+                class="form-input"
+              />
+              <div class="input-hint">
+                <p v-if="formErrors.email" class="error-text">
+                  {{ formErrors.email }}
+                </p>
+                <div
+                  v-else-if="newEmail && newEmail !== authStore.user.email"
+                  class="availability-status"
+                >
+                  <span v-if="checkingEmail" class="checking-indicator">
+                    <span class="checking-spinner"></span> Checking availability...
+                  </span>
+                  <span v-else-if="emailAvailable === true" class="available-indicator">
+                    ✓ Email is available
+                  </span>
+                  <span v-else-if="emailAvailable === false" class="unavailable-indicator">
+                    ✗ Email is already registered
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button @click="toggleEditEmail" class="cancel-button" :disabled="submittingEmail">
+                Cancel
+              </button>
+              <button
+                @click="updateEmail"
+                class="save-button"
+                :disabled="
+                  submittingEmail || checkingEmail || emailAvailable === false || !newEmail
+                "
+              >
+                {{ submittingEmail ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Password change section -->
+          <div class="profile-detail" v-if="!editingPassword">
+            <label>Password</label>
+            <div class="detail-value-with-action">
+              <span>•••••••••</span>
+              <button @click="toggleEditPassword" class="edit-button">Change</button>
+            </div>
+          </div>
+          <div class="edit-form" v-else>
+            <h4>Change Password</h4>
+            <div class="form-group">
+              <label for="currentPassword">Current Password</label>
+              <PasswordInput
+                id="currentPassword"
+                v-model="currentPassword"
+                :disabled="submittingPassword"
+                :error="formErrors.currentPassword"
+              />
+            </div>
+            <div class="form-group">
+              <label for="newPassword">New Password</label>
+              <PasswordInput
+                id="newPassword"
+                v-model="newPassword"
+                :disabled="submittingPassword"
+                :error="formErrors.newPassword"
+              />
+            </div>
+            <div class="form-group">
+              <label for="confirmPassword">Confirm New Password</label>
+              <PasswordInput
+                id="confirmPassword"
+                v-model="confirmPassword"
+                :disabled="submittingPassword"
+                :error="formErrors.confirmPassword"
+              />
+            </div>
+            <div class="form-actions">
+              <button
+                @click="toggleEditPassword"
+                class="cancel-button"
+                :disabled="submittingPassword"
+              >
+                Cancel
+              </button>
+              <button
+                @click="updatePassword"
+                class="save-button"
+                :disabled="
+                  submittingPassword || !currentPassword || !newPassword || !confirmPassword
+                "
+              >
+                {{ submittingPassword ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="profile-detail">
+            <label>Account Created</label>
+            <span>{{ formatDate(authStore.user.created_at) }}</span>
+          </div>
+          <div class="profile-detail">
+            <label>Last Login</label>
+            <span>{{ formatDate(authStore.user.last_login) }}</span>
           </div>
         </div>
-        <div class="edit-form" v-else>
-          <h4>Change Username</h4>
-          <div class="form-group">
-            <label for="newUsername">New Username</label>
+
+        <div class="profile-section">
+          <h3>Prediction Stats</h3>
+          <div class="profile-detail">
+            <label>Total Predictions</label>
+            <span>{{ authStore.user.predictions_made || 0 }}</span>
+          </div>
+          <div class="profile-detail">
+            <label>Correct Predictions</label>
+            <span>{{ authStore.user.correct_predictions || 0 }}</span>
+          </div>
+          <div class="profile-detail">
+            <label>Prediction Accuracy</label>
+            <span>{{ predictionAccuracy }}</span>
+          </div>
+        </div>
+
+        <div class="profile-section">
+          <h3>Points</h3>
+          <div class="profile-detail">
+            <label>Total Points</label>
+            <span>{{ authStore.user.total_points || 0 }}</span>
+          </div>
+          <div class="profile-detail">
+            <label>Weekly Points</label>
+            <span>{{ authStore.user.weekly_points || 0 }}</span>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <button @click="handleLogout" class="logout-button">Logout</button>
+        </div>
+      </div>
+
+      <!-- FAVOURITES TAB -->
+      <div v-if="activeTab === 'favourites'" class="tab-content">
+        <div class="favourites-header">
+          <div class="favourites-stats">
+            <div class="stat-item">
+              <span class="stat-value">{{ favouritesStore.favouritesCount }}</span>
+              <span class="stat-label">Songs</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">{{ favouritesStore.chartAppearancesCount }}</span>
+              <span class="stat-label">Chart Appearances</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="favourites-controls">
+          <div class="search-bar">
             <input
-              id="newUsername"
-              v-model="newUsername"
               type="text"
-              :disabled="submittingUsername"
-              @input="onUsernameInput"
-              class="form-input"
+              v-model="searchQuery"
+              placeholder="Search favourites..."
+              class="search-input"
             />
-            <div class="input-hint">
-              <p v-if="formErrors.username" class="error-text">
-                {{ formErrors.username }}
-              </p>
-              <div
-                v-else-if="newUsername && newUsername !== authStore.user.username"
-                class="availability-status"
-              >
-                <span v-if="checkingUsername" class="checking-indicator">
-                  <span class="checking-spinner"></span> Checking availability...
-                </span>
-                <span v-else-if="usernameAvailable === true" class="available-indicator">
-                  ✓ Username is available
-                </span>
-                <span v-else-if="usernameAvailable === false" class="unavailable-indicator">
-                  ✗ Username is already taken
-                </span>
+          </div>
+
+          <div class="sort-control">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select" v-model="selectedSort" class="sort-select">
+              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="favouritesStore.loading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading your favourites...</p>
+        </div>
+
+        <!-- Error state -->
+        <div v-else-if="favouritesStore.error" class="error-state">
+          <p>{{ favouritesStore.error }}</p>
+          <button @click="favouritesStore.loadFavourites" class="retry-button">Retry</button>
+        </div>
+
+        <!-- No favourites state -->
+        <div v-else-if="favouritesStore.favourites.length === 0" class="empty-state">
+          <p>You haven't added any favourites yet</p>
+          <button @click="router.push('/')" class="browse-button">Browse Charts</button>
+        </div>
+
+        <!-- No search results -->
+        <div v-else-if="filteredFavourites.length === 0" class="empty-state">
+          <p>No favourites match your search</p>
+          <button @click="searchQuery = ''" class="clear-search-button">Clear Search</button>
+        </div>
+
+        <!-- Favourites list -->
+        <div v-else class="favourites-list">
+          <div
+            v-for="favourite in filteredFavourites"
+            :key="`${favourite.song_name}-${favourite.artist}`"
+            class="favourite-card"
+          >
+            <div class="favourite-image">
+              <img :src="favourite.image_url" :alt="favourite.song_name" class="song-image" />
+            </div>
+
+            <div class="favourite-details">
+              <div class="favourite-title">{{ favourite.song_name }}</div>
+              <div class="favourite-artist">{{ favourite.artist }}</div>
+
+              <div class="charts-list">
+                <div
+                  v-for="chart in favourite.charts"
+                  :key="chart.id"
+                  class="chart-badge"
+                  @click="navigateToChart(chart.chart_id, chart.added_at)"
+                >
+                  <span class="chart-title">{{ chart.chart_title }}</span>
+                  <span class="chart-position">#{{ chart.position }}</span>
+
+                  <!-- Use FavouriteButton component instead -->
+                  <div class="favourite-btn-container" @click.stop>
+                    <FavouriteButton
+                      :song="{
+                        name: favourite.song_name,
+                        artist: favourite.artist,
+                        position: chart.position,
+                        peak_position: chart.peak_position,
+                        weeks_on_chart: chart.weeks_on_chart,
+                        image: favourite.image_url,
+                        last_week_position: 0,
+                        url: '',
+                      }"
+                      :chart-id="chart.chart_id"
+                      :chart-title="chart.chart_title"
+                      size="small"
+                      class="chart-favourite-btn"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div class="form-actions">
-            <button
-              @click="toggleEditUsername"
-              class="cancel-button"
-              :disabled="submittingUsername"
-            >
-              Cancel
-            </button>
-            <button
-              @click="updateUsername"
-              class="save-button"
-              :disabled="
-                submittingUsername ||
-                checkingUsername ||
-                usernameAvailable === false ||
-                !newUsername
-              "
-            >
-              {{ submittingUsername ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
         </div>
-
-        <!-- Email section -->
-        <div class="profile-detail" v-if="!editingEmail">
-          <label>Email</label>
-          <div class="detail-value-with-action">
-            <span>{{ authStore.user.email }}</span>
-            <button @click="toggleEditEmail" class="edit-button">Edit</button>
-          </div>
-        </div>
-        <div class="edit-form" v-else>
-          <h4>Change Email</h4>
-          <div class="form-group">
-            <label for="newEmail">New Email</label>
-            <input
-              id="newEmail"
-              v-model="newEmail"
-              type="email"
-              :disabled="submittingEmail"
-              @input="onEmailInput"
-              class="form-input"
-            />
-            <div class="input-hint">
-              <p v-if="formErrors.email" class="error-text">
-                {{ formErrors.email }}
-              </p>
-              <div
-                v-else-if="newEmail && newEmail !== authStore.user.email"
-                class="availability-status"
-              >
-                <span v-if="checkingEmail" class="checking-indicator">
-                  <span class="checking-spinner"></span> Checking availability...
-                </span>
-                <span v-else-if="emailAvailable === true" class="available-indicator">
-                  ✓ Email is available
-                </span>
-                <span v-else-if="emailAvailable === false" class="unavailable-indicator">
-                  ✗ Email is already registered
-                </span>
-              </div>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button @click="toggleEditEmail" class="cancel-button" :disabled="submittingEmail">
-              Cancel
-            </button>
-            <button
-              @click="updateEmail"
-              class="save-button"
-              :disabled="submittingEmail || checkingEmail || emailAvailable === false || !newEmail"
-            >
-              {{ submittingEmail ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
-        </div>
-
-        <!-- Password change section -->
-        <div class="profile-detail" v-if="!editingPassword">
-          <label>Password</label>
-          <div class="detail-value-with-action">
-            <span>•••••••••</span>
-            <button @click="toggleEditPassword" class="edit-button">Change</button>
-          </div>
-        </div>
-        <div class="edit-form" v-else>
-          <h4>Change Password</h4>
-          <div class="form-group">
-            <label for="currentPassword">Current Password</label>
-            <PasswordInput
-              id="currentPassword"
-              v-model="currentPassword"
-              :disabled="submittingPassword"
-              :error="formErrors.currentPassword"
-            />
-          </div>
-          <div class="form-group">
-            <label for="newPassword">New Password</label>
-            <PasswordInput
-              id="newPassword"
-              v-model="newPassword"
-              :disabled="submittingPassword"
-              :error="formErrors.newPassword"
-            />
-          </div>
-          <div class="form-group">
-            <label for="confirmPassword">Confirm New Password</label>
-            <PasswordInput
-              id="confirmPassword"
-              v-model="confirmPassword"
-              :disabled="submittingPassword"
-              :error="formErrors.confirmPassword"
-            />
-          </div>
-          <div class="form-actions">
-            <button
-              @click="toggleEditPassword"
-              class="cancel-button"
-              :disabled="submittingPassword"
-            >
-              Cancel
-            </button>
-            <button
-              @click="updatePassword"
-              class="save-button"
-              :disabled="submittingPassword || !currentPassword || !newPassword || !confirmPassword"
-            >
-              {{ submittingPassword ? 'Saving...' : 'Save' }}
-            </button>
-          </div>
-        </div>
-
-        <div class="profile-detail">
-          <label>Account Created</label>
-          <span>{{ formatDate(authStore.user.created_at) }}</span>
-        </div>
-        <div class="profile-detail">
-          <label>Last Login</label>
-          <span>{{ formatDate(authStore.user.last_login) }}</span>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <h3>Prediction Stats</h3>
-        <div class="profile-detail">
-          <label>Total Predictions</label>
-          <span>{{ authStore.user.predictions_made || 0 }}</span>
-        </div>
-        <div class="profile-detail">
-          <label>Correct Predictions</label>
-          <span>{{ authStore.user.correct_predictions || 0 }}</span>
-        </div>
-        <div class="profile-detail">
-          <label>Prediction Accuracy</label>
-          <span>{{ predictionAccuracy }}</span>
-        </div>
-      </div>
-
-      <div class="profile-section">
-        <h3>Points</h3>
-        <div class="profile-detail">
-          <label>Total Points</label>
-          <span>{{ authStore.user.total_points || 0 }}</span>
-        </div>
-        <div class="profile-detail">
-          <label>Weekly Points</label>
-          <span>{{ authStore.user.weekly_points || 0 }}</span>
-        </div>
-      </div>
-
-      <div class="profile-actions">
-        <button @click="handleLogout" class="logout-button">Logout</button>
       </div>
     </div>
 
@@ -600,7 +825,7 @@ const updatePassword = async () => {
 .profile-container {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: calc(100vh - 80px);
   padding: 20px;
 }
@@ -638,7 +863,39 @@ const updatePassword = async () => {
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
-  max-width: 600px;
+  max-width: 800px;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 16px;
+  font-weight: 500;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-button:hover {
+  color: #495057;
+}
+
+.tab-button.active {
+  color: #007bff;
+  border-bottom-color: #007bff;
+}
+
+.tab-content {
+  padding: 8px 0;
 }
 
 .profile-section {
@@ -888,5 +1145,226 @@ const updatePassword = async () => {
 .login-link:hover,
 .register-link:hover {
   background-color: #f0f8ff;
+}
+
+/* FAVOURITES STYLES */
+.favourites-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.favourites-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.favourites-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.search-bar {
+  flex: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.sort-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-select {
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  background-color: white;
+}
+
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.browse-button,
+.retry-button,
+.clear-search-button {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.browse-button:hover,
+.retry-button:hover,
+.clear-search-button:hover {
+  background-color: #0069d9;
+}
+
+.favourites-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.favourite-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.favourite-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+}
+
+.favourite-image {
+  height: 200px;
+  overflow: hidden;
+}
+
+.song-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favourite-details {
+  padding: 16px;
+}
+
+.favourite-title {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+.favourite-artist {
+  font-size: 1rem;
+  color: #6c757d;
+  margin-bottom: 16px;
+}
+
+.charts-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-badge {
+  display: flex;
+  align-items: center;
+  background: #f0f7ff;
+  color: #0366d6;
+  padding: 6px 10px;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.chart-badge:hover {
+  background: #cce5ff;
+}
+
+.chart-title {
+  margin-right: 6px;
+}
+
+.chart-position {
+  font-weight: bold;
+}
+
+.favourite-btn-container {
+  margin-left: 6px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.chart-badge:hover .favourite-btn-container {
+  opacity: 1;
+}
+
+.chart-favourite-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Override the default favourite button size in this context */
+.chart-favourite-btn .heart-icon {
+  width: 18px;
+  height: 18px;
+}
+
+@media (max-width: 768px) {
+  .favourites-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .favourites-controls {
+    flex-direction: column;
+  }
+
+  .sort-control {
+    width: 100%;
+  }
+
+  .sort-select {
+    flex: 1;
+  }
 }
 </style>
