@@ -26,10 +26,24 @@ def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5, header
     for i in range(count):
         start_time = time.time()
         
+        # Generate unique data for each request to avoid conflicts
+        request_data = {}
+        if data and isinstance(data, dict):
+            for key, value in data.items():
+                if key in ['username', 'email']:
+                    # Add index to ensure uniqueness
+                    request_data[key] = f"{value}_{i}"
+                else:
+                    request_data[key] = value
+        else:
+            request_data = data
+        
         if method.upper() == "GET":
-            resp = requests.get(url, params=data, headers=headers)
+            resp = requests.get(url, params=request_data, headers=headers)
         elif method.upper() == "POST":
-            resp = requests.post(url, json=data, headers=headers)
+            resp = requests.post(url, json=request_data, headers=headers)
+        elif method.upper() == "PUT":
+            resp = requests.put(url, json=request_data, headers=headers)
         else:
             raise ValueError(f"Unsupported method: {method}")
         
@@ -162,31 +176,30 @@ def test_login_rate_limit():
     print("Login rate limit test: PASSED")
 
 def test_register_rate_limit():
-    """Test register endpoint rate limit (3 per hour)."""
-    print("\n=== TESTING REGISTER RATE LIMIT (3 per hour) ===")
+    """Test register endpoint rate limit (20 per hour)."""
+    print("\n=== TESTING REGISTER RATE LIMIT (20 per hour) ===")
     
-    # Make 5 requests (more than enough to trigger rate limiting eventually)
+    # Make 22 requests (2 more than the limit)
     responses = make_requests(
         endpoint="register",
         method="POST",
         data={
-            "username": f"test_user_{random_string()}",  # Unique usernames each time
+            "username": f"test_user_{random_string()}",  # Base name will be made unique per request
             "password": "Test123!",
-            "email": f"test_{random_string()}@example.com"  # Unique emails each time
+            "email": f"test_{random_string()}@example.com"  # Base email will be made unique per request
         },
-        count=5,
-        delay=1.0  # Longer delay for registration
+        count=22,
+        delay=0.3  # Shorter delay as we have more requests
     )
     
     # Check if any 429 responses were received
     has_rate_limit = 429 in responses
     
-    # If no rate limits were hit, the test is inconclusive but not failed
+    # If no rate limits were hit after 22 requests, something is wrong
     if not has_rate_limit:
-        print("⚠️ Warning: No rate limiting detected for register endpoint after 5 requests.")
-        print("This may be due to higher rate limits than expected or because of unique request data.")
-        print("Register rate limit test: SKIPPED")
-        return
+        print("❌ Error: No rate limiting detected for register endpoint after 22 requests.")
+        print("The configured limit of 20 per hour may not be enforced correctly.")
+        assert False, "Register endpoint not enforcing rate limits correctly"
     
     # Find the index where rate limiting starts
     rate_limit_start = responses.index(429)
@@ -195,11 +208,16 @@ def test_register_rate_limit():
     for i, code in enumerate(responses[:rate_limit_start]):
         assert code in (201, 409, 400), f"Request {i+1} should return 201, 409, or 400, got {code}"
     
+    # Check if rate limiting starts after 20 requests as expected
+    if rate_limit_start < 20:
+        print(f"⚠️ Warning: Rate limiting started at request {rate_limit_start+1}, expected after 20 requests")
+    else:
+        print(f"✅ Rate limiting correctly started after {rate_limit_start} requests")
+    
     # All requests after rate limiting should continue to be rate limited
     for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
-    print(f"Register rate limit detected after {rate_limit_start} requests")
     print("Register rate limit test: PASSED")
 
 def test_check_availability_rate_limit():
@@ -339,7 +357,7 @@ def test_update_profile_rate_limit():
         start_time = time.time()
         
         # Generate unique username for each request
-        test_data = {"username": f"rate_limit_test_{random_string()}"}
+        test_data = {"username": f"rate_limit_test_{random_string()}_{i}"}
         
         resp = requests.put(url, json=test_data, headers=headers)
         
