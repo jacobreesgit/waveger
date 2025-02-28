@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validatePassword, passwordsMatch } from '@/utils/validation'
+import PasswordInput from '@/components/PasswordInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -141,30 +142,24 @@ const handleSubmit = async () => {
 
         <div class="form-group">
           <label for="password">New Password</label>
-          <input
+          <PasswordInput
             id="password"
             v-model="password"
-            type="password"
-            required
             :disabled="isSubmitting"
-            @input="errors.password = ''"
-            class="form-input"
+            :error="errors.password"
+            @update:model-value="errors.password = ''"
           />
-          <p v-if="errors.password" class="error-text">{{ errors.password }}</p>
         </div>
 
         <div class="form-group">
           <label for="confirmPassword">Confirm New Password</label>
-          <input
+          <PasswordInput
             id="confirmPassword"
             v-model="confirmPassword"
-            type="password"
-            required
             :disabled="isSubmitting"
-            @input="errors.confirmPassword = ''"
-            class="form-input"
+            :error="errors.confirmPassword"
+            @update:model-value="errors.confirmPassword = ''"
           />
-          <p v-if="errors.confirmPassword" class="error-text">{{ errors.confirmPassword }}</p>
         </div>
 
         <button type="submit" :disabled="isSubmitting" class="submit-button">

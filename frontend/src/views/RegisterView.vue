@@ -7,6 +7,7 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
 } from '@/utils/validation'
+import PasswordInput from '@/components/PasswordInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -233,19 +234,14 @@ watch(email, (newValue) => {
         <!-- Password Field -->
         <div class="form-group">
           <label for="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
             v-model="password"
-            type="password"
-            required
-            autocomplete="new-password"
             :disabled="isSubmitting"
-            class="form-input"
-            @input="formErrors.password = ''"
+            :error="formErrors.password"
+            @update:model-value="formErrors.password = ''"
+            autocomplete="new-password"
           />
-          <p v-if="formErrors.password" class="error-text">
-            {{ formErrors.password }}
-          </p>
         </div>
 
         <!-- Submit Button -->

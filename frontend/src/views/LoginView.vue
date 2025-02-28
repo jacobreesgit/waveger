@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validateLoginForm } from '@/utils/validation'
 import axios from 'axios'
+import PasswordInput from '@/components/PasswordInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -141,17 +142,13 @@ const handleLogin = async () => {
         <!-- Password Field -->
         <div class="form-group">
           <label for="password">Password</label>
-          <input
+          <PasswordInput
             id="password"
             v-model="password"
-            type="password"
-            required
             :disabled="isSubmitting"
-            @input="formErrors.password = ''"
+            :error="formErrors.password"
+            @update:model-value="formErrors.password = ''"
           />
-          <p v-if="formErrors.password" class="error-text">
-            {{ formErrors.password }}
-          </p>
           <div class="forgot-password">
             <router-link to="/forgot-password">Forgot password?</router-link>
           </div>

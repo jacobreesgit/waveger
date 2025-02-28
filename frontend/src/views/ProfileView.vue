@@ -7,6 +7,7 @@ import {
   checkEmailAvailability,
   validatePassword,
 } from '@/utils/validation'
+import PasswordInput from '@/components/PasswordInput.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -499,42 +500,30 @@ const updatePassword = async () => {
           <h4>Change Password</h4>
           <div class="form-group">
             <label for="currentPassword">Current Password</label>
-            <input
+            <PasswordInput
               id="currentPassword"
               v-model="currentPassword"
-              type="password"
               :disabled="submittingPassword"
-              class="form-input"
+              :error="formErrors.currentPassword"
             />
-            <p v-if="formErrors.currentPassword" class="error-text">
-              {{ formErrors.currentPassword }}
-            </p>
           </div>
           <div class="form-group">
             <label for="newPassword">New Password</label>
-            <input
+            <PasswordInput
               id="newPassword"
               v-model="newPassword"
-              type="password"
               :disabled="submittingPassword"
-              class="form-input"
+              :error="formErrors.newPassword"
             />
-            <p v-if="formErrors.newPassword" class="error-text">
-              {{ formErrors.newPassword }}
-            </p>
           </div>
           <div class="form-group">
             <label for="confirmPassword">Confirm New Password</label>
-            <input
+            <PasswordInput
               id="confirmPassword"
               v-model="confirmPassword"
-              type="password"
               :disabled="submittingPassword"
-              class="form-input"
+              :error="formErrors.confirmPassword"
             />
-            <p v-if="formErrors.confirmPassword" class="error-text">
-              {{ formErrors.confirmPassword }}
-            </p>
           </div>
           <div class="form-actions">
             <button
