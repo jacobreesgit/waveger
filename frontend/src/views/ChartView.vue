@@ -172,6 +172,12 @@ const loadAppleMusicData = async () => {
     return
   }
 
+  // If shouldReloadData returned false, don't reload Apple Music data either
+  if (store.currentChart && !isInitialLoad.value && !store.loading) {
+    console.log('Using existing Apple Music data, no need to reload')
+    return
+  }
+
   console.log('Loading Apple Music data for current songs')
 
   // Ensure we have an Apple Music token
@@ -252,15 +258,20 @@ watch(
 // Watch for chart changes to clear Apple Music data cache
 watch(
   () => store.currentChart,
-  async (newChart) => {
+  async (newChart, oldChart) => {
     if (newChart) {
-      console.log('Chart changed, clearing Apple Music data cache')
-      songData.value.clear()
-      appleDataLoading.value.clear()
+      // Only clear cache if it's a different chart than before
+      if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
+        console.log('Chart changed, clearing Apple Music data cache')
+        songData.value.clear()
+        appleDataLoading.value.clear()
 
-      // Load Apple Music data for the new chart
-      await nextTick()
-      await loadAppleMusicData()
+        // Load Apple Music data for the new chart
+        await nextTick()
+        await loadAppleMusicData()
+      } else {
+        console.log('Same chart updated, preserving Apple Music data cache')
+      }
     }
   },
 )
