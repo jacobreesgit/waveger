@@ -166,14 +166,20 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
 }
 
 // Load or fetch Apple Music data for current songs
+// Update the loadAppleMusicData function in ChartView.vue
 const loadAppleMusicData = async () => {
   if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
     console.log('No songs available to fetch Apple Music data')
     return
   }
 
-  // If shouldReloadData returned false, don't reload Apple Music data either
-  if (store.currentChart && !isInitialLoad.value && !store.loading) {
+  // Check if we already have Apple Music data for the current songs
+  const haveAllData = store.currentChart.songs.every((song) =>
+    songData.value.has(`${song.position}`),
+  )
+
+  // If we determined we shouldn't reload data AND we already have all the Apple Music data
+  if (store.currentChart && !isInitialLoad.value && !store.loading && haveAllData) {
     console.log('Using existing Apple Music data, no need to reload')
     return
   }
