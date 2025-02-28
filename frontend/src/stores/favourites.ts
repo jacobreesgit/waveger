@@ -64,6 +64,8 @@ export const useFavouritesStore = defineStore('favourites', () => {
   }
 
   // Load all favourites for the current user
+  // Add these debugging lines to the loadFavourites function in your favouritesStore
+
   const loadFavourites = async () => {
     if (!axios.defaults.headers.common['Authorization']) {
       console.log('No auth token, skipping favourites load')
