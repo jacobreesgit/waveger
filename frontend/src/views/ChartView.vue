@@ -2,9 +2,12 @@
 import { onMounted, onUnmounted, ref, watch, nextTick, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
+import { useFavouritesStore } from '@/stores/favourites'
+import { useAuthStore } from '@/stores/auth'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
+import FavouriteButton from '@/components/FavouriteButton.vue'
 import { useRoute } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
 
@@ -15,6 +18,8 @@ const props = defineProps<{
 
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
+const favouritesStore = useFavouritesStore()
+const authStore = useAuthStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
@@ -217,6 +222,11 @@ onMounted(async () => {
 
   // Load Apple Music data after chart data is available
   await loadAppleMusicData()
+
+  // If user is logged in, load their favourites
+  if (authStore.user) {
+    await favouritesStore.loadFavourites()
+  }
 })
 
 onUnmounted(() => {
@@ -348,15 +358,23 @@ watch(
       <transition-group name="song-list" tag="div" class="songs">
         <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
           <div class="song-rank">#{{ song.position }}</div>
-          <img
-            :src="
-              songData.get(`${song.position}`)?.attributes.artwork.url
-                ? getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url)
-                : song.image
-            "
-            :alt="song.name"
-            class="song-image"
-          />
+          <div class="song-image-container">
+            <img
+              :src="
+                songData.get(`${song.position}`)?.attributes.artwork.url
+                  ? getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url)
+                  : song.image
+              "
+              :alt="song.name"
+              class="song-image"
+            />
+            <FavouriteButton
+              :song="song"
+              :chart-id="store.selectedChartId.replace(/\/$/, '')"
+              :chart-title="store.currentChart.title"
+              class="favourite-btn-overlay"
+            />
+          </div>
           <div class="song-info">
             <div class="song-title">{{ song.name }}</div>
             <div class="song-artist">{{ song.artist }}</div>
@@ -713,5 +731,26 @@ watch(
 
 .song-list-move {
   transition: transform 0.5s ease;
+}
+
+.song-image-container {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.song-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.favourite-btn-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
 }
 </style>

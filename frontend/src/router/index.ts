@@ -6,6 +6,7 @@ import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import FavouritesView from '@/views/FavouritesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,12 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: ProfileView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/favourites',
+      name: 'favourites',
+      component: FavouritesView,
       meta: { requiresAuth: true },
     },
     {

@@ -13,7 +13,8 @@ const routes = computed(() => {
   const baseRoutes = [{ path: '/', name: 'Home', title: 'Current Charts' }]
 
   if (authStore.user) {
-    // Add profile route when user is logged in
+    // Add user routes when logged in
+    baseRoutes.push({ path: '/favourites', name: 'Favourites', title: 'Favourites' })
     baseRoutes.push({ path: '/profile', name: 'Profile', title: 'Profile' })
   } else {
     // Add login/register routes when no user is logged in
