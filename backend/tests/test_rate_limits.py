@@ -136,10 +136,10 @@ def get_valid_token():
 # ---------------------- Test Functions ----------------------
 
 def test_login_rate_limit():
-    """Test login endpoint rate limit (4 per minute)."""
-    print("\n=== TESTING LOGIN RATE LIMIT (4 per minute) ===")
+    """Test login endpoint rate limit (5 per minute)."""
+    print("\n=== TESTING LOGIN RATE LIMIT (5 per minute) ===")
     
-    # Make 6 requests (2 more than the limit)
+    # Make 7 requests (2 more than the limit)
     responses = make_requests(
         endpoint="login",
         method="POST",
@@ -147,16 +147,16 @@ def test_login_rate_limit():
             "username": f"nonexistent_{random_string()}",
             "password": "wrong_password123"
         },
-        count=6,
+        count=7,
         delay=0.5
     )
     
-    # Assert first 4 should be either 401 or 400 (authentication failure, not rate limited)
-    for i, code in enumerate(responses[:4]):
+    # Assert first 5 should be either 401 or 400 (authentication failure, not rate limited)
+    for i, code in enumerate(responses[:5]):
         assert code in (401, 400), f"Request {i+1} should return 401 or 400, got {code}"
     
     # Assert last 2 should be rate limited (429)
-    for i, code in enumerate(responses[4:], 5):
+    for i, code in enumerate(responses[5:], 6):
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
     print("Login rate limit test: PASSED")
@@ -321,6 +321,51 @@ def test_user_info_rate_limit():
     
     print("User-info rate limit test: PASSED")
 
+def test_update_profile_rate_limit():
+    """Test update-profile endpoint rate limit (10 per minute)."""
+    print("\n=== TESTING UPDATE PROFILE RATE LIMIT (10 per minute) ===")
+    
+    # Get a valid token first
+    token = get_valid_token()
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Make 12 requests (2 more than the limit)
+    url = f"{BASE_URL}/update-profile"
+    responses = []
+    
+    print(f"\nTesting PUT {url} with 12 requests...")
+    
+    for i in range(12):
+        start_time = time.time()
+        
+        # Generate unique username for each request
+        test_data = {"username": f"rate_limit_test_{random_string()}"}
+        
+        resp = requests.put(url, json=test_data, headers=headers)
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        elapsed = time.time() - start_time
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        
+        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        
+        responses.append(resp.status_code)
+        time.sleep(0.3)  # Add delay between requests
+    
+    # First 10 should succeed with 200
+    for i, code in enumerate(responses[:10]):
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
+    
+    # Last 2 should be rate limited
+    for i, code in enumerate(responses[10:], 11):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("Update profile rate limit test: PASSED")
+
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -339,6 +384,7 @@ def run_all_tests():
         test_user_endpoint_rate_limit()
         test_refresh_token_rate_limit()
         test_user_info_rate_limit()
+        test_update_profile_rate_limit()
         
         print("\n=========================================")
         print("ALL RATE LIMIT TESTS PASSED!")

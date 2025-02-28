@@ -393,6 +393,159 @@ def test_user_info():
     
     print("✅ User info endpoint correctly requires username parameter")
 
+def test_update_profile():
+    """Test the update-profile endpoint for changing user details."""
+    print("\n=== TESTING UPDATE PROFILE ENDPOINT ===")
+    
+    # Create a test user
+    test_user = create_test_user()
+    access_token = test_user["tokens"]["access_token"]
+    
+    # Setup auth headers
+    headers = {"Authorization": f"Bearer {access_token}"}
+    
+    # Test 1: Update username
+    new_username = f"updated_{random_string()}"
+    
+    print(f"Testing username update from {test_user['username']} to {new_username}")
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"username": new_username},
+        headers=headers
+    )
+    
+    assert response.status_code == 200, f"Profile update failed with status {response.status_code}: {response.text}"
+    data = response.json()
+    assert "message" in data, "Response missing message"
+    assert "updates" in data, "Response missing updates"
+    assert "username" in data["updates"], "Username update not confirmed in response"
+    assert data["updates"]["username"] == new_username, "Username not updated correctly"
+    
+    # Verify the change by fetching user data
+    user_response = requests.get(f"{BASE_URL}/user", headers=headers)
+    assert user_response.status_code == 200, "Failed to fetch updated user data"
+    user_data = user_response.json()
+    assert user_data["username"] == new_username, "Username not updated in database"
+    
+    print("✅ Username update successful")
+    
+    # Test 2: Update email
+    new_email = f"updated_{random_string()}@example.com"
+    
+    print(f"Testing email update to {new_email}")
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"email": new_email},
+        headers=headers
+    )
+    
+    assert response.status_code == 200, f"Email update failed with status {response.status_code}: {response.text}"
+    data = response.json()
+    assert "updates" in data, "Response missing updates"
+    assert "email" in data["updates"], "Email update not confirmed in response"
+    assert data["updates"]["email"] == new_email, "Email not updated correctly"
+    
+    # Verify the change
+    user_response = requests.get(f"{BASE_URL}/user", headers=headers)
+    user_data = user_response.json()
+    assert user_data["email"] == new_email, "Email not updated in database"
+    
+    print("✅ Email update successful")
+    
+    # Test 3: Update password
+    old_password = test_user["password"]
+    new_password = f"NewPassword{random_string()}123!"
+    
+    print("Testing password update")
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={
+            "current_password": old_password,
+            "new_password": new_password
+        },
+        headers=headers
+    )
+    
+    assert response.status_code == 200, f"Password update failed with status {response.status_code}: {response.text}"
+    data = response.json()
+    assert "updates" in data, "Response missing updates"
+    assert "password_updated" in data["updates"], "Password update not confirmed in response"
+    assert data["updates"]["password_updated"] is True, "Password update flag not set"
+    
+    # Verify the password change by trying to login with new password
+    login_response = requests.post(
+        f"{BASE_URL}/login",
+        json={
+            "username": new_username,
+            "password": new_password
+        }
+    )
+    
+    assert login_response.status_code == 200, "Failed to login with new password"
+    
+    print("✅ Password update successful")
+    
+    # Test 4: Try to update with incorrect current password
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={
+            "current_password": "wrong_password",
+            "new_password": "AnotherNew123!"
+        },
+        headers=headers
+    )
+    
+    assert response.status_code == 401, f"Expected 401 for incorrect password, got {response.status_code}"
+    
+    print("✅ Incorrect current password correctly rejected")
+    
+    # Test 5: Try to update to an existing username
+    # Create another test user to have a taken username
+    another_user = create_test_user()
+    
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"username": another_user["username"]},
+        headers=headers
+    )
+    
+    assert response.status_code == 409, f"Expected 409 for username conflict, got {response.status_code}"
+    
+    print("✅ Username conflict correctly detected")
+    
+    # Test 6: Try to update to an existing email
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"email": another_user["email"]},
+        headers=headers
+    )
+    
+    assert response.status_code == 409, f"Expected 409 for email conflict, got {response.status_code}"
+    
+    print("✅ Email conflict correctly detected")
+    
+    # Test 7: Try to update with invalid token
+    invalid_headers = {"Authorization": "Bearer invalid_token"}
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"username": f"invalid_{random_string()}"},
+        headers=invalid_headers
+    )
+    
+    assert response.status_code in [401, 422], f"Expected 401/422 for invalid token, got {response.status_code}"
+    
+    print("✅ Invalid token correctly rejected")
+
+    # Test 8: Try to update with missing authorization
+    response = requests.put(
+        f"{BASE_URL}/update-profile",
+        json={"username": f"unauthorized_{random_string()}"}
+    )
+    
+    assert response.status_code == 401, f"Expected 401 for missing auth, got {response.status_code}"
+    
+    print("✅ Missing authorization correctly rejected")
+
 def run_all_tests():
     """Run all authentication tests in sequence."""
     print("\n=========================================")
@@ -407,7 +560,8 @@ def run_all_tests():
         test_token_structure_and_claims()
         test_authorization_required()
         test_username_email_availability()
-        test_user_info()  # Added the new test
+        test_user_info()
+        test_update_profile()
         
         print("\n=========================================")
         print("ALL AUTHENTICATION TESTS PASSED!")
