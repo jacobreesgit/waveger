@@ -510,6 +510,54 @@ export const useAuthStore = defineStore('auth', () => {
       loading.value = false
     }
   }
+  const updateProfile = async (updates: {
+    username?: string
+    email?: string
+    current_password?: string
+    new_password?: string
+  }) => {
+    try {
+      loading.value = true
+      error.value = null
+
+      const response = await axios.put(`${BASE_URL}/update-profile`, updates, {
+        headers: {
+          Authorization: `Bearer ${token.value}`,
+        },
+      })
+
+      // Update local user data if successful
+      if (response.data.updates) {
+        if (response.data.updates.username) {
+          user.value!.username = response.data.updates.username
+        }
+        if (response.data.updates.email) {
+          user.value!.email = response.data.updates.email
+        }
+
+        // Update stored user data
+        if (rememberMe.value) {
+          localStorage.setItem('user', JSON.stringify(user.value))
+        } else {
+          sessionStorage.setItem('user', JSON.stringify(user.value))
+        }
+      }
+
+      return response.data
+    } catch (e) {
+      console.error('Profile update error:', e)
+
+      if (axios.isAxiosError(e)) {
+        error.value = e.response?.data?.error || 'Failed to update profile'
+      } else {
+        error.value = e instanceof Error ? e.message : 'Failed to update profile'
+      }
+
+      throw error.value
+    } finally {
+      loading.value = false
+    }
+  }
 
   return {
     user,
@@ -528,5 +576,6 @@ export const useAuthStore = defineStore('auth', () => {
     forgotPassword,
     verifyResetToken,
     resetPassword,
+    updateProfile,
   }
 })

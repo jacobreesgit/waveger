@@ -744,3 +744,106 @@ def get_user_info():
     except Exception as e:
         logger.error(f"Unexpected error in user_info: {e}")
         return jsonify({"error": "Server error", "details": str(e)}), 500
+
+@auth_bp.route("/update-profile", methods=["PUT"])
+@jwt_required()
+@limiter.limit("10 per minute", key_func=get_real_ip)
+def update_profile():
+    """Update user profile information (username, email, password)."""
+    try:
+        # Get the user ID from the JWT token
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        # Get current data to check what's changed
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute(
+                "SELECT username, email, password_hash FROM users WHERE id = %s",
+                (user_id,)
+            )
+            user = cursor.fetchone()
+            
+            if not user:
+                return jsonify({"error": "User not found"}), 404
+                
+            current_username, current_email, current_password_hash = user
+            
+            # Check what fields were provided and update them
+            updates = {}
+            update_fields = []
+            update_values = []
+            
+            # Handle username update
+            if 'username' in data and data['username'] != current_username:
+                # Check if username is available
+                cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM users WHERE username = %s AND id != %s)",
+                    (data['username'], user_id)
+                )
+                username_exists = cursor.fetchone()[0]
+                
+                if username_exists:
+                    return jsonify({"error": "Username already taken"}), 409
+                    
+                update_fields.append("username = %s")
+                update_values.append(data['username'])
+                updates['username'] = data['username']
+            
+            # Handle email update
+            if 'email' in data and data['email'] != current_email:
+                # Check if email is available
+                cursor.execute(
+                    "SELECT EXISTS(SELECT 1 FROM users WHERE email = %s AND id != %s)",
+                    (data['email'], user_id)
+                )
+                email_exists = cursor.fetchone()[0]
+                
+                if email_exists:
+                    return jsonify({"error": "Email already registered"}), 409
+                    
+                update_fields.append("email = %s")
+                update_values.append(data['email'])
+                updates['email'] = data['email']
+            
+            # Handle password update
+            if 'current_password' in data and 'new_password' in data:
+                # Verify current password
+                if not bcrypt.check_password_hash(current_password_hash, data['current_password']):
+                    return jsonify({"error": "Current password is incorrect"}), 401
+                    
+                # Hash and update password
+                password_hash = bcrypt.generate_password_hash(data['new_password']).decode('utf-8')
+                update_fields.append("password_hash = %s")
+                update_values.append(password_hash)
+                updates['password_updated'] = True
+            
+            # If there are no updates, return early
+            if not update_fields:
+                return jsonify({"message": "No changes made"}), 200
+                
+            # Build and execute update query
+            query = "UPDATE users SET " + ", ".join(update_fields) + " WHERE id = %s"
+            update_values.append(user_id)
+            
+            cursor.execute(query, update_values)
+            conn.commit()
+            
+            return jsonify({
+                "message": "Profile updated successfully",
+                "updates": updates
+            }), 200
+            
+        except Exception as e:
+            conn.rollback()
+            logger.error(f"Database error in update_profile: {e}")
+            return jsonify({"error": "Failed to update profile", "details": str(e)}), 500
+        finally:
+            cursor.close()
+            conn.close()
+            
+    except Exception as e:
+        logger.error(f"Unexpected error in update_profile: {e}")
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
