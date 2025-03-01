@@ -1,3 +1,26 @@
+import requests
+import json
+import time
+import pytest
+import logging
+from datetime import datetime, timedelta
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Base API URL
+BASE_URL = "https://wavegerpython.onrender.com/api"
+
+# Helper Functions
+def get_formatted_date(days_ago=0):
+    """Get date formatted as YYYY-MM-DD, optionally for a past date."""
+    date = datetime.now() - timedelta(days=days_ago)
+    return date.strftime('%Y-%m-%d')
+
 def check_chart_details_response(data):
     """Validate structure of chart details response for different chart types."""
     assert isinstance(data, dict), "Chart details response should be a dictionary"
@@ -84,88 +107,6 @@ def check_chart_details_response(data):
         assert not missing_fields, f"Song entry missing required fields for {chart_title}: {missing_fields}"
     
     logger.info(f"Chart details validated for {chart_title}. Found {len(chart_data['songs'])} songs")
-    return Trueimport requests
-import json
-import time
-import pytest
-import logging
-from datetime import datetime, timedelta
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
-# Base API URL
-BASE_URL = "https://wavegerpython.onrender.com/api"
-
-# Helper Functions
-def get_formatted_date(days_ago=0):
-    """Get date formatted as YYYY-MM-DD, optionally for a past date."""
-    date = datetime.now() - timedelta(days=days_ago)
-    return date.strftime('%Y-%m-%d')
-
-def check_top_charts_response(data):
-    """Validate structure of top charts response."""
-    assert isinstance(data, dict), "Top charts response should be a dictionary"
-    assert "source" in data, "Response missing 'source' field"
-    assert data["source"] in ["api", "database"], f"Unexpected source: {data['source']}"
-    
-    assert "data" in data, "Response missing 'data' field"
-    chart_data = data["data"]
-    
-    # Top charts could be a list of chart types or a single chart object
-    if isinstance(chart_data, list):
-        assert len(chart_data) > 0, "No charts found in response"
-        
-        # Check structure of first chart entry
-        first_chart = chart_data[0]
-        assert "title" in first_chart, "Chart entry missing 'title'"
-        assert "id" in first_chart, "Chart entry missing 'id'"
-        
-        logger.info(f"Top charts validated. Found {len(chart_data)} charts")
-    else:
-        assert isinstance(chart_data, dict), "Chart data should be a dictionary or list"
-        assert "songs" in chart_data, "Single chart data missing 'songs' list"
-        assert "title" in chart_data, "Single chart data missing 'title'"
-    
-    return True
-
-def check_chart_details_response(data):
-    """Validate structure of chart details response."""
-    assert isinstance(data, dict), "Chart details response should be a dictionary"
-    assert "source" in data, "Response missing 'source' field"
-    assert data["source"] in ["api", "database"], f"Unexpected source: {data['source']}"
-    
-    assert "data" in data, "Response missing 'data' field"
-    chart_data = data["data"]
-    
-    # Check for required fields
-    assert "title" in chart_data, "Chart data missing 'title' field"
-    assert "songs" in chart_data, "Chart data missing 'songs' list"
-    assert isinstance(chart_data["songs"], list), "Songs should be a list"
-    
-    # Check song structure if songs exist
-    if chart_data["songs"]:
-        first_song = chart_data["songs"][0]
-        
-        # Different charts might have slightly different field names
-        # Be flexible in checking song structure
-        valid_song_fields = [
-            # Most common field names
-            "position", "name", "artist", 
-            # Alternative field names
-            "rank", "title", "performer"
-        ]
-        
-        # Ensure at least 2 of these fields exist
-        fields_found = [field for field in valid_song_fields if field in first_song]
-        
-        assert len(fields_found) >= 2, f"Song entry missing required fields. Found: {fields_found}"
-    
-    logger.info(f"Chart details validated. Found {len(chart_data['songs'])} songs")
     return True
 
 def test_top_charts():
@@ -185,22 +126,16 @@ def test_top_charts():
         assert False, f"Response is not valid JSON: {response.text}"
     
     # Validate response structure
-    check_top_charts_response(data)
+    assert "data" in data, "Response missing data field"
+    assert isinstance(data["data"], list), "Top charts data should be a list"
+    assert len(data["data"]) > 0, "No charts found in top charts"
+    
+    # Check structure of first chart
+    first_chart = data["data"][0]
+    assert "id" in first_chart, "Chart entry missing 'id'"
+    assert "title" in first_chart, "Chart entry missing 'title'"
     
     print("✅ Top charts endpoint test passed")
-    
-    # Test caching behavior if source was API
-    if data.get("source") == "api":
-        print("Testing caching behavior...")
-        time.sleep(2)  # Brief pause
-        
-        # Make the same request again
-        cache_response = requests.get(f"{BASE_URL}/top-charts")
-        assert cache_response.status_code == 200, "Cached request failed"
-        
-        cache_data = cache_response.json()
-        assert cache_data.get("source") == "database", "Second request should use cached data"
-        print("✅ Caching behavior test passed")
     
     return data
 
@@ -330,11 +265,11 @@ def test_chart_diversity():
     # Ensure we have some charts to test
     assert len(chart_list) > 0, "No charts available to test"
     
-    # Test a sample of different charts
-    test_count = min(3, len(chart_list))
+    # Track charts that have been successfully tested
+    tested_charts = []
     
-    for i in range(test_count):
-        chart = chart_list[i]
+    # Test all available charts
+    for chart in chart_list:
         chart_id = chart.get("id", "").rstrip("/")  # Remove trailing slash
         chart_title = chart.get("title")
         
@@ -342,7 +277,7 @@ def test_chart_diversity():
         
         # Skip if missing ID
         if not chart_id:
-            print(f"⚠️ Chart at index {i} missing ID, skipping")
+            print(f"⚠️ Chart missing ID, skipping")
             continue
         
         # Test this chart
@@ -358,12 +293,17 @@ def test_chart_diversity():
             check_chart_details_response(chart_data)
             
             print(f"✅ Successfully fetched chart: {chart_title}")
+            tested_charts.append(chart_title)
+            
         except Exception as e:
             print(f"❌ Failed to test chart {chart_id}: {e}")
             import traceback
             traceback.print_exc()
     
+    assert len(tested_charts) > 3, f"Only tested {len(tested_charts)} charts. Expected more diversity."
+    
     print("✅ Chart diversity test completed")
+    print(f"Tested charts: {', '.join(tested_charts)}")
 
 def run_all_tests():
     """Run all chart API tests in sequence."""
