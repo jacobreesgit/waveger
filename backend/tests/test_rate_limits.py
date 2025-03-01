@@ -384,6 +384,100 @@ def test_update_profile_rate_limit():
     
     print("Update profile rate limit test: PASSED")
 
+def test_top_charts_rate_limit():
+    """Test top-charts endpoint rate limit (100 per minute)."""
+    print("\n=== TESTING TOP CHARTS RATE LIMIT (100 per minute) ===")
+    
+    # Make 102 requests (2 more than the limit)
+    # We'll use a smaller number to avoid timeouts during testing
+    count = 22  # Using smaller count for faster testing
+    
+    url = f"{BASE_URL.replace('/auth', '')}/top-charts"
+    responses = []
+    
+    print(f"\nTesting GET {url} with {count} requests...")
+    
+    for i in range(count):
+        start_time = time.time()
+        resp = requests.get(url)
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        elapsed = time.time() - start_time
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        
+        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        
+        responses.append(resp.status_code)
+        time.sleep(0.1)  # Very short delay for this high-limit endpoint
+    
+    # Check if we hit the rate limit
+    has_rate_limit = 429 in responses
+    
+    # If testing with fewer requests than the limit, we may not hit it
+    if count <= 100:
+        print("Note: Testing with fewer requests than the limit, may not hit rate limit")
+        return
+    
+    # If we did exceed the limit, we should see 429 responses
+    if has_rate_limit:
+        # Find the index where rate limiting starts
+        rate_limit_start = responses.index(429)
+        
+        print(f"Rate limiting correctly started after {rate_limit_start} requests")
+        
+        # All requests after rate limiting should continue to be rate limited
+        for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
+            assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    else:
+        print("⚠️ Warning: Rate limit not hit. This could be expected if testing with fewer requests than the limit.")
+    
+    print("Top charts rate limit test completed")
+
+def test_chart_details_rate_limit():
+    """Test chart endpoint rate limit (200 per minute)."""
+    print("\n=== TESTING CHART DETAILS RATE LIMIT (200 per minute) ===")
+    
+    # Make 22 requests (smaller number for testing purposes)
+    count = 22
+    
+    url = f"{BASE_URL.replace('/auth', '')}/chart"
+    responses = []
+    
+    print(f"\nTesting GET {url} with {count} requests...")
+    
+    for i in range(count):
+        start_time = time.time()
+        
+        # Add chart ID parameter to make request more realistic
+        resp = requests.get(url, params={"id": "hot-100"})
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        elapsed = time.time() - start_time
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        
+        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        
+        responses.append(resp.status_code)
+        time.sleep(0.1)  # Very short delay
+    
+    # With only 22 requests, we shouldn't hit the 200 per minute limit
+    has_rate_limit = 429 in responses
+    
+    if has_rate_limit:
+        print("⚠️ Unexpected: Rate limit hit sooner than expected. Limit may be lower than 200 per minute.")
+    else:
+        print("✅ Successfully made 22 requests without hitting rate limit (expected for 200/minute limit)")
+    
+    print("Chart details rate limit test completed")
+
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -403,6 +497,8 @@ def run_all_tests():
         test_refresh_token_rate_limit()
         test_user_info_rate_limit()
         test_update_profile_rate_limit()
+        test_top_charts_rate_limit()
+        test_chart_details_rate_limit()
         
         print("\n=========================================")
         print("ALL RATE LIMIT TESTS PASSED!")

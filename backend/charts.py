@@ -5,6 +5,7 @@ import psycopg2
 import json
 from datetime import datetime
 import logging
+from __init__ import limiter, get_real_ip
 
 charts_bp = Blueprint("charts", __name__)
 
@@ -127,6 +128,7 @@ def store_chart_data(data, chart_id, historical_week):
         raise
 
 @charts_bp.route("/top-charts", methods=["GET"])
+@limiter.limit("100 per minute", key_func=get_real_ip)  # Add rate limit: 100 requests per minute
 def get_top_charts():
     try:
         logging.debug("Top charts endpoint called")
@@ -136,6 +138,7 @@ def get_top_charts():
         return jsonify({"error": str(e)}), 500
 
 @charts_bp.route("/chart", methods=["GET"])
+@limiter.limit("200 per minute", key_func=get_real_ip)  # Add rate limit: 200 requests per minute
 def get_chart_details():
     try:
         chart_id = request.args.get("id", "hot-100")

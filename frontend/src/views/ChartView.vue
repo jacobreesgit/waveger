@@ -221,11 +221,30 @@ onMounted(async () => {
   await appleMusicStore.fetchToken()
 
   // Determine the chart ID and date to display
-  const urlDate = route.params.date as string | undefined
-  const formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
+  let urlDate = route.params.date as string | undefined
+  let formattedDate: string
+  let chartId = (route.query.id as string) || 'hot-100'
 
-  // Default to hot-100 if not specified
-  const chartId = (route.query.id as string) || 'hot-100'
+  // If no date in URL but we're on the home route, check for stored last viewed date
+  if (!urlDate && route.name === 'home') {
+    const storedDate = localStorage.getItem('lastViewedDate')
+    if (storedDate) {
+      console.log('Using last viewed date from storage:', storedDate)
+      urlDate = storedDate
+    }
+  }
+
+  // If no chart ID in URL, check for stored last viewed chart
+  if (!route.query.id && route.name === 'home') {
+    const storedChart = localStorage.getItem('lastViewedChart')
+    if (storedChart) {
+      console.log('Using last viewed chart from storage:', storedChart)
+      chartId = storedChart
+    }
+  }
+
+  // Parse date - either from URL, storage, or current date
+  formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
 
   // Wait for store initialization if it's in progress
   if (!store.initialized && isInitialLoad.value) {
@@ -242,6 +261,14 @@ onMounted(async () => {
       week: formattedDate,
       range: '1-10',
     })
+
+    // Save the chart selection to localStorage
+    localStorage.setItem('lastViewedChart', chartId)
+
+    // Save the date if it was from URL
+    if (urlDate) {
+      localStorage.setItem('lastViewedDate', urlDate)
+    }
   } else {
     console.log('Using existing chart data from store')
   }

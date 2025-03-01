@@ -15,6 +15,17 @@ export const useChartsStore = defineStore('charts', () => {
   const initialized = ref(false)
   const initializing = ref(false)
 
+  // Load last viewed chart from localStorage on initialization
+  const loadLastViewedChart = () => {
+    const lastChart = localStorage.getItem('lastViewedChart')
+    if (lastChart) {
+      // Normalize chart ID format
+      const normalizedChartId = lastChart.endsWith('/') ? lastChart : `${lastChart}/`
+      selectedChartId.value = normalizedChartId
+      console.log('Loaded last viewed chart from storage:', normalizedChartId)
+    }
+  }
+
   // Simplified initialize method that only fetches chart data
   const initialize = async () => {
     if (initialized.value) {
@@ -33,12 +44,31 @@ export const useChartsStore = defineStore('charts', () => {
       error.value = null
       console.log('Store - Initializing charts store')
 
-      // Fetch default chart data only
-      const today = new Date().toISOString().split('T')[0]
-      console.log(`Store initialization - Using today's date: ${today}`)
+      // Load the last viewed chart ID if available
+      loadLastViewedChart()
+
+      // Get date to use - either from localStorage or today
+      let dateToUse: string
+      const lastDate = localStorage.getItem('lastViewedDate')
+
+      if (lastDate) {
+        // Convert from URL format (DD-MM-YYYY) to API format (YYYY-MM-DD)
+        const [day, month, year] = lastDate.split('-')
+        dateToUse = `${year}-${month}-${day}`
+        console.log(`Store initialization - Using last viewed date: ${dateToUse}`)
+      } else {
+        dateToUse = new Date().toISOString().split('T')[0]
+        console.log(`Store initialization - Using today's date: ${dateToUse}`)
+      }
+
+      // Use stored chart ID (or default to hot-100 if none stored)
+      const chartId = selectedChartId.value.replace(/\/$/, '')
+      console.log(`Store initialization - Using chart ID: ${chartId}`)
+
+      // Fetch chart data
       await fetchChartDetails({
-        id: 'hot-100',
-        week: today,
+        id: chartId,
+        week: dateToUse,
         range: '1-10',
       })
 
@@ -64,7 +94,20 @@ export const useChartsStore = defineStore('charts', () => {
       const chartId = params.id || 'hot-100/'
 
       // Store the selected chart ID
-      selectedChartId.value = chartId
+      selectedChartId.value = chartId.endsWith('/') ? chartId : `${chartId}/`
+
+      // Save to localStorage for persistence
+      localStorage.setItem('lastViewedChart', chartId)
+
+      // If a date is provided, save it to localStorage in URL format
+      if (params.week) {
+        const date = new Date(params.week)
+        const day = date.getDate().toString().padStart(2, '0')
+        const month = (date.getMonth() + 1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        const urlFormattedDate = `${day}-${month}-${year}`
+        localStorage.setItem('lastViewedDate', urlFormattedDate)
+      }
 
       console.log('Store - Fetching chart details with params:', params)
       console.log(`Store - Requesting chart data for date: ${params.week || 'current date'}`)
@@ -150,5 +193,6 @@ export const useChartsStore = defineStore('charts', () => {
     fetchMoreSongs,
     initialized,
     initializing,
+    loadLastViewedChart,
   }
 })
