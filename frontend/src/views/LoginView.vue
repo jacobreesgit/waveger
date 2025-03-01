@@ -128,6 +128,7 @@ const handleLogin = async () => {
           <input
             id="username"
             v-model="username"
+            autocomplete="username"
             type="text"
             required
             :disabled="isSubmitting"

@@ -89,9 +89,57 @@ onMounted(() => {
   // Use the chart ID from the route if available
   const routeChartId = route.query.id as string
   if (routeChartId) {
-    // Add slash at the end if needed to match our format
-    selectedChartId.value = routeChartId.endsWith('/') ? routeChartId : `${routeChartId}/`
-    store.selectedChartId = selectedChartId.value
+    // Normalize IDs for comparison
+    const normalizedRouteId = routeChartId.endsWith('/') ? routeChartId : `${routeChartId}/`
+    const normalizedStoreId = store.selectedChartId.replace(/\/$/, '') + '/'
+
+    console.log('Chart selector mounting with IDs:', {
+      routeId: normalizedRouteId,
+      storeId: normalizedStoreId,
+      currentChart: store.currentChart?.title || 'None',
+    })
+
+    // Compare normalized IDs to detect mismatches
+    const idMismatch = normalizedRouteId !== normalizedStoreId
+
+    // Also check for mismatches between the displayed chart title and route ID
+    let titleMismatch = false
+    if (store.currentChart) {
+      const currentTitle = store.currentChart.title.toLowerCase()
+      const isHot100Title = currentTitle.includes('hot 100')
+      const isBillboard200Title = currentTitle.includes('billboard 200')
+
+      // If current title is Hot 100 but route ID is not 'hot-100'
+      if (isHot100Title && !normalizedRouteId.includes('hot-100')) {
+        titleMismatch = true
+      }
+      // If current title is Billboard 200 but route ID is not 'billboard-200'
+      else if (isBillboard200Title && !normalizedRouteId.includes('billboard-200')) {
+        titleMismatch = true
+      }
+    }
+
+    // Update the local selectedChartId and store.selectedChartId
+    selectedChartId.value = normalizedRouteId
+
+    // Only update the store's selectedChartId if there's a mismatch
+    if (idMismatch || titleMismatch) {
+      store.selectedChartId = selectedChartId.value
+
+      // Force a data reload if there's a mismatch and we already have chart data
+      if (store.currentChart) {
+        console.log('Detected chart type mismatch, forcing data reload')
+        const formattedDate = route.params.date
+          ? parseDateFromURL(route.params.date as string)
+          : new Date().toISOString().split('T')[0]
+
+        store.fetchChartDetails({
+          id: routeChartId,
+          week: formattedDate,
+          range: '1-10',
+        })
+      }
+    }
   } else {
     // Make sure store ID matches local ID
     store.selectedChartId = selectedChartId.value

@@ -35,7 +35,7 @@ const updateValue = (event: Event) => {
         :value="modelValue"
         :placeholder="placeholder"
         :disabled="disabled"
-        :autocomplete="autocomplete"
+        :autocomplete="autocomplete || 'current-password'"
         @input="updateValue"
         class="password-input"
       />
