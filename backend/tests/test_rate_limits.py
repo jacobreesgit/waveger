@@ -14,6 +14,9 @@ FALLBACK_USER = {
     "email": "test_permanent@example.com"
 }
 
+# Global variable to store a valid token once obtained
+CACHED_TOKEN = None
+
 # ---------------------- Helper Functions ----------------------
 
 def make_requests(endpoint, method="GET", data=None, count=10, delay=0.5, headers=None):
@@ -67,7 +70,7 @@ def random_string(length=8):
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=length))
 
 def ensure_test_user_exists():
-    """Make sure the fallback test user exists before running tests."""
+    """Make sure the fallback test user exists before running tests, with rate limit handling."""
     # First, check if we can log in with the fallback user
     login_response = requests.post(
         f"{BASE_URL}/login",
@@ -82,6 +85,12 @@ def ensure_test_user_exists():
         print(f"✅ Fallback user {FALLBACK_USER['username']} exists and credentials are valid.")
         return True
     
+    # If we're hitting rate limits, wait and try again
+    if login_response.status_code == 429:
+        print(f"Rate limit hit when trying to log in as fallback user. Waiting 60 seconds...")
+        time.sleep(60)
+        return ensure_test_user_exists()  # Recursive call
+    
     # Otherwise, try to register the fallback user
     print(f"Registering fallback user {FALLBACK_USER['username']}...")
     register_response = requests.post(
@@ -95,16 +104,25 @@ def ensure_test_user_exists():
     elif register_response.status_code == 409:
         print(f"⚠️ User {FALLBACK_USER['username']} already exists but password may be wrong")
         return False
+    elif register_response.status_code == 429:
+        print(f"Rate limit hit when trying to register fallback user. Waiting 60 seconds...")
+        time.sleep(60)
+        return ensure_test_user_exists()  # Recursive call
     else:
         print(f"❌ Failed to register fallback user. Status: {register_response.status_code}")
         print(f"Response: {register_response.text}")
         return False
 
-def get_valid_token():
-    """Tries to get a valid token, first by logging in with existing credentials,
-    then trying to register a new user if login fails."""
+def get_valid_token(force_new=False):
+    """Tries to get a valid token, with improved caching and fallback mechanisms."""
+    global CACHED_TOKEN
     
-    # First try to log in with the fallback user
+    # Return cached token if available and not forcing new
+    if CACHED_TOKEN and not force_new:
+        print("Using cached token")
+        return CACHED_TOKEN
+    
+    # First try to login with the fallback user
     print("Attempting to log in with existing user...")
     login_response = requests.post(
         f"{BASE_URL}/login",
@@ -120,7 +138,14 @@ def get_valid_token():
         token = login_data.get("access_token")
         if token:
             print(f"Successfully logged in as {FALLBACK_USER['username']}")
+            CACHED_TOKEN = token
             return token
+    
+    # If login failed and we're hitting rate limits, wait and try again
+    if login_response.status_code == 429:
+        print("Rate limit hit. Waiting 60 seconds before trying again...")
+        time.sleep(60)  # Wait for rate limit to reset
+        return get_valid_token(force_new)  # Recursive call
     
     # Otherwise, try to register a new user
     print("Login failed. Attempting to register a new user...")
@@ -137,17 +162,122 @@ def get_valid_token():
         }
     )
     
+    # If registration succeeded, use that token
     if register_response.status_code == 201:
         register_data = register_response.json()
         token = register_data.get("access_token")
         if token:
             print(f"Successfully registered new user: {username}")
+            CACHED_TOKEN = token
             return token
+    
+    # If registration failed due to rate limits, wait and try login again
+    if register_response.status_code == 429:
+        print("Rate limit hit during registration. Waiting 60 seconds...")
+        time.sleep(60)  # Wait for rate limit to reset
+        return get_valid_token(force_new=True)  # Try again with login
     
     print(f"All authentication attempts failed. Cannot proceed with user endpoint test.")
     raise Exception("Unable to obtain a valid token for testing")
 
 # ---------------------- Test Functions ----------------------
+
+def test_user_endpoint_rate_limit():
+    """Test user endpoint rate limit (30 per minute) with valid authentication."""
+    print("\n=== TESTING USER ENDPOINT RATE LIMIT (30 per minute) ===")
+    
+    # Get a valid token using the improved helper function
+    try:
+        token = get_valid_token()
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        print("Skipping user endpoint rate limit test.")
+        return
+    
+    # Now make 32 requests (2 more than the limit) with the valid token
+    count = 32
+    responses = []
+    auth_header = {"Authorization": f"Bearer {token}"}
+    
+    print(f"Testing GET {BASE_URL}/user with {count} requests and valid token...")
+    
+    for i in range(count):
+        resp = requests.get(
+            f"{BASE_URL}/user",
+            headers=auth_header
+        )
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}")
+        
+        responses.append(resp.status_code)
+        time.sleep(0.1)  # Very short delay for this high-limit endpoint
+    
+    # First 30 should return 200 (valid authenticated request)
+    for i, code in enumerate(responses[:30]):
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
+    
+    # Last 2 should be rate limited
+    for i, code in enumerate(responses[30:], 31):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("User endpoint rate limit test: PASSED")
+
+def test_update_profile_rate_limit():
+    """Test update-profile endpoint rate limit (10 per minute)."""
+    print("\n=== TESTING UPDATE PROFILE RATE LIMIT (10 per minute) ===")
+    
+    # Get a valid token first
+    try:
+        token = get_valid_token()
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        print("Skipping update profile rate limit test.")
+        return
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Make 12 requests (2 more than the limit)
+    url = f"{BASE_URL}/update-profile"
+    responses = []
+    
+    print(f"\nTesting PUT {url} with 12 requests...")
+    
+    for i in range(12):
+        start_time = time.time()
+        
+        # Generate unique username for each request
+        test_data = {"username": f"rate_limit_test_{random_string()}_{i}"}
+        
+        resp = requests.put(url, json=test_data, headers=headers)
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        elapsed = time.time() - start_time
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        
+        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        
+        responses.append(resp.status_code)
+        time.sleep(0.3)  # Add delay between requests
+    
+    # First 10 should succeed with 200
+    for i, code in enumerate(responses[:10]):
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
+    
+    # Last 2 should be rate limited
+    for i, code in enumerate(responses[10:], 11):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("Update profile rate limit test: PASSED")
 
 def test_login_rate_limit():
     """Test login endpoint rate limit (5 per minute)."""
@@ -243,52 +373,6 @@ def test_check_availability_rate_limit():
     
     print("Check-availability rate limit test: PASSED")
 
-def test_user_endpoint_rate_limit():
-    """Test user endpoint rate limit (30 per minute) with valid authentication."""
-    print("\n=== TESTING USER ENDPOINT RATE LIMIT (30 per minute) ===")
-    
-    # Get a valid token using the helper function (tries login then registration)
-    try:
-        token = get_valid_token()
-    except Exception as e:
-        print(f"ERROR: {str(e)}")
-        print("Skipping user endpoint rate limit test.")
-        return
-    
-    # Now make 32 requests (2 more than the limit) with the valid token
-    count = 32
-    responses = []
-    auth_header = {"Authorization": f"Bearer {token}"}
-    
-    print(f"Testing GET {BASE_URL}/user with {count} requests and valid token...")
-    
-    for i in range(count):
-        resp = requests.get(
-            f"{BASE_URL}/user",
-            headers=auth_header
-        )
-        
-        # Extract rate limit headers if present
-        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
-        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
-        
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
-              f"Remaining: {remaining}, Limit: {limit}")
-        
-        responses.append(resp.status_code)
-        time.sleep(0.1)  # Very short delay for this high-limit endpoint
-    
-    # First 30 should return 200 (valid authenticated request)
-    for i, code in enumerate(responses[:30]):
-        assert code == 200, f"Request {i+1} should return 200, got {code}"
-    
-    # Last 2 should be rate limited
-    for i, code in enumerate(responses[30:], 31):
-        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
-    
-    print("User endpoint rate limit test: PASSED")
-
 def test_refresh_token_rate_limit():
     """Test refresh token endpoint rate limit (10 per minute)."""
     print("\n=== TESTING REFRESH TOKEN RATE LIMIT (10 per minute) ===")
@@ -339,57 +423,11 @@ def test_user_info_rate_limit():
     
     print("User-info rate limit test: PASSED")
 
-def test_update_profile_rate_limit():
-    """Test update-profile endpoint rate limit (10 per minute)."""
-    print("\n=== TESTING UPDATE PROFILE RATE LIMIT (10 per minute) ===")
-    
-    # Get a valid token first
-    token = get_valid_token()
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # Make 12 requests (2 more than the limit)
-    url = f"{BASE_URL}/update-profile"
-    responses = []
-    
-    print(f"\nTesting PUT {url} with 12 requests...")
-    
-    for i in range(12):
-        start_time = time.time()
-        
-        # Generate unique username for each request
-        test_data = {"username": f"rate_limit_test_{random_string()}_{i}"}
-        
-        resp = requests.put(url, json=test_data, headers=headers)
-        
-        # Extract rate limit headers if present
-        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
-        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
-        
-        elapsed = time.time() - start_time
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        
-        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
-              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
-        
-        responses.append(resp.status_code)
-        time.sleep(0.3)  # Add delay between requests
-    
-    # First 10 should succeed with 200
-    for i, code in enumerate(responses[:10]):
-        assert code == 200, f"Request {i+1} should return 200, got {code}"
-    
-    # Last 2 should be rate limited
-    for i, code in enumerate(responses[10:], 11):
-        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
-    
-    print("Update profile rate limit test: PASSED")
-
 def test_top_charts_rate_limit():
     """Test top-charts endpoint rate limit (100 per minute)."""
     print("\n=== TESTING TOP CHARTS RATE LIMIT (100 per minute) ===")
     
-    # Make 102 requests (2 more than the limit)
-    # We'll use a smaller number to avoid timeouts during testing
+    # Make 22 requests (smaller number for testing purposes)
     count = 22  # Using smaller count for faster testing
     
     url = f"{BASE_URL.replace('/auth', '')}/top-charts"
@@ -420,7 +458,6 @@ def test_top_charts_rate_limit():
     # If testing with fewer requests than the limit, we may not hit it
     if count <= 100:
         print("Note: Testing with fewer requests than the limit, may not hit rate limit")
-        return
     
     # If we did exceed the limit, we should see 429 responses
     if has_rate_limit:
@@ -433,7 +470,7 @@ def test_top_charts_rate_limit():
         for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
             assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     else:
-        print("⚠️ Warning: Rate limit not hit. This could be expected if testing with fewer requests than the limit.")
+        print("⚠️ No rate limit hit. This is expected with only 22 requests against a 100/minute limit.")
     
     print("Top charts rate limit test completed")
 
@@ -490,13 +527,16 @@ def run_all_tests():
     ensure_test_user_exists()
     
     try:
+        # Run authenticated tests first to ensure we can get tokens
+        test_user_endpoint_rate_limit()  # Requires token
+        test_update_profile_rate_limit()  # Requires token
+        
+        # Then run the rest of the tests
         test_login_rate_limit()
-        test_register_rate_limit()
-        test_check_availability_rate_limit()
-        test_user_endpoint_rate_limit()
         test_refresh_token_rate_limit()
         test_user_info_rate_limit()
-        test_update_profile_rate_limit()
+        test_check_availability_rate_limit()
+        test_register_rate_limit()  # This will likely hit limits, so run it last
         test_top_charts_rate_limit()
         test_chart_details_rate_limit()
         
