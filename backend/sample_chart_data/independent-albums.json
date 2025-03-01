@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "The week's most popular albums on independent labels, as compiled by Luminate, based on multi-metric consumption blending traditional album sales, track equivalent albums and streaming (audio + video) equivalent albums. Independent labels are defined as those which are either distributed independently or through the indie arm of a major label group as well as labels that are independently owned and control their masters and are distributed directly through either Universal Music Group, Sony Music Entertainment or Warner Music Group.",
+    "songs": [
+      {
+        "artist": "Bad Bunny",
+        "image": "https://charts-static.billboard.com/img/2025/01/bad-bunny-6eh-debitirarmasfotos-6xg-180x180.jpg",
+        "last_week_position": 1,
+        "name": "Debi Tirar Mas Fotos",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Debi+Tirar+Mas+Fotos+Bad+Bunny",
+        "weeks_on_chart": 7
+      },
+      {
+        "artist": "The Lumineers",
+        "image": "https://charts-static.billboard.com/img/2025/03/the-lumineers-csg-automatic-7vh-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Automatic",
+        "peak_position": 2,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Automatic+The+Lumineers",
+        "weeks_on_chart": 1
+      },
+      {
+        "artist": "BigXthaPlug",
+        "image": "https://charts-static.billboard.com/img/2024/10/bigxthaplug-b0q-takecare-afp-180x180.jpg",
+        "last_week_position": 2,
+        "name": "Take Care",
+        "peak_position": 1,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Take+Care+BigXthaPlug",
+        "weeks_on_chart": 19
+      },
+      {
+        "artist": "Tito Double P",
+        "image": "https://charts-static.billboard.com/img/2024/09/titodoublep-tye-incomodo-3g6-180x180.jpg",
+        "last_week_position": 3,
+        "name": "Incomodo",
+        "peak_position": 1,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=Incomodo+Tito+Double+P",
+        "weeks_on_chart": 26
+      },
+      {
+        "artist": "Frank Ocean",
+        "image": "https://charts-static.billboard.com/img/2011/05/frank-ocean-3ku-180x180.jpg",
+        "last_week_position": 4,
+        "name": "Blonde",
+        "peak_position": 1,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Blonde+Frank+Ocean",
+        "weeks_on_chart": 289
+      },
+      {
+        "artist": "Zach Top",
+        "image": "https://charts-static.billboard.com/img/2024/04/zachtop-7m8-coldbeercountrymusic-tnn-180x180.jpg",
+        "last_week_position": 7,
+        "name": "Cold Beer & Country Music",
+        "peak_position": 5,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Cold+Beer+%26+Country+Music+Zach+Top",
+        "weeks_on_chart": 30
+      },
+      {
+        "artist": "Shaboozey",
+        "image": "https://charts-static.billboard.com/img/2024/06/shaboozey-2wm-whereivebeenisntwhereimgoing-xpw-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Where I've Been, Isn't Where I'm Going",
+        "peak_position": 1,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Where+I%27ve+Been%2C+Isn%27t+Where+I%27m+Going+Shaboozey",
+        "weeks_on_chart": 38
+      },
+      {
+        "artist": "Bad Bunny",
+        "image": "https://charts-static.billboard.com/img/2022/05/bad-bunny-6eh-unveranosinti-3ib-180x180.jpg",
+        "last_week_position": 8,
+        "name": "Un Verano Sin Ti",
+        "peak_position": 1,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Un+Verano+Sin+Ti+Bad+Bunny",
+        "weeks_on_chart": 146
+      },
+      {
+        "artist": "Peso Pluma",
+        "image": "https://charts-static.billboard.com/img/2023/07/pesopluma-2yo-genesis-vvj-180x180.jpg",
+        "last_week_position": 9,
+        "name": "Genesis",
+        "peak_position": 1,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=Genesis+Peso+Pluma",
+        "weeks_on_chart": 87
+      },
+      {
+        "artist": "Queen",
+        "image": "https://charts-static.billboard.com/img/1981/11/queen-ty8-greatesthits-3ec-180x180.jpg",
+        "last_week_position": 12,
+        "name": "Greatest Hits",
+        "peak_position": 1,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Greatest+Hits+Queen",
+        "weeks_on_chart": 242
+      }
+    ],
+    "title": "Indie Top Chart | Best Independent Records",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "api"
+}

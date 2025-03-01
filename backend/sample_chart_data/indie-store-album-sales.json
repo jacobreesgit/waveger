@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "THE WEEK'S TOP-SELLING ALBUMS ACROSS ALL GENRES BASED ON AN INFLUENTIAL PANEL OF STORES COMPRISING INDEPENDENT RETAILER COALITIONS AND SMALLER REGIONAL CHAINS, AS COMPILED BY LUMINATE.",
+    "songs": [
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2024/12/kendrick-lamar-1hw-gnx-2n7-180x180.jpg",
+        "last_week_position": 1,
+        "name": "GNX",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=GNX+Kendrick+Lamar",
+        "weeks_on_chart": 2
+      },
+      {
+        "artist": "Sabrina Carpenter",
+        "image": "https://charts-static.billboard.com/img/2024/09/sabrina-carpenter-3b3-shortnsweet-v6a-180x180.jpg",
+        "last_week_position": 7,
+        "name": "Short n' Sweet",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Short+n%27+Sweet+Sabrina+Carpenter",
+        "weeks_on_chart": 25
+      },
+      {
+        "artist": "Chappell Roan",
+        "image": "https://charts-static.billboard.com/img/2023/10/chappellroan-bhw-theriseandfallofamidwestprincess-6vr-180x180.jpg",
+        "last_week_position": 4,
+        "name": "The Rise And Fall Of A Midwest Princess",
+        "peak_position": 1,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=The+Rise+And+Fall+Of+A+Midwest+Princess+Chappell+Roan",
+        "weeks_on_chart": 42
+      },
+      {
+        "artist": "A Day To Remember",
+        "image": "https://charts-static.billboard.com/img/2025/03/a-day-to-remember-z6c-bigolealbumvol1-dd6-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Big Ole Album, Vol. 1",
+        "peak_position": 4,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=Big+Ole+Album%2C+Vol.+1+A+Day+To+Remember",
+        "weeks_on_chart": 1
+      },
+      {
+        "artist": "The Lumineers",
+        "image": "https://charts-static.billboard.com/img/2025/03/the-lumineers-csg-automatic-7vh-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Automatic",
+        "peak_position": 5,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Automatic+The+Lumineers",
+        "weeks_on_chart": 1
+      },
+      {
+        "artist": "The Weeknd",
+        "image": "https://charts-static.billboard.com/img/2025/02/the-weeknd-jlk-hurryuptomorrow-c35-180x180.jpg",
+        "last_week_position": 3,
+        "name": "Hurry Up Tomorrow",
+        "peak_position": 1,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Hurry+Up+Tomorrow+The+Weeknd",
+        "weeks_on_chart": 3
+      },
+      {
+        "artist": "Mac Miller",
+        "image": "https://charts-static.billboard.com/img/2025/02/mac-miller-mo7-balloonerism-xlq-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Balloonerism",
+        "peak_position": 1,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Balloonerism+Mac+Miller",
+        "weeks_on_chart": 5
+      },
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 11,
+        "name": "good kid, m.A.A.d city",
+        "peak_position": 1,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=good+kid%2C+m.A.A.d+city+Kendrick+Lamar",
+        "weeks_on_chart": 278
+      },
+      {
+        "artist": "Charli xcx",
+        "image": "https://charts-static.billboard.com/img/2024/06/charli-xcx-cvd-brat-1bt-180x180.jpg",
+        "last_week_position": 8,
+        "name": "Brat",
+        "peak_position": 1,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=Brat+Charli+xcx",
+        "weeks_on_chart": 37
+      },
+      {
+        "artist": "Gracie Abrams",
+        "image": "https://charts-static.billboard.com/img/2024/07/gracieabrams-wqa-thesecretofus-izu-180x180.jpg",
+        "last_week_position": 0,
+        "name": "The Secret Of Us",
+        "peak_position": 4,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=The+Secret+Of+Us+Gracie+Abrams",
+        "weeks_on_chart": 5
+      }
+    ],
+    "title": "Indie Store Album Sales",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "api"
+}

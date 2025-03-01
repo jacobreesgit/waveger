@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "The week's most popular downloaded songs, ranked by sales data as compiled by Luminate.",
+    "songs": [
+      {
+        "artist": "Drake",
+        "image": "https://charts-static.billboard.com/img/2009/04/drake-8dm-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Nokia",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Nokia+Drake",
+        "weeks_on_chart": 1
+      },
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2024/05/kendrick-lamar-1hw-notlikeus-3of-180x180.jpg",
+        "last_week_position": 1,
+        "name": "Not Like Us",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Not+Like+Us+Kendrick+Lamar",
+        "weeks_on_chart": 24
+      },
+      {
+        "artist": "Chappell Roan",
+        "image": "https://charts-static.billboard.com/img/2024/07/chappellroan-bhw-pinkponyclub-ocm-180x180.jpg",
+        "last_week_position": 2,
+        "name": "Pink Pony Club",
+        "peak_position": 2,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Pink+Pony+Club+Chappell+Roan",
+        "weeks_on_chart": 13
+      },
+      {
+        "artist": "Kendrick Lamar & SZA",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Luther",
+        "peak_position": 4,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=Luther+Kendrick+Lamar+%26+SZA",
+        "weeks_on_chart": 2
+      },
+      {
+        "artist": "Lady Gaga & Bruno Mars",
+        "image": "https://charts-static.billboard.com/img/2024/08/lady-gaga-r3b-diewithasmile-gdz-180x180.jpg",
+        "last_week_position": 10,
+        "name": "Die With A Smile",
+        "peak_position": 1,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Die+With+A+Smile+Lady+Gaga+%26+Bruno+Mars",
+        "weeks_on_chart": 27
+      },
+      {
+        "artist": "ROSE & Bruno Mars",
+        "image": "https://charts-static.billboard.com/img/2024/11/rose-000-apt-4dd-180x180.jpg",
+        "last_week_position": 11,
+        "name": "APT.",
+        "peak_position": 1,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=APT.+ROSE+%26+Bruno+Mars",
+        "weeks_on_chart": 18
+      },
+      {
+        "artist": "Benson Boone",
+        "image": "https://charts-static.billboard.com/img/2024/02/bensonboone-zpu-beautifulthings-nmb-180x180.jpg",
+        "last_week_position": 8,
+        "name": "Beautiful Things",
+        "peak_position": 1,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Beautiful+Things+Benson+Boone",
+        "weeks_on_chart": 57
+      },
+      {
+        "artist": "Lady Gaga",
+        "image": "https://charts-static.billboard.com/img/2025/02/lady-gaga-r3b-abracadabra-y2i-180x180.jpg",
+        "last_week_position": 3,
+        "name": "Abracadabra",
+        "peak_position": 3,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Abracadabra+Lady+Gaga",
+        "weeks_on_chart": 3
+      },
+      {
+        "artist": "Kendrick Lamar Featuring Lefty Gunplay",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 9,
+        "name": "TV Off",
+        "peak_position": 9,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=TV+Off+Kendrick+Lamar+Featuring+Lefty+Gunplay",
+        "weeks_on_chart": 4
+      },
+      {
+        "artist": "Shaboozey",
+        "image": "https://charts-static.billboard.com/img/2024/04/shaboozey-2wm-abarsongtipsy-t07-180x180.jpg",
+        "last_week_position": 12,
+        "name": "A Bar Song (Tipsy)",
+        "peak_position": 1,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=A+Bar+Song+%28Tipsy%29+Shaboozey",
+        "weeks_on_chart": 45
+      }
+    ],
+    "title": "Digital Song Sales",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "api"
+}

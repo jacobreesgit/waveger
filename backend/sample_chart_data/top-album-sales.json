@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "The Songs of the Summer running tally tracks the most popular titles based on cumulative performance on the weekly streaming-, airplay- and sales-based Billboard Hot 100 chart from Memorial Day through Labor Day each year. At the end of the season, the top songs of the summer are revealed.",
+    "songs": [
+      {
+        "artist": "Post Malone Featuring Morgan Wallen",
+        "image": "https://charts-static.billboard.com/img/2024/05/post-malone-uhe-ihadsomehelp-1sg-180x180.jpg",
+        "last_week_position": 1,
+        "name": "I Had Some Help",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=I+Had+Some+Help+Post+Malone+Featuring+Morgan+Wallen",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Shaboozey",
+        "image": "https://charts-static.billboard.com/img/2024/04/shaboozey-2wm-abarsongtipsy-bat-180x180.jpg",
+        "last_week_position": 2,
+        "name": "A Bar Song (Tipsy)",
+        "peak_position": 2,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=A+Bar+Song+%28Tipsy%29+Shaboozey",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2024/05/kendrick-lamar-1hw-notlikeus-fyp-180x180.jpg",
+        "last_week_position": 3,
+        "name": "Not Like Us",
+        "peak_position": 2,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Not+Like+Us+Kendrick+Lamar",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Sabrina Carpenter",
+        "image": "https://charts-static.billboard.com/img/2024/04/sabrina-carpenter-3b3-espresso-c1a-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Espresso",
+        "peak_position": 4,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=Espresso+Sabrina+Carpenter",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Tommy Richman",
+        "image": "https://charts-static.billboard.com/img/2024/05/tommyrichman-vhu-milliondollarbaby-kpl-180x180.jpg",
+        "last_week_position": 4,
+        "name": "Million Dollar Baby",
+        "peak_position": 2,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Million+Dollar+Baby+Tommy+Richman",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Sabrina Carpenter",
+        "image": "https://charts-static.billboard.com/img/2024/06/sabrina-carpenter-3b3-pleasepleaseplease-i9t-180x180.jpg",
+        "last_week_position": 7,
+        "name": "Please Please Please",
+        "peak_position": 6,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Please+Please+Please+Sabrina+Carpenter",
+        "weeks_on_chart": 12
+      },
+      {
+        "artist": "Hozier",
+        "image": "https://charts-static.billboard.com/img/2013/10/hozier-yf1-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Too Sweet",
+        "peak_position": 6,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Too+Sweet+Hozier",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Teddy Swims",
+        "image": "https://charts-static.billboard.com/img/2023/07/teddyswims-loq-losecontrol-4kx-180x180.jpg",
+        "last_week_position": 8,
+        "name": "Lose Control",
+        "peak_position": 7,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Lose+Control+Teddy+Swims",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Billie Eilish",
+        "image": "https://charts-static.billboard.com/img/2024/06/billie-eilish-lrt-birdsofafeather-7iy-180x180.jpg",
+        "last_week_position": 10,
+        "name": "Birds Of A Feather",
+        "peak_position": 9,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=Birds+Of+A+Feather+Billie+Eilish",
+        "weeks_on_chart": 14
+      },
+      {
+        "artist": "Benson Boone",
+        "image": "https://charts-static.billboard.com/img/2024/02/bensonboone-zpu-beautifulthings-vvt-180x180.jpg",
+        "last_week_position": 9,
+        "name": "Beautiful Things",
+        "peak_position": 7,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Beautiful+Things+Benson+Boone",
+        "weeks_on_chart": 14
+      }
+    ],
+    "title": "Songs Of The Summer",
+    "week": "Week of September 7, 2024"
+  },
+  "source": "database"
+}

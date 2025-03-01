@@ -21,7 +21,6 @@ const chartOptions = [
   { id: 'digital-song-sales', title: 'Digital Song Sales' },
   { id: 'summer-songs', title: 'Songs of the Summer' },
   { id: 'top-album-sales', title: 'Top Album Sales' },
-  { id: 'tiktok-billboard-top-50', title: 'TikTok Billboard Top 50' },
   { id: 'top-streaming-albums/', title: 'Top Streaming Albums' },
   { id: 'independent-albums', title: 'Independent Albums' },
   { id: 'vinyl-albums', title: 'Vinyl Albums' },

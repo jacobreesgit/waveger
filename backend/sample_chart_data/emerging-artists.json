@@ -1,0 +1,100 @@
+{
+  "data": {
+    "info": "The week's most popular developing artists, using the same formula as the all-encompassing Billboard Artist 100, which measures artist activity across multiple\u00a0Billboard\u00a0charts, including the Hot 100, Billboard 200 (The Artist 100 lists the most popular acts, overall, each week.) However, the Emerging Artists chart excludes acts that have notched a top 25 entry on either the Hot 100 or Billboard 200, as well as artists that have achieved two or more top 10s on\u00a0Billboard's \"Hot\" song genre charts and/or consumption-based \"Top\" album genre rankings.",
+    "songs": [
+      {
+        "image": "https://charts-static.billboard.com/img/2024/04/zachtop-7m8-artistchart-4l3-180x180.jpg",
+        "last_week_position": 2,
+        "name": "Zach Top",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Zach+Top",
+        "weeks_on_chart": 32
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2024/04/alexwarren-1ap-artistchart-j6k-180x180.jpg",
+        "last_week_position": 1,
+        "name": "Alex Warren",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Alex+Warren",
+        "weeks_on_chart": 32
+      },
+      {
+        "image": "https://www.billboard.com/wp-content/themes/vip/pmc-billboard-2021/assets/public/lazyload-fallback.gif",
+        "last_week_position": 3,
+        "name": "GELO",
+        "peak_position": 3,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=GELO",
+        "weeks_on_chart": 7
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2023/11/theredclaystrays-mhx-87x87.jpg",
+        "last_week_position": 12,
+        "name": "The Red Clay Strays",
+        "peak_position": 1,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=The+Red+Clay+Strays",
+        "weeks_on_chart": 66
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2024/07/ellalangley-mpj-artistchart-oaf-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Ella Langley",
+        "peak_position": 1,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Ella+Langley",
+        "weeks_on_chart": 35
+      },
+      {
+        "image": "https://www.billboard.com/wp-content/themes/vip/pmc-billboard-2021/assets/public/lazyload-fallback.gif",
+        "last_week_position": 4,
+        "name": "Lefty Gunplay",
+        "peak_position": 3,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Lefty+Gunplay",
+        "weeks_on_chart": 13
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2021/04/addisonrae-xms-artistchart-5vt-180x180.jpg",
+        "last_week_position": 14,
+        "name": "Addison Rae",
+        "peak_position": 5,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Addison+Rae",
+        "weeks_on_chart": 28
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2019/11/beabadoobee-rb8-artistchart-85b-180x180.jpg",
+        "last_week_position": 7,
+        "name": "beabadoobee",
+        "peak_position": 1,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=beabadoobee",
+        "weeks_on_chart": 59
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2024/02/bossmandlow-p9g-180x180.jpg",
+        "last_week_position": 10,
+        "name": "BossMan Dlow",
+        "peak_position": 1,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=BossMan+Dlow",
+        "weeks_on_chart": 56
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2024/03/tuckerwetmore-5kz-artistchart-zkd-180x180.jpg",
+        "last_week_position": 9,
+        "name": "Tucker Wetmore",
+        "peak_position": 1,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Tucker+Wetmore",
+        "weeks_on_chart": 52
+      }
+    ],
+    "title": "Emerging Artists",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "api"
+}

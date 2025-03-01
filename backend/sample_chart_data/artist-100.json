@@ -1,0 +1,100 @@
+{
+  "data": {
+    "info": "THE WEEK\u2019S MOST POPULAR ARTISTS ACROSS ALL GENRES, RANKED BY ALBUM AND TRACK SALES AS PROVIDED BY LUMINATE, RADIO AIRPLAY AUDIENCE IMPRESSIONS AS PROVIDED BY LUMINATE, STREAMING ACTIVITY DATA FROM ONLINE MUSIC SOURCES TRACKED BY LUMINATE.",
+    "songs": [
+      {
+        "image": "https://charts-static.billboard.com/img/2012/11/kendrick-lamar-1hw-artistchart-xmj-180x180.jpg",
+        "last_week_position": 1,
+        "name": "Kendrick Lamar",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Kendrick+Lamar",
+        "weeks_on_chart": 477
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2014/08/sabrina-carpenter-3b3-artistchart-6e0-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Sabrina Carpenter",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Sabrina+Carpenter",
+        "weeks_on_chart": 64
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2009/12/drake-8dm-artistchart-2go-180x180.jpg",
+        "last_week_position": 25,
+        "name": "Drake",
+        "peak_position": 1,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Drake",
+        "weeks_on_chart": 554
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2017/07/sza-xyh-artistchart-ybr-180x180.jpg",
+        "last_week_position": 2,
+        "name": "SZA",
+        "peak_position": 1,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=SZA",
+        "weeks_on_chart": 286
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2018/01/morgan-wallen-dqx-artistchart-932-180x180.jpg",
+        "last_week_position": 4,
+        "name": "Morgan Wallen",
+        "peak_position": 1,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Morgan+Wallen",
+        "weeks_on_chart": 311
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2014/08/partynextdoor-83j-artistchart-gkl-180x180.jpg",
+        "last_week_position": 94,
+        "name": "PARTYNEXTDOOR",
+        "peak_position": 6,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=PARTYNEXTDOOR",
+        "weeks_on_chart": 17
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2017/05/billie-eilish-lrt-artistchart-1ek-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Billie Eilish",
+        "peak_position": 1,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Billie+Eilish",
+        "weeks_on_chart": 331
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2023/10/chappellroan-bhw-artistchart-q4x-180x180.jpg",
+        "last_week_position": 7,
+        "name": "Chappell Roan",
+        "peak_position": 1,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Chappell+Roan",
+        "weeks_on_chart": 45
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2013/12/the-weeknd-jlk-artistchart-qvt-180x180.jpg",
+        "last_week_position": 3,
+        "name": "The Weeknd",
+        "peak_position": 1,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=The+Weeknd",
+        "weeks_on_chart": 502
+      },
+      {
+        "image": "https://charts-static.billboard.com/img/2006/12/taylor-swift-9sy-artistchart-ko8-180x180.jpg",
+        "last_week_position": 10,
+        "name": "Taylor Swift",
+        "peak_position": 1,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Taylor+Swift",
+        "weeks_on_chart": 552
+      }
+    ],
+    "title": "Billboard Artist 100",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "database"
+}

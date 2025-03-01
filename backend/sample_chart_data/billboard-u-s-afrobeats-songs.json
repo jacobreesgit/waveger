@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "The week\u2019s most popular Afrobeats songs, ranked by a weighted formula incorporating official streams on both subscription and ad-supported tiers of leading audio and video music services, plus download sales from top music retailers, all compiled by Luminate.",
+    "songs": [
+      {
+        "artist": "Tyla",
+        "image": "https://charts-static.billboard.com/img/2023/02/tyla-7bc-87x87.jpg",
+        "last_week_position": 1,
+        "name": "Push 2 Start",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Push+2+Start+Tyla",
+        "weeks_on_chart": 19
+      },
+      {
+        "artist": "Tyla",
+        "image": "https://charts-static.billboard.com/img/2023/09/tyla-7bc-water-r4l-180x180.jpg",
+        "last_week_position": 2,
+        "name": "Water",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Water+Tyla",
+        "weeks_on_chart": 78
+      },
+      {
+        "artist": "Adam Port, Stryv & Camila Cabello Feat. Malachiii",
+        "image": "https://charts-static.billboard.com/img/2024/06/adamport-3kc-move-998-180x180.jpg",
+        "last_week_position": 4,
+        "name": "Move",
+        "peak_position": 1,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Move+Adam+Port%2C+Stryv+%26+Camila+Cabello+Feat.+Malachiii",
+        "weeks_on_chart": 37
+      },
+      {
+        "artist": "Rema",
+        "image": "https://charts-static.billboard.com/img/2025/02/rema-000-babyisitacrime-ifd-180x180.jpg",
+        "last_week_position": 3,
+        "name": "Baby (Is It A Crime)",
+        "peak_position": 3,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=Baby+%28Is+It+A+Crime%29+Rema",
+        "weeks_on_chart": 2
+      },
+      {
+        "artist": "Asake",
+        "image": "https://charts-static.billboard.com/img/2025/02/asake-kd6-whylove-5eq-180x180.jpg",
+        "last_week_position": 13,
+        "name": "Why Love",
+        "peak_position": 5,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Why+Love+Asake",
+        "weeks_on_chart": 2
+      },
+      {
+        "artist": "ODUMODUBLVCK & Victony",
+        "image": "https://charts-static.billboard.com/img/2025/02/odumodublvck-000-pitythisboy-qkf-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Pity This Boy",
+        "peak_position": 5,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Pity+This+Boy+ODUMODUBLVCK+%26+Victony",
+        "weeks_on_chart": 2
+      },
+      {
+        "artist": "Wizkid & Brent Faiyaz",
+        "image": "https://charts-static.billboard.com/img/2024/11/wizkid-qj3-pieceofmyheart-2ng-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Piece Of My Heart",
+        "peak_position": 4,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=Piece+Of+My+Heart+Wizkid+%26+Brent+Faiyaz",
+        "weeks_on_chart": 18
+      },
+      {
+        "artist": "Tems Featuring J. Cole",
+        "image": "https://charts-static.billboard.com/img/2021/05/tems-67h-180x180.jpg",
+        "last_week_position": 8,
+        "name": "Free Fall",
+        "peak_position": 5,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Free+Fall+Tems+Featuring+J.+Cole",
+        "weeks_on_chart": 37
+      },
+      {
+        "artist": "Asake & Wizkid",
+        "image": "https://charts-static.billboard.com/img/2022/02/asake-kd6-180x180.jpg",
+        "last_week_position": 9,
+        "name": "MMS",
+        "peak_position": 7,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=MMS+Asake+%26+Wizkid",
+        "weeks_on_chart": 28
+      },
+      {
+        "artist": "Burna Boy",
+        "image": "https://charts-static.billboard.com/img/2024/12/burna-boy-8ej-bundlebybundle-859-180x180.jpg",
+        "last_week_position": 10,
+        "name": "Bundle By Bundle",
+        "peak_position": 5,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Bundle+By+Bundle+Burna+Boy",
+        "weeks_on_chart": 10
+      }
+    ],
+    "title": "Billboard U.S. Afrobeats Songs",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "api"
+}

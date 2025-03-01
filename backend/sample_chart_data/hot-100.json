@@ -1,0 +1,110 @@
+{
+  "data": {
+    "info": "THE WEEK\u2019S MOST POPULAR CURRENT SONGS ACROSS ALL GENRES, RANKED BY STREAMING ACTIVITY FROM DIGITAL MUSIC SOURCES TRACKED BY LUMINATE, RADIO AIRPLAY AUDIENCE IMPRESSIONS AS MEASURED BY LUMINATE AND SALES DATA AS COMPILED BY LUMINATE.",
+    "songs": [
+      {
+        "artist": "Kendrick Lamar & SZA",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 2,
+        "name": "Luther",
+        "peak_position": 1,
+        "position": 1,
+        "url": "https://www.youtube.com/results?search_query=Luther+Kendrick+Lamar+%26+SZA",
+        "weeks_on_chart": 13
+      },
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2024/05/kendrick-lamar-1hw-notlikeus-fyp-180x180.jpg",
+        "last_week_position": 1,
+        "name": "Not Like Us",
+        "peak_position": 1,
+        "position": 2,
+        "url": "https://www.youtube.com/results?search_query=Not+Like+Us+Kendrick+Lamar",
+        "weeks_on_chart": 41
+      },
+      {
+        "artist": "Lady Gaga & Bruno Mars",
+        "image": "https://charts-static.billboard.com/img/2024/08/lady-gaga-r3b-diewithasmile-6og-180x180.jpg",
+        "last_week_position": 4,
+        "name": "Die With A Smile",
+        "peak_position": 1,
+        "position": 3,
+        "url": "https://www.youtube.com/results?search_query=Die+With+A+Smile+Lady+Gaga+%26+Bruno+Mars",
+        "weeks_on_chart": 27
+      },
+      {
+        "artist": "Kendrick Lamar Featuring Lefty Gunplay",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 3,
+        "name": "TV Off",
+        "peak_position": 2,
+        "position": 4,
+        "url": "https://www.youtube.com/results?search_query=TV+Off+Kendrick+Lamar+Featuring+Lefty+Gunplay",
+        "weeks_on_chart": 13
+      },
+      {
+        "artist": "Kendrick Lamar",
+        "image": "https://charts-static.billboard.com/img/2010/10/kendrick-lamar-1hw-180x180.jpg",
+        "last_week_position": 5,
+        "name": "Squabble Up",
+        "peak_position": 1,
+        "position": 5,
+        "url": "https://www.youtube.com/results?search_query=Squabble+Up+Kendrick+Lamar",
+        "weeks_on_chart": 13
+      },
+      {
+        "artist": "Drake",
+        "image": "https://charts-static.billboard.com/img/2009/04/drake-8dm-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Gimme A Hug",
+        "peak_position": 6,
+        "position": 6,
+        "url": "https://www.youtube.com/results?search_query=Gimme+A+Hug+Drake",
+        "weeks_on_chart": 1
+      },
+      {
+        "artist": "ROSE & Bruno Mars",
+        "image": "https://charts-static.billboard.com/img/2024/10/rose-000-apt-kne-180x180.jpg",
+        "last_week_position": 7,
+        "name": "APT.",
+        "peak_position": 3,
+        "position": 7,
+        "url": "https://www.youtube.com/results?search_query=APT.+ROSE+%26+Bruno+Mars",
+        "weeks_on_chart": 18
+      },
+      {
+        "artist": "Billie Eilish",
+        "image": "https://charts-static.billboard.com/img/2024/06/billie-eilish-lrt-birdsofafeather-7iy-180x180.jpg",
+        "last_week_position": 6,
+        "name": "Birds Of A Feather",
+        "peak_position": 2,
+        "position": 8,
+        "url": "https://www.youtube.com/results?search_query=Birds+Of+A+Feather+Billie+Eilish",
+        "weeks_on_chart": 40
+      },
+      {
+        "artist": "Shaboozey",
+        "image": "https://charts-static.billboard.com/img/2024/04/shaboozey-2wm-abarsongtipsy-bat-180x180.jpg",
+        "last_week_position": 8,
+        "name": "A Bar Song (Tipsy)",
+        "peak_position": 1,
+        "position": 9,
+        "url": "https://www.youtube.com/results?search_query=A+Bar+Song+%28Tipsy%29+Shaboozey",
+        "weeks_on_chart": 45
+      },
+      {
+        "artist": "Drake",
+        "image": "https://charts-static.billboard.com/img/2009/04/drake-8dm-180x180.jpg",
+        "last_week_position": 0,
+        "name": "Nokia",
+        "peak_position": 10,
+        "position": 10,
+        "url": "https://www.youtube.com/results?search_query=Nokia+Drake",
+        "weeks_on_chart": 1
+      }
+    ],
+    "title": "Billboard Hot 100\u2122",
+    "week": "Week of March 1, 2025"
+  },
+  "source": "database"
+}
