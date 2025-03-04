@@ -427,14 +427,15 @@ def test_top_charts_rate_limit():
     """Test top-charts endpoint rate limit (100 per minute)."""
     print("\n=== TESTING TOP CHARTS RATE LIMIT (100 per minute) ===")
     
-    # Make 22 requests (smaller number for testing purposes)
-    count = 22  # Using smaller count for faster testing
+    # Increase to 105 requests (5 more than the limit)
+    count = 105
     
     url = f"{BASE_URL.replace('/auth', '')}/top-charts"
     responses = []
     
     print(f"\nTesting GET {url} with {count} requests...")
     
+    # Show progress in batches to reduce log verbosity
     for i in range(count):
         start_time = time.time()
         resp = requests.get(url)
@@ -444,48 +445,50 @@ def test_top_charts_rate_limit():
         limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
         
         elapsed = time.time() - start_time
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         
-        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
-              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        # Print only every 10th request or the last 5 requests for clarity
+        if i % 10 == 0 or i >= count - 5:
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+                f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
         
         responses.append(resp.status_code)
-        time.sleep(0.1)  # Very short delay for this high-limit endpoint
+        time.sleep(0.05)  # Reduced delay for faster testing
     
     # Check if we hit the rate limit
     has_rate_limit = 429 in responses
     
-    # If testing with fewer requests than the limit, we may not hit it
-    if count <= 100:
-        print("Note: Testing with fewer requests than the limit, may not hit rate limit")
-    
-    # If we did exceed the limit, we should see 429 responses
     if has_rate_limit:
         # Find the index where rate limiting starts
         rate_limit_start = responses.index(429)
         
         print(f"Rate limiting correctly started after {rate_limit_start} requests")
         
-        # All requests after rate limiting should continue to be rate limited
+        # Ensure rate limit is consistently enforced after being triggered
         for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
             assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+        
+        print("✅ Top charts rate limit correctly enforced after 100 requests")
     else:
-        print("⚠️ No rate limit hit. This is expected with only 22 requests against a 100/minute limit.")
+        print("❌ Failed to hit rate limit after {count} requests. Rate limiting may not be working correctly.")
+        assert False, "Rate limiting not triggered for top-charts endpoint"
     
-    print("Top charts rate limit test completed")
+    print("Top charts rate limit test completed successfully")
+
 
 def test_chart_details_rate_limit():
     """Test chart endpoint rate limit (200 per minute)."""
     print("\n=== TESTING CHART DETAILS RATE LIMIT (200 per minute) ===")
     
-    # Make 22 requests (smaller number for testing purposes)
-    count = 22
+    # Increase to 205 requests (5 more than the limit)
+    count = 205
     
     url = f"{BASE_URL.replace('/auth', '')}/chart"
     responses = []
     
     print(f"\nTesting GET {url} with {count} requests...")
     
+    # To reduce log verbosity, we'll print status in batches
     for i in range(count):
         start_time = time.time()
         
@@ -497,23 +500,39 @@ def test_chart_details_rate_limit():
         limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
         
         elapsed = time.time() - start_time
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         
-        print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
-              f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
+        # Print only every 20th request or the first/last 5 requests for clarity
+        if i % 20 == 0 or i < 5 or i >= count - 5:
+            timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+            print(f"  [{timestamp}] Request {i+1}: Status {resp.status_code}, "
+                f"Remaining: {remaining}, Limit: {limit}, Time: {elapsed:.2f}s")
         
         responses.append(resp.status_code)
-        time.sleep(0.1)  # Very short delay
+        time.sleep(0.05)  # Reduced delay for faster testing
+        
+        # Print progress updates
+        if i > 0 and i % 50 == 0:
+            print(f"  Progress: {i}/{count} requests completed")
     
-    # With only 22 requests, we shouldn't hit the 200 per minute limit
+    # Check if we hit the rate limit
     has_rate_limit = 429 in responses
     
     if has_rate_limit:
-        print("⚠️ Unexpected: Rate limit hit sooner than expected. Limit may be lower than 200 per minute.")
+        # Find the index where rate limiting starts
+        rate_limit_start = responses.index(429)
+        
+        print(f"Rate limiting correctly started after {rate_limit_start} requests")
+        
+        # Ensure rate limit is consistently enforced after being triggered
+        for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
+            assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+        
+        print("✅ Chart details rate limit correctly enforced after 200 requests")
     else:
-        print("✅ Successfully made 22 requests without hitting rate limit (expected for 200/minute limit)")
+        print("❌ Failed to hit rate limit after {count} requests. Rate limiting may not be working correctly.")
+        assert False, "Rate limiting not triggered for chart-details endpoint"
     
-    print("Chart details rate limit test completed")
+    print("Chart details rate limit test completed successfully")
 
 # ---------------------- Main function to run tests ----------------------
 
