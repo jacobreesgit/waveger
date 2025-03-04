@@ -295,12 +295,12 @@ def test_login_rate_limit():
         delay=0.5
     )
     
-    # Assert first 4 should be either 401 or 400 (authentication failure, not rate limited)
-    for i, code in enumerate(responses[:4]):
+    # Assert first 5 should be either 401 or 400 (authentication failure, not rate limited)
+    for i, code in enumerate(responses[:5]):
         assert code in (401, 400), f"Request {i+1} should return 401 or 400, got {code}"
     
-    # Assert last 3 should be rate limited (429)
-    for i, code in enumerate(responses[4:], 5):
+    # Assert last 2 should be rate limited (429)
+    for i, code in enumerate(responses[5:], 6):
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
     print("Login rate limit test: PASSED")
