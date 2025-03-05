@@ -5,12 +5,13 @@ import random
 import string
 import os
 import sys
-
-# Add dotenv import and loading
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Define BASE_URL at the top before using it
+BASE_URL = "https://wavegerpython.onrender.com/api/auth"
 
 # Reset rate limiter at the beginning of tests
 def reset_rate_limiter():
@@ -24,7 +25,7 @@ def reset_rate_limiter():
         
         if not admin_key:
             print("ERROR: ADMIN_SECRET_KEY environment variable not set")
-            print("Set this variable to match the value on your Render server")
+            print("Set this variable in your .env file")
             return
         
         # Send request to reset rate limiter
@@ -53,9 +54,6 @@ def reset_after_test():
 
 # Reset rate limits before running tests
 reset_rate_limiter()
-
-# Base API URL
-BASE_URL = "https://wavegerpython.onrender.com/api/auth"
 
 # Existing test user credentials (to use when registration limit is hit)
 FALLBACK_USER = {
