@@ -4,6 +4,7 @@ from charts import charts_bp
 from apple_music import apple_music_bp
 from auth import auth_bp
 from favourites import favourites_bp
+from admin import admin_bp  # Import the new admin blueprint
 import logging
 
 # Configure logging
@@ -15,6 +16,7 @@ app.register_blueprint(charts_bp, url_prefix="/api")
 app.register_blueprint(apple_music_bp, url_prefix="/api")
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(favourites_bp, url_prefix="/api")
+app.register_blueprint(admin_bp, url_prefix="/api/admin")  # Register admin blueprint
 
 # Add this to app.py after registering blueprints
 @app.route("/api/test-limiter", methods=["GET"])

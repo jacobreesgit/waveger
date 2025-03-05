@@ -6,42 +6,50 @@ import string
 import os
 import sys
 
+# Add dotenv import and loading
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 # Reset rate limiter at the beginning of tests
 def reset_rate_limiter():
-    """Reset all rate limits to 0 at the start of tests"""
+    """Reset all rate limits on the remote server"""
     try:
-        # Try to import the limiter from the main application
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        backend_dir = os.path.dirname(current_dir)
-        sys.path.insert(0, backend_dir)
+        # Admin endpoint for resetting rate limits
+        admin_url = f"{BASE_URL.replace('/auth', '/admin')}/reset-rate-limiter"
         
-        from __init__ import limiter
+        # Get admin key from environment
+        admin_key = os.getenv("ADMIN_SECRET_KEY")
         
-        # Reset all limits
-        limiter.reset()
-        print("Successfully reset rate limiter")
-        # Add a short delay to ensure reset takes effect
-        time.sleep(1)
+        if not admin_key:
+            print("ERROR: ADMIN_SECRET_KEY environment variable not set")
+            print("Set this variable to match the value on your Render server")
+            return
+        
+        # Send request to reset rate limiter
+        response = requests.post(
+            admin_url,
+            headers={"X-Admin-Key": admin_key}
+        )
+        
+        if response.status_code == 200:
+            print("Successfully reset rate limiter on remote server")
+            # Add a short delay to ensure reset takes effect
+            time.sleep(1)
+        else:
+            print(f"Failed to reset rate limiter. Status: {response.status_code}, Response: {response.text}")
+            
     except Exception as e:
-        print(f"Failed to reset rate limiter: {e}")
+        print(f"Error resetting rate limiter: {e}")
 
 # Reset rate limiter after each test
 def reset_after_test():
     """Reset rate limits after a test has completed"""
     try:
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        backend_dir = os.path.dirname(current_dir)
-        sys.path.insert(0, backend_dir)
-        
-        from __init__ import limiter
-        
-        # Reset all limits
-        limiter.reset()
-        print("Reset rate limiter after test")
-        # Add a short delay to ensure reset takes effect
-        time.sleep(1)
+        reset_rate_limiter()
     except Exception as e:
-        print(f"Failed to reset rate limiter: {e}")
+        print(f"Failed to reset rate limiter after test: {e}")
 
 # Reset rate limits before running tests
 reset_rate_limiter()
