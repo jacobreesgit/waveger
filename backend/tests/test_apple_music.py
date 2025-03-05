@@ -20,6 +20,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Reset rate limiter at the beginning of tests
+def reset_rate_limiter():
+    """Reset all rate limits to 0 at the start of tests"""
+    try:
+        # Try to import the limiter from the main application
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(current_dir)
+        sys.path.insert(0, backend_dir)
+        
+        from __init__ import limiter
+        
+        # Reset all limits
+        limiter.reset()
+        logger.info("Successfully reset rate limiter")
+    except Exception as e:
+        logger.error(f"Failed to reset rate limiter: {e}")
+
+# Reset rate limits before running tests
+reset_rate_limiter()
+
 # Import the apple_music module from the parent directory
 def import_module_from_file(module_name, file_path):
     spec = importlib.util.spec_from_file_location(module_name, file_path)

@@ -4,6 +4,28 @@ import time
 import random
 import string
 from datetime import datetime
+import os
+import sys
+
+# Reset rate limiter at the beginning of tests
+def reset_rate_limiter():
+    """Reset all rate limits to 0 at the start of tests"""
+    try:
+        # Try to import the limiter from the main application
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(current_dir)
+        sys.path.insert(0, backend_dir)
+        
+        from __init__ import limiter
+        
+        # Reset all limits
+        limiter.reset()
+        print("Successfully reset rate limiter")
+    except Exception as e:
+        print(f"Failed to reset rate limiter: {e}")
+
+# Reset rate limits before running tests
+reset_rate_limiter()
 
 # Base API URLs
 BASE_URL = "https://wavegerpython.onrender.com/api"
