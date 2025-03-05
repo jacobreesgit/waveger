@@ -505,20 +505,20 @@ def test_register_rate_limit():
     print("Register rate limit test: PASSED")
 
 def test_top_charts_rate_limit():
-    """Test top-charts endpoint rate limit (100 per minute) with a more controlled approach."""
-    print("\n=== TESTING TOP CHARTS RATE LIMIT (100 per minute) ===")
+    """Test top-charts endpoint rate limit (50 per minute) with a more controlled approach."""
+    print("\n=== TESTING TOP CHARTS RATE LIMIT (50 per minute) ===")
     
     # URL for the endpoint
     url = f"{BASE_URL.replace('/auth', '')}/top-charts"
     
     # Number of requests to make
-    total_requests = 120  # Try a bit more than the limit
+    total_requests = 60  # Try a bit more than the limit
     responses = []
     
     print(f"\nTesting GET {url} with {total_requests} requests (controlled rate)...")
     
     # Use batch size to avoid overloading the server
-    batch_size = 10
+    batch_size = 5
     batch_delay = 0.5  # Half second between batches
     
     start_time = time.time()
@@ -535,7 +535,7 @@ def test_top_charts_rate_limit():
             limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
             
             # Print status periodically or when getting close to the limit
-            if i % 10 == 0 or (remaining != 'N/A' and int(remaining) < 5) or status_code == 429:
+            if i % 5 == 0 or (remaining != 'N/A' and int(remaining) < 5) or status_code == 429:
                 timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                 print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
                     f"Remaining: {remaining}, Limit: {limit}")
@@ -578,8 +578,8 @@ def test_top_charts_rate_limit():
         # If we completed enough requests without timeouts but didn't hit the limit
         requests_per_minute = (success_count / elapsed) * 60
         
-        if requests_per_minute > 90 and success_count >= 95:
-            print(f"Achieved {requests_per_minute:.1f} requests per minute, which is close to the limit of 100.")
+        if requests_per_minute > 45 and success_count >= 48:
+            print(f"Achieved {requests_per_minute:.1f} requests per minute, which is close to the limit of 50.")
             print("Test is conditionally PASSED since we made enough requests to test the limit")
             print("The server may have reset the rate limit window during the test.")
         else:
@@ -587,21 +587,21 @@ def test_top_charts_rate_limit():
             assert False, "Rate limiting not properly verified. Either it's not working or the server rate limit differs from expected."
 
 def test_chart_details_rate_limit():
-    """Test chart endpoint rate limit (200 per minute) with a more controlled approach."""
-    print("\n=== TESTING CHART DETAILS RATE LIMIT (200 per minute) ===")
+    """Test chart endpoint rate limit (50 per minute) with a more controlled approach."""
+    print("\n=== TESTING CHART DETAILS RATE LIMIT (50 per minute) ===")
     
     # URL for the endpoint with params
     url = f"{BASE_URL.replace('/auth', '')}/chart"
     params = {"id": "hot-100"}
     
     # Number of requests to make
-    total_requests = 220  # Try a bit more than the limit
+    total_requests = 60  # Try a bit more than the limit
     responses = []
     
     print(f"\nTesting GET {url} with {total_requests} requests (controlled rate)...")
     
     # Use batch size to avoid overloading the server
-    batch_size = 20
+    batch_size = 5
     batch_delay = 0.5  # Half second between batches
     
     start_time = time.time()
@@ -618,7 +618,7 @@ def test_chart_details_rate_limit():
             limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
             
             # Print status periodically or when getting close to the limit
-            if i % 20 == 0 or (remaining != 'N/A' and int(remaining) < 5) or status_code == 429:
+            if i % 5 == 0 or (remaining != 'N/A' and int(remaining) < 5) or status_code == 429:
                 timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
                 print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
                     f"Remaining: {remaining}, Limit: {limit}")
@@ -661,8 +661,8 @@ def test_chart_details_rate_limit():
         # If we completed enough requests without timeouts but didn't hit the limit
         requests_per_minute = (success_count / elapsed) * 60
         
-        if requests_per_minute > 180 and success_count >= 190:
-            print(f"Achieved {requests_per_minute:.1f} requests per minute, which is close to the limit of 200.")
+        if requests_per_minute > 45 and success_count >= 48:
+            print(f"Achieved {requests_per_minute:.1f} requests per minute, which is close to the limit of 50.")
             print("Test is conditionally PASSED since we made enough requests to test the limit")
             print("The server may have reset the rate limit window during the test.")
         else:
