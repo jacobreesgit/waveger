@@ -20,6 +20,26 @@ def reset_rate_limiter():
         # Reset all limits
         limiter.reset()
         print("Successfully reset rate limiter")
+        # Add a short delay to ensure reset takes effect
+        time.sleep(1)
+    except Exception as e:
+        print(f"Failed to reset rate limiter: {e}")
+
+# Reset rate limiter after each test
+def reset_after_test():
+    """Reset rate limits after a test has completed"""
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        backend_dir = os.path.dirname(current_dir)
+        sys.path.insert(0, backend_dir)
+        
+        from __init__ import limiter
+        
+        # Reset all limits
+        limiter.reset()
+        print("Reset rate limiter after test")
+        # Add a short delay to ensure reset takes effect
+        time.sleep(1)
     except Exception as e:
         print(f"Failed to reset rate limiter: {e}")
 
@@ -38,6 +58,39 @@ FALLBACK_USER = {
 
 # Global variable to store a valid token once obtained
 CACHED_TOKEN = None
+
+# Try to create the fallback user once during import, not during test execution
+def create_fallback_user_on_import():
+    try:
+        # First check if we can login
+        login_response = requests.post(
+            f"{BASE_URL}/login",
+            json={
+                "username": FALLBACK_USER["username"],
+                "password": FALLBACK_USER["password"]
+            }
+        )
+        
+        if login_response.status_code == 200:
+            print(f"✅ Fallback user {FALLBACK_USER['username']} exists and credentials are valid.")
+            return
+            
+        # If login fails but not due to rate limit, try to register
+        if login_response.status_code != 429:
+            register_response = requests.post(
+                f"{BASE_URL}/register",
+                json=FALLBACK_USER
+            )
+            
+            if register_response.status_code == 201:
+                print(f"✅ Successfully registered fallback user {FALLBACK_USER['username']}")
+            elif register_response.status_code == 409:
+                print(f"⚠️ User {FALLBACK_USER['username']} already exists but password may be wrong")
+    except Exception as e:
+        print(f"Error during fallback user creation: {e}")
+
+# Create fallback user at import time to avoid issues during tests
+create_fallback_user_on_import()
 
 # ---------------------- Helper Functions ----------------------
 
@@ -327,74 +380,6 @@ def test_login_rate_limit():
     
     print("Login rate limit test: PASSED")
 
-def test_register_rate_limit():
-    """Test register endpoint rate limit (20 per hour)."""
-    print("\n=== TESTING REGISTER RATE LIMIT (20 per hour) ===")
-    
-    # Make 22 requests (2 more than the limit)
-    responses = make_requests(
-        endpoint="register",
-        method="POST",
-        data={
-            "username": f"test_user_{random_string()}",  # Base name will be made unique per request
-            "password": "Test123!",
-            "email": f"test_{random_string()}@example.com"  # Base email will be made unique per request
-        },
-        count=22,
-        delay=0.3  # Shorter delay as we have more requests
-    )
-    
-    # Check if any 429 responses were received
-    has_rate_limit = 429 in responses
-    
-    # If no rate limits were hit after 22 requests, something is wrong
-    if not has_rate_limit:
-        print("❌ Error: No rate limiting detected for register endpoint after 22 requests.")
-        print("The configured limit of 20 per hour may not be enforced correctly.")
-        assert False, "Register endpoint not enforcing rate limits correctly"
-    
-    # Find the index where rate limiting starts
-    rate_limit_start = responses.index(429)
-    
-    # All requests before rate limiting should be valid responses (201, 409, 400)
-    for i, code in enumerate(responses[:rate_limit_start]):
-        assert code in (201, 409, 400), f"Request {i+1} should return 201, 409, or 400, got {code}"
-    
-    # Check if rate limiting starts after 20 requests as expected
-    if rate_limit_start < 20:
-        print(f"⚠️ Warning: Rate limiting started at request {rate_limit_start+1}, expected after 20 requests")
-    else:
-        print(f"✅ Rate limiting correctly started after {rate_limit_start} requests")
-    
-    # All requests after rate limiting should continue to be rate limited
-    for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
-        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
-    
-    print("Register rate limit test: PASSED")
-
-def test_check_availability_rate_limit():
-    """Test check-availability endpoint rate limit (20 per minute)."""
-    print("\n=== TESTING CHECK-AVAILABILITY RATE LIMIT (20 per minute) ===")
-    
-    # Make 22 requests (2 more than the limit)
-    responses = make_requests(
-        endpoint="check-availability",
-        method="GET",
-        data={"username": f"test_{random_string()}"},  # Use random usernames
-        count=22,
-        delay=0.2  # Shorter delay for this higher-limit endpoint
-    )
-    
-    # First 20 should succeed with 200
-    for i, code in enumerate(responses[:20]):
-        assert code == 200, f"Request {i+1} should return 200, got {code}"
-    
-    # Last 2 should be rate limited
-    for i, code in enumerate(responses[20:], 21):
-        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
-    
-    print("Check-availability rate limit test: PASSED")
-
 def test_refresh_token_rate_limit():
     """Test refresh token endpoint rate limit (10 per minute)."""
     print("\n=== TESTING REFRESH TOKEN RATE LIMIT (10 per minute) ===")
@@ -444,6 +429,74 @@ def test_user_info_rate_limit():
         assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
     
     print("User-info rate limit test: PASSED")
+
+def test_check_availability_rate_limit():
+    """Test check-availability endpoint rate limit (20 per minute)."""
+    print("\n=== TESTING CHECK-AVAILABILITY RATE LIMIT (20 per minute) ===")
+    
+    # Make 22 requests (2 more than the limit)
+    responses = make_requests(
+        endpoint="check-availability",
+        method="GET",
+        data={"username": f"test_{random_string()}"},  # Use random usernames
+        count=22,
+        delay=0.2  # Shorter delay for this higher-limit endpoint
+    )
+    
+    # First 20 should succeed with 200
+    for i, code in enumerate(responses[:20]):
+        assert code == 200, f"Request {i+1} should return 200, got {code}"
+    
+    # Last 2 should be rate limited
+    for i, code in enumerate(responses[20:], 21):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("Check-availability rate limit test: PASSED")
+
+def test_register_rate_limit():
+    """Test register endpoint rate limit (20 per hour)."""
+    print("\n=== TESTING REGISTER RATE LIMIT (20 per hour) ===")
+    
+    # Make 22 requests (2 more than the limit)
+    responses = make_requests(
+        endpoint="register",
+        method="POST",
+        data={
+            "username": f"test_user_{random_string()}",  # Base name will be made unique per request
+            "password": "Test123!",
+            "email": f"test_{random_string()}@example.com"  # Base email will be made unique per request
+        },
+        count=22,
+        delay=0.3  # Shorter delay as we have more requests
+    )
+    
+    # Check if any 429 responses were received
+    has_rate_limit = 429 in responses
+    
+    # If no rate limits were hit after 22 requests, something is wrong
+    if not has_rate_limit:
+        print("❌ Error: No rate limiting detected for register endpoint after 22 requests.")
+        print("The configured limit of 20 per hour may not be enforced correctly.")
+        assert False, "Register endpoint not enforcing rate limits correctly"
+    
+    # Find the index where rate limiting starts
+    rate_limit_start = responses.index(429)
+    
+    # All requests before rate limiting should be valid responses (201, 409, 400)
+    for i, code in enumerate(responses[:rate_limit_start]):
+        assert code in (201, 409, 400), f"Request {i+1} should return 201, 409, or 400, got {code}"
+    
+    # Check if rate limiting starts after 20 requests as expected
+    if rate_limit_start < 20:
+        print(f"⚠️ Warning: Rate limiting started at request {rate_limit_start+1}, expected after 20 requests")
+    else:
+        print(f"✅ Rate limiting correctly started after {rate_limit_start} requests")
+    
+    # All requests after rate limiting should continue to be rate limited
+    for i, code in enumerate(responses[rate_limit_start:], rate_limit_start + 1):
+        assert code == 429, f"Request {i} should be rate limited with 429, got {code}"
+    
+    print("Register rate limit test: PASSED")
 
 def test_top_charts_rate_limit():
     """Test top-charts endpoint rate limit (100 per minute)."""
@@ -601,15 +654,30 @@ def run_all_tests():
     try:
         # Run authenticated tests first to ensure we can get tokens
         test_user_endpoint_rate_limit()  # Requires token
+        reset_after_test()
+        
         test_update_profile_rate_limit()  # Requires token
+        reset_after_test()
         
         # Then run the rest of the tests
         test_login_rate_limit()
+        reset_after_test()
+        
         test_refresh_token_rate_limit()
+        reset_after_test()
+        
         test_user_info_rate_limit()
+        reset_after_test()
+        
         test_check_availability_rate_limit()
+        reset_after_test()
+        
         test_register_rate_limit()  # This will likely hit limits, so run it last
+        reset_after_test()
+        
         test_top_charts_rate_limit()
+        reset_after_test()
+        
         test_chart_details_rate_limit()
         
         print("\n=========================================")
