@@ -9,4 +9,4 @@ cp pre-commit .git/hooks/pre-commit
 chmod +x .git/hooks/pre-commit
 
 echo "Git hook installed successfully!"
-echo "Now, every time you make a commit, the commit_log.txt file will be updated with the current date and time."
+echo "Now, every time you make a commit, a text file with the current date and time in the filename will be created and added to the repository."

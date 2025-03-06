@@ -1,23 +1,25 @@
 #!/bin/bash
 
-# Fixed filename for the commit log
-FILENAME="commit_log.txt"
-
-# Get the current date and time
+# Get the current date and time for the filename
 CURRENT_DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
+FILENAME="${CURRENT_DATETIME}.txt"
 
-# Create or update the file with the current date and time
+# Remove any previous timestamp files (using a pattern match)
+rm -f 20??-??-??_??-??-??.txt 2>/dev/null
+
+# Create new file with the current date and time in the filename
 cat > "$FILENAME" << EOF
 # Git Commit Log
 
-**Last Updated:** ${CURRENT_DATETIME}
+**Commit Time:** ${CURRENT_DATETIME}
 
 This file is automatically updated before each Git commit.
+The filename contains the date and time of the commit.
 EOF
 
-echo "Updated commit log file: ${FILENAME}"
+echo "Created new commit log file: ${FILENAME}"
 
 # Add the file to the current commit
 git add "$FILENAME"
 
-echo "Added updated commit log file to the current commit"
+echo "Added commit log file to the current commit"
