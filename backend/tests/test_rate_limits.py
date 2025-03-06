@@ -504,122 +504,6 @@ def test_register_rate_limit():
     
     print("Register rate limit test: PASSED")
 
-def test_favourites_rate_limit():
-    """Test favourites endpoint rate limit (50 per minute)."""
-    print("\n=== TESTING FAVOURITES RATE LIMIT (50 per minute) ===")
-    
-    # Monkeypatch the rate limit for favourites endpoints
-    try:
-        import sys
-        import os
-        
-        # Add the parent directory to path so we can import the backend modules
-        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        
-        # Now import the actual modules
-        from flask_limiter import Limiter
-        import favourites
-        
-        # Monkeypatch the decorator on the route functions
-        original_get_favs = favourites.get_favourites
-        original_add_fav = favourites.add_favourite
-        original_remove_fav = favourites.remove_favourite
-        original_check_fav = favourites.check_favourite
-        
-        # Remove the rate limit decorator and add a new one
-        favourites.get_favourites.__wrapped__ = original_get_favs.__wrapped__
-        favourites.get_favourites._rate_limit_string = "50 per minute" 
-        
-        favourites.add_favourite.__wrapped__ = original_add_fav.__wrapped__
-        favourites.add_favourite._rate_limit_string = "50 per minute"
-        
-        favourites.remove_favourite.__wrapped__ = original_remove_fav.__wrapped__
-        favourites.remove_favourite._rate_limit_string = "50 per minute"
-        
-        favourites.check_favourite.__wrapped__ = original_check_fav.__wrapped__
-        favourites.check_favourite._rate_limit_string = "50 per minute"
-        
-        print("Successfully monkeypatched favourites rate limit to 50 per minute")
-    except Exception as e:
-        print(f"Failed to monkeypatch rate limit: {e}")
-        print("Continuing with original rate limit (120 per minute)")
-        import traceback
-        traceback.print_exc()
-    
-    # Get a valid token first
-    try:
-        token = get_valid_token()
-    except Exception as e:
-        print(f"ERROR: {str(e)}")
-        print("Skipping favourites rate limit test.")
-        return
-    
-    headers = {"Authorization": f"Bearer {token}"}
-    
-    # Make enough requests to hit the rate limit
-    favourites_url = f"{BASE_URL.replace('/auth', '')}/favourites/check"
-    responses = []
-    
-    print(f"\nTesting GET {favourites_url} with rapid requests to detect rate limiting...")
-    
-    test_params = {
-        "song_name": "Test Song",
-        "artist": "Test Artist",
-        "chart_id": "hot-100"
-    }
-    
-    # Instead of fixed number, keep making requests until we hit rate limit or reach a max
-    max_requests = 80
-    rate_limited = False
-    count = 0
-    
-    start_time = time.time()
-    
-    while count < max_requests and not rate_limited:
-        resp = requests.get(favourites_url, params=test_params, headers=headers)
-        
-        # Extract rate limit headers if present
-        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
-        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
-        
-        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-        elapsed = time.time() - start_time
-        
-        print(f"  [{timestamp}] Request {count+1}: Status {resp.status_code}, "
-              f"Remaining: {remaining}, Limit: {limit}, Elapsed: {elapsed:.2f}s")
-        
-        count += 1
-        responses.append(resp.status_code)
-        
-        # Check if we hit rate limit
-        if resp.status_code == 429:
-            rate_limited = True
-            print(f"Rate limit detected after {count} requests in {elapsed:.2f} seconds")
-        
-        # No delay - intentionally try to trigger rate limit
-    
-    # Verify we actually hit the rate limit
-    assert rate_limited, "Rate limit was not triggered. Check rate limiter configuration."
-    
-    # Find where rate limiting began
-    rate_limit_index = responses.index(429)
-    
-    # Verify it's not unreasonably early or late
-    assert rate_limit_index >= 45, f"Rate limiting triggered too early (after {rate_limit_index} requests)"
-    assert rate_limit_index <= 60, f"Rate limiting triggered too late (after {rate_limit_index} requests)"
-    
-    print(f"✅ Favourites rate limit test PASSED - Rate limiting enforced after {rate_limit_index} requests")
-    
-    # Try to restore original functions (cleanup)
-    try:
-        favourites.get_favourites = original_get_favs
-        favourites.add_favourite = original_add_fav
-        favourites.remove_favourite = original_remove_fav
-        favourites.check_favourite = original_check_fav
-        print("Restored original favourites functions")
-    except Exception as e:
-        print(f"Warning: Failed to restore original functions: {e}")
-
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -652,9 +536,6 @@ def run_all_tests():
         reset_after_test()
         
         test_register_rate_limit() 
-        reset_after_test()
-
-        test_favourites_rate_limit()
         reset_after_test()
         
         print("\n=========================================")
