@@ -20,7 +20,7 @@ def get_db_connection():
 
 @favourites_bp.route("/favourites", methods=["GET"])
 @jwt_required()
-@limiter.limit("1000 per minute", key_func=get_real_ip)
+@limiter.limit("120 per minute", key_func=get_real_ip)
 def get_favourites():
     """Get all favourites for the authenticated user."""
     user_id = get_jwt_identity()
@@ -99,7 +99,7 @@ def get_favourites():
 
 @favourites_bp.route("/favourites", methods=["POST"])
 @jwt_required()
-@limiter.limit("1000 per minute", key_func=get_real_ip)
+@limiter.limit("120 per minute", key_func=get_real_ip)
 def add_favourite():
     """Add a song to favourites."""
     user_id = get_jwt_identity()
@@ -172,7 +172,7 @@ def add_favourite():
 
 @favourites_bp.route("/favourites/<int:favourite_id>", methods=["DELETE"])
 @jwt_required()
-@limiter.limit("1000 per minute", key_func=get_real_ip)
+@limiter.limit("120 per minute", key_func=get_real_ip)
 def remove_favourite(favourite_id):
     """Remove a song from favourites."""
     user_id = get_jwt_identity()
@@ -210,7 +210,7 @@ def remove_favourite(favourite_id):
 
 @favourites_bp.route("/favourites/check", methods=["GET"])
 @jwt_required()
-@limiter.limit("1000 per minute", key_func=get_real_ip)
+@limiter.limit("120 per minute", key_func=get_real_ip)
 def check_favourite():
     """Check if a song is already favourited by the user."""
     user_id = get_jwt_identity()

@@ -504,6 +504,75 @@ def test_register_rate_limit():
     
     print("Register rate limit test: PASSED")
 
+def test_favourites_rate_limit():
+    """Test favourites endpoint rate limit (120 per minute)."""
+    print("\n=== TESTING FAVOURITES RATE LIMIT (120 per minute) ===")
+    
+    # Get a valid token first
+    try:
+        token = get_valid_token()
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        print("Skipping favourites rate limit test.")
+        return
+    
+    headers = {"Authorization": f"Bearer {token}"}
+    
+    # Make enough requests to hit the rate limit - using 25 should be sufficient to detect rate limiting
+    # while being fast enough to complete within the test window
+    favourites_url = f"{BASE_URL.replace('/auth', '')}/favourites/check"
+    responses = []
+    
+    print(f"\nTesting GET {favourites_url} with rapid requests to detect rate limiting...")
+    
+    test_params = {
+        "song_name": "Test Song",
+        "artist": "Test Artist",
+        "chart_id": "hot-100"
+    }
+    
+    # Instead of fixed number, keep making requests until we hit rate limit or reach a max
+    max_requests = 150
+    rate_limited = False
+    count = 0
+    
+    start_time = time.time()
+    
+    while count < max_requests and not rate_limited:
+        resp = requests.get(favourites_url, params=test_params, headers=headers)
+        
+        # Extract rate limit headers if present
+        remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
+        limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
+        
+        timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
+        elapsed = time.time() - start_time
+        
+        print(f"  [{timestamp}] Request {count+1}: Status {resp.status_code}, "
+              f"Remaining: {remaining}, Limit: {limit}, Elapsed: {elapsed:.2f}s")
+        
+        count += 1
+        responses.append(resp.status_code)
+        
+        # Check if we hit rate limit
+        if resp.status_code == 429:
+            rate_limited = True
+            print(f"Rate limit detected after {count} requests in {elapsed:.2f} seconds")
+        
+        # No delay - intentionally try to trigger rate limit
+    
+    # Verify we actually hit the rate limit
+    assert rate_limited, "Rate limit was not triggered. Check rate limiter configuration."
+    
+    # Find where rate limiting began
+    rate_limit_index = responses.index(429)
+    
+    # Verify it's not unreasonably early or late
+    assert rate_limit_index >= 100, f"Rate limiting triggered too early (after {rate_limit_index} requests)"
+    assert rate_limit_index <= 140, f"Rate limiting triggered too late (after {rate_limit_index} requests)"
+    
+    print(f"✅ Favourites rate limit test PASSED - Rate limiting enforced after {rate_limit_index} requests")
+
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -516,11 +585,10 @@ def run_all_tests():
     ensure_test_user_exists()
     
     try:
-        # Run authenticated tests first to ensure we can get tokens
-        test_user_endpoint_rate_limit()  # Requires token
+        test_user_endpoint_rate_limit()
         reset_after_test()
         
-        test_update_profile_rate_limit()  # Requires token
+        test_update_profile_rate_limit()
         reset_after_test()
         
         # Then run the rest of the tests
@@ -537,6 +605,9 @@ def run_all_tests():
         reset_after_test()
         
         test_register_rate_limit() 
+        reset_after_test()
+
+        test_favourites_rate_limit()
         reset_after_test()
         
         print("\n=========================================")
