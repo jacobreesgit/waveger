@@ -536,7 +536,7 @@ def run_all_tests():
         test_check_availability_rate_limit()
         reset_after_test()
         
-        test_register_rate_limit()
+        test_register_rate_limit() 
         reset_after_test()
         
         print("\n=========================================")
