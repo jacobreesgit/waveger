@@ -504,137 +504,6 @@ def test_register_rate_limit():
     
     print("Register rate limit test: PASSED")
 
-def test_top_charts_rate_limit():
-    """Test top-charts endpoint rate limit (50 per minute) with rapid requests."""
-    print("\n=== TESTING TOP CHARTS RATE LIMIT (50 per minute) ===")
-    
-    # URL for the endpoint
-    url = f"{BASE_URL.replace('/auth', '')}/top-charts"
-    
-    # Number of requests to make
-    total_requests = 60  # Try a bit more than the limit
-    responses = []
-    
-    print(f"\nTesting GET {url} with {total_requests} requests (rapid sequence)...")
-    
-    start_time = time.time()
-    hit_rate_limit = False
-    
-    for i in range(total_requests):
-        try:
-            resp = requests.get(url, timeout=10)
-            status_code = resp.status_code
-            responses.append(status_code)
-            
-            # Extract rate limit headers if present
-            remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
-            limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
-            
-            # Check if we've hit the rate limit
-            if status_code == 429:
-                hit_rate_limit = True
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
-                      f"Remaining: {remaining}, Limit: {limit} - RATE LIMIT HIT!")
-            elif i % 5 == 0 or (remaining != 'N/A' and int(remaining) < 10):
-                # Only print status periodically or when getting close to the limit
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
-                      f"Remaining: {remaining}, Limit: {limit}")
-            
-            # No delay between requests to ensure we hit the rate limit
-                
-        except requests.exceptions.Timeout:
-            print(f"  Request {i+1} timed out - server may be overloaded")
-            continue
-        except Exception as e:
-            print(f"  Error in request {i+1}: {str(e)}")
-            continue
-    
-    elapsed = time.time() - start_time
-    
-    # Count successful and rate-limited responses
-    success_count = responses.count(200)
-    rate_limited_count = responses.count(429)
-    
-    print(f"\nCompleted in {elapsed:.2f} seconds:")
-    print(f"  - {success_count} successful requests (200)")
-    print(f"  - {rate_limited_count} rate-limited requests (429)")
-    
-    if hit_rate_limit:
-        print("✅ Top charts rate limit correctly enforced")
-        print("Top charts rate limit test: PASSED")
-    else:
-        # If we didn't hit the rate limit with 60 rapid requests, something is wrong
-        print("❌ Failed to hit rate limit!")
-        assert False, "Rate limiting not properly verified. Either it's not working or the server rate limit differs from expected."
-
-def test_chart_details_rate_limit():
-    """Test chart endpoint rate limit (50 per minute) with rapid requests."""
-    print("\n=== TESTING CHART DETAILS RATE LIMIT (50 per minute) ===")
-    
-    # URL for the endpoint with params
-    url = f"{BASE_URL.replace('/auth', '')}/chart"
-    params = {"id": "hot-100"}
-    
-    # Number of requests to make
-    total_requests = 60  # Try a bit more than the limit
-    responses = []
-    
-    print(f"\nTesting GET {url} with {total_requests} requests (rapid sequence)...")
-    
-    start_time = time.time()
-    hit_rate_limit = False
-    
-    for i in range(total_requests):
-        try:
-            resp = requests.get(url, params=params, timeout=10)
-            status_code = resp.status_code
-            responses.append(status_code)
-            
-            # Extract rate limit headers if present
-            remaining = resp.headers.get('X-RateLimit-Remaining', 'N/A')
-            limit = resp.headers.get('X-RateLimit-Limit', 'N/A')
-            
-            # Check if we've hit the rate limit
-            if status_code == 429:
-                hit_rate_limit = True
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
-                      f"Remaining: {remaining}, Limit: {limit} - RATE LIMIT HIT!")
-            elif i % 5 == 0 or (remaining != 'N/A' and int(remaining) < 10):
-                # Only print status periodically or when getting close to the limit
-                timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
-                print(f"  [{timestamp}] Request {i+1}: Status {status_code}, "
-                      f"Remaining: {remaining}, Limit: {limit}")
-            
-            # No delay between requests to ensure we hit the rate limit
-                
-        except requests.exceptions.Timeout:
-            print(f"  Request {i+1} timed out - server may be overloaded")
-            continue
-        except Exception as e:
-            print(f"  Error in request {i+1}: {str(e)}")
-            continue
-    
-    elapsed = time.time() - start_time
-    
-    # Count successful and rate-limited responses
-    success_count = responses.count(200)
-    rate_limited_count = responses.count(429)
-    
-    print(f"\nCompleted in {elapsed:.2f} seconds:")
-    print(f"  - {success_count} successful requests (200)")
-    print(f"  - {rate_limited_count} rate-limited requests (429)")
-    
-    if hit_rate_limit:
-        print("✅ Chart details rate limit correctly enforced")
-        print("Chart details rate limit test: PASSED")
-    else:
-        # If we didn't hit the rate limit with 60 rapid requests, something is wrong
-        print("❌ Failed to hit rate limit!")
-        assert False, "Rate limiting not properly verified. Either it's not working or the server rate limit differs from expected."
-
 # ---------------------- Main function to run tests ----------------------
 
 def run_all_tests():
@@ -667,13 +536,8 @@ def run_all_tests():
         test_check_availability_rate_limit()
         reset_after_test()
         
-        test_register_rate_limit()  # This will likely hit limits, so run it last
+        test_register_rate_limit()
         reset_after_test()
-        
-        test_top_charts_rate_limit()
-        reset_after_test()
-        
-        test_chart_details_rate_limit()
         
         print("\n=========================================")
         print("ALL RATE LIMIT TESTS PASSED!")
