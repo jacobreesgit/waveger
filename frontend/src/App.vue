@@ -18,7 +18,7 @@ watch(
   () => route.fullPath,
   (newPath) => {
     // Only store if we're viewing a chart page
-    if (route.name === 'home' || route.name === 'chart-date') {
+    if (route.name === 'charts' || route.name === 'chart-date') {
       const chartId = route.query.id as string
       const dateParam = route.params.date as string
 
@@ -31,7 +31,7 @@ watch(
       if (dateParam) {
         lastViewedDate.value = dateParam
         localStorage.setItem('lastViewedDate', dateParam)
-      } else if (route.name === 'home') {
+      } else if (route.name === 'charts') {
         // If on home route without date, use today's date formatted for URL
         const today = new Date()
         const day = today.getDate().toString().padStart(2, '0')
@@ -71,12 +71,12 @@ const navigateToLastViewed = () => {
   }
   // If we just have a chart ID, navigate to that chart with today's date
   else if (chartId) {
-    router.push(`/?id=${chartId}`)
+    router.push(`/charts?id=${chartId}`)
     return true
   }
 
-  // If we have no saved values, just go to home (defaults will apply)
-  router.push('/')
+  // If we have no saved values, just go to charts page
+  router.push('/charts')
   return false
 }
 
@@ -92,8 +92,13 @@ const routes = computed(() => {
   const baseRoutes: AppRoute[] = [
     {
       path: '/',
-      name: 'Home',
-      title: 'Current Charts',
+      name: 'Landing',
+      title: 'Home',
+    },
+    {
+      path: '/charts',
+      name: 'Charts',
+      title: 'Charts',
       action: navigateToLastViewed,
     },
   ]
@@ -111,9 +116,9 @@ const routes = computed(() => {
 
 // Custom function to determine if a link should be active
 const isActive = (path: string) => {
-  if (path === '/') {
-    // Home link should be active on both / and /:date routes, but not on /login or /profile
-    return route.path === '/' || route.name === 'chart-date'
+  if (path === '/charts') {
+    // Charts link should be active on both /charts and /:date routes, but not on / or /login or /profile
+    return route.path === '/charts' || route.name === 'chart-date'
   }
   // For other routes, just check if the current path starts with the link path
   return route.path.startsWith(path)
@@ -142,7 +147,7 @@ onMounted(async () => {
 
 <template>
   <header class="app-header">
-    <h1>Billboard Charts</h1>
+    <h1><RouterLink to="/" class="logo-link">Billboard Charts</RouterLink></h1>
     <nav>
       <template v-for="navRoute in routes" :key="navRoute.name">
         <RouterLink
@@ -179,6 +184,16 @@ onMounted(async () => {
   padding: 20px;
   background: #f8f9fa;
   border-bottom: 1px solid #e9ecef;
+}
+
+.logo-link {
+  text-decoration: none;
+  color: #333;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #007bff;
+  }
 }
 
 nav {

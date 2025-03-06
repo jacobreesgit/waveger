@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import HomeView from '@/views/HomeView.vue'
 import ChartView from '@/views/ChartView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -12,7 +13,12 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
+      name: 'landing',
+      component: HomeView,
+    },
+    {
+      path: '/charts',
+      name: 'charts',
       component: ChartView,
     },
     {
