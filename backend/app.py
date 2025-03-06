@@ -5,7 +5,7 @@ from apple_music import apple_music_bp
 from auth import auth_bp
 from favourites import favourites_bp
 from admin import admin_bp
-from predictions import predictions_bp  # Import the new predictions blueprint
+from backend.predictions import predictions_bp
 import logging
 
 # Configure logging
@@ -19,6 +19,8 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 app.register_blueprint(favourites_bp, url_prefix="/api")
 app.register_blueprint(admin_bp, url_prefix="/api/admin")
 app.register_blueprint(predictions_bp, url_prefix="/api")  # Register the new blueprint
+
+# Rest of your existing code...
 
 # Add this to app.py after registering blueprints
 @app.route("/api/test-limiter", methods=["GET"])
