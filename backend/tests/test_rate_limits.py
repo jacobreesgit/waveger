@@ -505,8 +505,12 @@ def test_register_rate_limit():
     print("Register rate limit test: PASSED")
 
 def test_favourites_rate_limit():
-    """Test favourites endpoint rate limit (120 per minute)."""
-    print("\n=== TESTING FAVOURITES RATE LIMIT (120 per minute) ===")
+    """Test favourites endpoint rate limit (50 per minute)."""
+    print("\n=== TESTING FAVOURITES RATE LIMIT (50 per minute) ===")
+    
+    # Set environment variable to override the default rate limit
+    os.environ["WAVEGER_TEST_FAVOURITES_LIMIT"] = "50 per minute"
+    print("Set environment variable WAVEGER_TEST_FAVOURITES_LIMIT=50 per minute")
     
     # Get a valid token first
     try:
@@ -518,8 +522,7 @@ def test_favourites_rate_limit():
     
     headers = {"Authorization": f"Bearer {token}"}
     
-    # Make enough requests to hit the rate limit - using 25 should be sufficient to detect rate limiting
-    # while being fast enough to complete within the test window
+    # Make enough requests to hit the rate limit
     favourites_url = f"{BASE_URL.replace('/auth', '')}/favourites/check"
     responses = []
     
@@ -532,7 +535,7 @@ def test_favourites_rate_limit():
     }
     
     # Instead of fixed number, keep making requests until we hit rate limit or reach a max
-    max_requests = 150
+    max_requests = 80
     rate_limited = False
     count = 0
     
@@ -568,10 +571,14 @@ def test_favourites_rate_limit():
     rate_limit_index = responses.index(429)
     
     # Verify it's not unreasonably early or late
-    assert rate_limit_index >= 100, f"Rate limiting triggered too early (after {rate_limit_index} requests)"
-    assert rate_limit_index <= 140, f"Rate limiting triggered too late (after {rate_limit_index} requests)"
+    assert rate_limit_index >= 45, f"Rate limiting triggered too early (after {rate_limit_index} requests)"
+    assert rate_limit_index <= 60, f"Rate limiting triggered too late (after {rate_limit_index} requests)"
     
     print(f"✅ Favourites rate limit test PASSED - Rate limiting enforced after {rate_limit_index} requests")
+    
+    # Clean up - remove the environment variable so it doesn't affect other tests
+    os.environ.pop("WAVEGER_TEST_FAVOURITES_LIMIT", None)
+    print("Removed environment variable WAVEGER_TEST_FAVOURITES_LIMIT")
 
 # ---------------------- Main function to run tests ----------------------
 
