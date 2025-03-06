@@ -46,8 +46,9 @@ export const usePredictionsStore = defineStore('predictions', () => {
   })
 
   const predictionsForCurrentContest = computed(() => {
-    if (!currentContest.value) return []
-    return userPredictions.value.filter((p) => p.contest_id === currentContest.value.id)
+    const contest = currentContest.value
+    if (!contest) return []
+    return userPredictions.value.filter((p) => p.contest_id === contest.id)
   })
 
   const canSubmitPredictions = computed(() => {
