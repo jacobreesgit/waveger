@@ -5,7 +5,7 @@ from apple_music import apple_music_bp
 from auth import auth_bp
 from favourites import favourites_bp
 from admin import admin_bp
-from predictions import predictions_bp
+from predictions import predictions_bp  # Use relative import
 import logging
 
 # Configure logging
