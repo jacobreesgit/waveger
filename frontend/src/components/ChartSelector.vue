@@ -168,7 +168,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .chart-selector {
   margin-bottom: 20px;
 }

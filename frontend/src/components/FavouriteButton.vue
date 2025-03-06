@@ -100,7 +100,7 @@ watchEffect(async () => {
   </button>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .favourite-btn {
   background: none;
   border: none;

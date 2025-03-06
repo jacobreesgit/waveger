@@ -525,7 +525,7 @@ watch(
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .chart-list {
   max-width: 1200px;
   margin: 0 auto;

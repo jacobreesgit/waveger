@@ -98,7 +98,7 @@ const handleSubmit = async () => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .forgot-password-container {
   display: flex;
   justify-content: center;

@@ -170,7 +170,7 @@ const handleSubmit = async () => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .reset-password-container {
   display: flex;
   justify-content: center;

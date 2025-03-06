@@ -262,7 +262,7 @@ watch(email, (newValue) => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .register-container {
   display: flex;
   justify-content: center;

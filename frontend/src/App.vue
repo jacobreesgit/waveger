@@ -171,7 +171,7 @@ onMounted(async () => {
   </main>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .app-header {
   display: flex;
   justify-content: space-between;

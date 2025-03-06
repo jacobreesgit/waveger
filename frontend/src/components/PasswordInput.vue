@@ -89,7 +89,7 @@ const updateValue = (event: Event) => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .password-field {
   margin-bottom: 16px;
   width: 100%;

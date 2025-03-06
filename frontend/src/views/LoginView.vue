@@ -178,8 +178,7 @@ const handleLogin = async () => {
   </div>
 </template>
 
-<style scoped>
-/* Styles remain unchanged */
+<style lang="scss" scoped>
 .login-container {
   display: flex;
   justify-content: center;

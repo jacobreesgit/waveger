@@ -197,7 +197,7 @@ const navigateToChart = (chartId: string, added_at: string) => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .favourites-container {
   max-width: 1200px;
   margin: 0 auto;

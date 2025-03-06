@@ -821,7 +821,7 @@ const navigateToChart = (chartId: string, added_at: string) => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .profile-container {
   display: flex;
   justify-content: center;

@@ -98,7 +98,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .date-picker {
   margin-bottom: 16px;
 }
