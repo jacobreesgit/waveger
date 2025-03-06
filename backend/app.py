@@ -33,5 +33,18 @@ def test_rate_limit():
         "client_ip": client_ip
     })
 
+# Add a detailed debugging endpoint
+@app.route("/api/debug-headers", methods=["GET"])
+def debug_headers():
+    """Endpoint to debug request headers and IP detection"""
+    headers = {k: v for k, v in request.headers.items()}
+    
+    return jsonify({
+        "remote_addr": request.remote_addr,
+        "x_forwarded_for": request.headers.get('X-Forwarded-For'),
+        "x_real_ip": request.headers.get('X-Real-IP'),
+        "all_headers": headers
+    })
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5001)

@@ -508,9 +508,43 @@ def test_favourites_rate_limit():
     """Test favourites endpoint rate limit (50 per minute)."""
     print("\n=== TESTING FAVOURITES RATE LIMIT (50 per minute) ===")
     
-    # Set environment variable to override the default rate limit
-    os.environ["WAVEGER_TEST_FAVOURITES_LIMIT"] = "50 per minute"
-    print("Set environment variable WAVEGER_TEST_FAVOURITES_LIMIT=50 per minute")
+    # Monkeypatch the rate limit for favourites endpoints
+    try:
+        import sys
+        import os
+        
+        # Add the parent directory to path so we can import the backend modules
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        
+        # Now import the actual modules
+        from flask_limiter import Limiter
+        import favourites
+        
+        # Monkeypatch the decorator on the route functions
+        original_get_favs = favourites.get_favourites
+        original_add_fav = favourites.add_favourite
+        original_remove_fav = favourites.remove_favourite
+        original_check_fav = favourites.check_favourite
+        
+        # Remove the rate limit decorator and add a new one
+        favourites.get_favourites.__wrapped__ = original_get_favs.__wrapped__
+        favourites.get_favourites._rate_limit_string = "50 per minute" 
+        
+        favourites.add_favourite.__wrapped__ = original_add_fav.__wrapped__
+        favourites.add_favourite._rate_limit_string = "50 per minute"
+        
+        favourites.remove_favourite.__wrapped__ = original_remove_fav.__wrapped__
+        favourites.remove_favourite._rate_limit_string = "50 per minute"
+        
+        favourites.check_favourite.__wrapped__ = original_check_fav.__wrapped__
+        favourites.check_favourite._rate_limit_string = "50 per minute"
+        
+        print("Successfully monkeypatched favourites rate limit to 50 per minute")
+    except Exception as e:
+        print(f"Failed to monkeypatch rate limit: {e}")
+        print("Continuing with original rate limit (120 per minute)")
+        import traceback
+        traceback.print_exc()
     
     # Get a valid token first
     try:
@@ -576,9 +610,15 @@ def test_favourites_rate_limit():
     
     print(f"✅ Favourites rate limit test PASSED - Rate limiting enforced after {rate_limit_index} requests")
     
-    # Clean up - remove the environment variable so it doesn't affect other tests
-    os.environ.pop("WAVEGER_TEST_FAVOURITES_LIMIT", None)
-    print("Removed environment variable WAVEGER_TEST_FAVOURITES_LIMIT")
+    # Try to restore original functions (cleanup)
+    try:
+        favourites.get_favourites = original_get_favs
+        favourites.add_favourite = original_add_fav
+        favourites.remove_favourite = original_remove_fav
+        favourites.check_favourite = original_check_fav
+        print("Restored original favourites functions")
+    except Exception as e:
+        print(f"Warning: Failed to restore original functions: {e}")
 
 # ---------------------- Main function to run tests ----------------------
 
