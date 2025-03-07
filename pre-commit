@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Get the current date and time for the filename
+CURRENT_DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
+FILENAME="${CURRENT_DATETIME}.txt"
+
+# Find previous timestamp files and remove them properly through git
+for old_file in 20??-??-??_??-??-??.txt; do
+    if [ -f "$old_file" ] && [ "$old_file" != "$FILENAME" ]; then
+        echo "Removing old timestamp file: $old_file"
+        git rm -f "$old_file" --quiet
+    fi
+done
+
+# Create new file with the current date and time in the filename
+cat > "$FILENAME" << EOF
+# Git Commit Log
+
+**Commit Time:** ${CURRENT_DATETIME}
+
+This file is automatically updated before each Git commit.
+The filename contains the date and time of the commit.
+EOF
+
+echo "Created new commit log file: ${FILENAME}"
+
+# Add the file to the current commit
+git add "$FILENAME"
+
+echo "Added commit log file to the current commit"
