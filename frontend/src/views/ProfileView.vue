@@ -3,6 +3,7 @@ import { ref, onMounted, computed, reactive, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useFavouritesStore } from '@/stores/favourites'
+import { usePredictionsStore } from '@/stores/predictions'
 import {
   checkUsernameAvailability,
   checkEmailAvailability,
@@ -10,15 +11,17 @@ import {
 } from '@/utils/validation'
 import PasswordInput from '@/components/PasswordInput.vue'
 import FavouriteButton from '@/components/FavouriteButton.vue'
+import type { Prediction } from '@/types/predictions'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const favouritesStore = useFavouritesStore()
+const predictionStore = usePredictionsStore()
 
 const isLoading = ref(true)
 const error = ref('')
 const successMessage = ref('')
-const activeTab = ref('profile') // 'profile' or 'favourites'
+const activeTab = ref('profile') // 'profile', 'favourites', or 'predictions'
 
 // Edit mode states
 const editingUsername = ref(false)
@@ -57,6 +60,12 @@ const submittingPassword = ref(false)
 const searchQuery = ref('')
 const selectedSort = ref('latest')
 
+// Prediction-related states
+const predictionFilter = ref<'all' | 'correct' | 'incorrect' | 'pending'>('all')
+const predictionTypeFilter = ref<'all' | 'entry' | 'position_change' | 'exit'>('all')
+const chartTypeFilter = ref<'all' | 'hot-100' | 'billboard-200'>('all')
+const isPredictionsLoading = ref(false)
+
 // Sorting options
 const sortOptions = [
   { value: 'latest', label: 'Recently Added' },
@@ -66,14 +75,20 @@ const sortOptions = [
 ]
 
 onMounted(async () => {
-  isLoading.value = false
-  // Initialize form values with current user data
-  if (authStore.user) {
-    newUsername.value = authStore.user.username
-    newEmail.value = authStore.user.email
+  try {
+    // Initialize form values with current user data
+    if (authStore.user) {
+      newUsername.value = authStore.user.username
+      newEmail.value = authStore.user.email
 
-    // Load favourites data
-    await favouritesStore.loadFavourites()
+      // Load predictions and favourites data
+      await Promise.all([predictionStore.fetchUserPredictions(), favouritesStore.loadFavourites()])
+    }
+  } catch (e) {
+    console.error('Error initializing profile view:', e)
+    error.value = e instanceof Error ? e.message : 'Failed to load profile data'
+  } finally {
+    isLoading.value = false
   }
 })
 
@@ -86,6 +101,19 @@ watch(activeTab, async (newTab) => {
     !favouritesStore.loading
   ) {
     await favouritesStore.loadFavourites()
+  } else if (
+    newTab === 'predictions' &&
+    authStore.user &&
+    !predictionStore.userPredictions.length
+  ) {
+    isPredictionsLoading.value = true
+    try {
+      await predictionStore.fetchUserPredictions()
+    } catch (e) {
+      console.error('Error loading predictions:', e)
+    } finally {
+      isPredictionsLoading.value = false
+    }
   }
 })
 
@@ -106,6 +134,80 @@ const predictionAccuracy = computed(() => {
   return `${accuracy.toFixed(1)}%`
 })
 
+// Calculate success rate by prediction type
+const predictionStatsByType = computed(() => {
+  const predictions = predictionStore.userPredictions
+
+  // Initialize stats object
+  const stats = {
+    entry: { total: 0, correct: 0, pending: 0, rate: '0%' },
+    position_change: { total: 0, correct: 0, pending: 0, rate: '0%' },
+    exit: { total: 0, correct: 0, pending: 0, rate: '0%' },
+    overall: { total: 0, correct: 0, pending: 0, rate: '0%' },
+  }
+
+  // Count predictions by type
+  predictions.forEach((prediction) => {
+    const type = prediction.prediction_type as 'entry' | 'position_change' | 'exit'
+    stats[type].total++
+    stats.overall.total++
+
+    if (prediction.is_correct === undefined || prediction.is_correct === null) {
+      stats[type].pending++
+      stats.overall.pending++
+    } else if (prediction.is_correct) {
+      stats[type].correct++
+      stats.overall.correct++
+    }
+  })
+
+  // Calculate success rates
+  for (const type in stats) {
+    if (Object.prototype.hasOwnProperty.call(stats, type)) {
+      const typeStats = stats[type as keyof typeof stats]
+      const processed = typeStats.total - typeStats.pending
+      typeStats.rate =
+        processed > 0 ? `${((typeStats.correct / processed) * 100).toFixed(1)}%` : 'N/A'
+    }
+  }
+
+  return stats
+})
+
+// Get filtered predictions based on selected filters
+const filteredPredictions = computed(() => {
+  let result = [...predictionStore.userPredictions]
+
+  // Apply result filter
+  if (predictionFilter.value !== 'all') {
+    if (predictionFilter.value === 'pending') {
+      result = result.filter((p) => p.is_correct === undefined || p.is_correct === null)
+    } else if (predictionFilter.value === 'correct') {
+      result = result.filter((p) => p.is_correct === true)
+    } else if (predictionFilter.value === 'incorrect') {
+      result = result.filter((p) => p.is_correct === false)
+    }
+  }
+
+  // Apply prediction type filter
+  if (predictionTypeFilter.value !== 'all') {
+    result = result.filter((p) => p.prediction_type === predictionTypeFilter.value)
+  }
+
+  // Apply chart type filter
+  if (chartTypeFilter.value !== 'all') {
+    result = result.filter((p) => p.chart_type === chartTypeFilter.value)
+  }
+
+  // Sort by prediction date (newest first)
+  result.sort(
+    (a, b) => new Date(b.prediction_date).getTime() - new Date(a.prediction_date).getTime(),
+  )
+
+  return result
+})
+
+// Format date for display
 const formatDate = (dateString?: string | null) => {
   if (!dateString) return 'Not available'
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -433,6 +535,57 @@ const navigateToChart = (chartId: string, added_at: string) => {
     router.push(`/?id=${chartId}`)
   }
 }
+
+// Get prediction status for display
+const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
+  if (prediction.is_correct === undefined || prediction.is_correct === null) {
+    return 'pending'
+  }
+  return prediction.is_correct ? 'correct' : 'incorrect'
+}
+
+// Navigate to predictions view
+const goToPredictionsView = () => {
+  router.push('/predictions')
+}
+
+// Get position change or position text based on prediction type
+const getPositionText = (prediction: Prediction): string => {
+  if (prediction.prediction_type === 'entry') {
+    return `Position: #${prediction.position}`
+  } else if (prediction.prediction_type === 'position_change') {
+    const changeValue = prediction.position
+    const prefix = changeValue > 0 ? '+' : ''
+    return `Change: ${prefix}${changeValue}`
+  }
+  return ''
+}
+
+// Get actual position or change text based on prediction type and results
+const getActualResultText = (prediction: Prediction): string => {
+  if (!prediction.is_correct && prediction.is_correct !== false) {
+    return 'Pending'
+  }
+
+  // Note: In a real implementation, we'd need to access the actual position or change
+  // from the prediction_results table. For now, we'll simulate with placeholder text.
+  if (prediction.prediction_type === 'entry') {
+    return prediction.is_correct ? 'Entered chart' : 'Did not enter'
+  } else if (prediction.prediction_type === 'position_change') {
+    return prediction.is_correct ? 'Changed as predicted' : 'Different change'
+  } else if (prediction.prediction_type === 'exit') {
+    return prediction.is_correct ? 'Exited chart' : 'Still on chart'
+  }
+
+  return ''
+}
+
+// Reset prediction filters
+const resetPredictionFilters = () => {
+  predictionFilter.value = 'all'
+  predictionTypeFilter.value = 'all'
+  chartTypeFilter.value = 'all'
+}
 </script>
 
 <template>
@@ -473,6 +626,12 @@ const navigateToChart = (chartId: string, added_at: string) => {
           :class="['tab-button', { active: activeTab === 'favourites' }]"
         >
           Favourites
+        </button>
+        <button
+          @click="activeTab = 'predictions'"
+          :class="['tab-button', { active: activeTab === 'predictions' }]"
+        >
+          Predictions
         </button>
       </div>
 
@@ -669,17 +828,113 @@ const navigateToChart = (chartId: string, added_at: string) => {
 
         <div class="profile-section">
           <h3>Prediction Stats</h3>
-          <div class="profile-detail">
-            <label>Total Predictions</label>
-            <span>{{ authStore.user.predictions_made || 0 }}</span>
+          <div class="prediction-stats-grid">
+            <div class="stat-card">
+              <div class="stat-value">{{ authStore.user.predictions_made || 0 }}</div>
+              <div class="stat-label">Total Predictions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ authStore.user.correct_predictions || 0 }}</div>
+              <div class="stat-label">Correct Predictions</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ predictionAccuracy }}</div>
+              <div class="stat-label">Overall Accuracy</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value">{{ authStore.user.total_points || 0 }}</div>
+              <div class="stat-label">Total Points</div>
+            </div>
           </div>
-          <div class="profile-detail">
-            <label>Correct Predictions</label>
-            <span>{{ authStore.user.correct_predictions || 0 }}</span>
-          </div>
-          <div class="profile-detail">
-            <label>Prediction Accuracy</label>
-            <span>{{ predictionAccuracy }}</span>
+
+          <div class="prediction-type-stats">
+            <h4>Success Rate by Prediction Type</h4>
+
+            <div class="prediction-type-grid">
+              <div class="prediction-type-card">
+                <div class="type-name">New Entries</div>
+                <div class="type-stats">
+                  <div>
+                    <span class="stats-label">Total:</span>
+                    <span class="stats-value">{{ predictionStatsByType.entry.total }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Correct:</span>
+                    <span class="stats-value">{{ predictionStatsByType.entry.correct }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Pending:</span>
+                    <span class="stats-value">{{ predictionStatsByType.entry.pending }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Success Rate:</span>
+                    <span class="stats-value success-rate">{{
+                      predictionStatsByType.entry.rate
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prediction-type-card">
+                <div class="type-name">Position Changes</div>
+                <div class="type-stats">
+                  <div>
+                    <span class="stats-label">Total:</span>
+                    <span class="stats-value">{{
+                      predictionStatsByType.position_change.total
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Correct:</span>
+                    <span class="stats-value">{{
+                      predictionStatsByType.position_change.correct
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Pending:</span>
+                    <span class="stats-value">{{
+                      predictionStatsByType.position_change.pending
+                    }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Success Rate:</span>
+                    <span class="stats-value success-rate">{{
+                      predictionStatsByType.position_change.rate
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="prediction-type-card">
+                <div class="type-name">Chart Exits</div>
+                <div class="type-stats">
+                  <div>
+                    <span class="stats-label">Total:</span>
+                    <span class="stats-value">{{ predictionStatsByType.exit.total }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Correct:</span>
+                    <span class="stats-value">{{ predictionStatsByType.exit.correct }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Pending:</span>
+                    <span class="stats-value">{{ predictionStatsByType.exit.pending }}</span>
+                  </div>
+                  <div>
+                    <span class="stats-label">Success Rate:</span>
+                    <span class="stats-value success-rate">{{
+                      predictionStatsByType.exit.rate
+                    }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="prediction-actions">
+              <button @click="goToPredictionsView" class="view-all-predictions-btn">
+                View All Predictions
+              </button>
+            </div>
           </div>
         </div>
 
@@ -809,6 +1064,135 @@ const navigateToChart = (chartId: string, added_at: string) => {
           </div>
         </div>
       </div>
+
+      <!-- PREDICTIONS TAB -->
+      <div v-if="activeTab === 'predictions'" class="tab-content">
+        <div class="predictions-header">
+          <h3>Your Prediction History</h3>
+
+          <div class="prediction-filters">
+            <div class="filter-group">
+              <label for="result-filter">Result:</label>
+              <select id="result-filter" v-model="predictionFilter" class="filter-select">
+                <option value="all">All Results</option>
+                <option value="correct">Correct</option>
+                <option value="incorrect">Incorrect</option>
+                <option value="pending">Pending</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="type-filter">Type:</label>
+              <select id="type-filter" v-model="predictionTypeFilter" class="filter-select">
+                <option value="all">All Types</option>
+                <option value="entry">New Entry</option>
+                <option value="position_change">Position Change</option>
+                <option value="exit">Chart Exit</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="chart-filter">Chart:</label>
+              <select id="chart-filter" v-model="chartTypeFilter" class="filter-select">
+                <option value="all">All Charts</option>
+                <option value="hot-100">Hot 100</option>
+                <option value="billboard-200">Billboard 200</option>
+              </select>
+            </div>
+
+            <button @click="resetPredictionFilters" class="reset-filters-btn">Reset Filters</button>
+          </div>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="isPredictionsLoading" class="predictions-loading">
+          <div class="loading-spinner"></div>
+          <p>Loading your predictions...</p>
+        </div>
+
+        <!-- No predictions state -->
+        <div v-else-if="predictionStore.userPredictions.length === 0" class="no-predictions">
+          <p>You haven't made any predictions yet.</p>
+          <button @click="goToPredictionsView" class="make-prediction-btn">
+            Make a Prediction
+          </button>
+        </div>
+
+        <!-- No filtered predictions state -->
+        <div v-else-if="filteredPredictions.length === 0" class="no-predictions">
+          <p>No predictions match your filter criteria.</p>
+          <button @click="resetPredictionFilters" class="reset-filters-btn">Reset Filters</button>
+        </div>
+
+        <!-- Predictions list -->
+        <div v-else class="predictions-list">
+          <div
+            v-for="prediction in filteredPredictions"
+            :key="prediction.id"
+            class="prediction-card"
+            :class="getPredictionStatus(prediction)"
+          >
+            <div class="prediction-status-indicator"></div>
+
+            <div class="prediction-header">
+              <div class="prediction-type-badge">
+                {{ prediction.prediction_type.replace('_', ' ') }}
+              </div>
+              <div class="prediction-chart-badge">{{ prediction.chart_type }}</div>
+              <div class="prediction-date">
+                {{ new Date(prediction.prediction_date).toLocaleDateString() }}
+              </div>
+            </div>
+
+            <div class="prediction-content">
+              <h4 class="prediction-song-title">{{ prediction.target_name }}</h4>
+              <div class="prediction-artist">{{ prediction.artist }}</div>
+
+              <div class="prediction-details">
+                <div class="prediction-value">{{ getPositionText(prediction) }}</div>
+
+                <!-- Result section if available -->
+                <div
+                  v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
+                  class="prediction-result"
+                >
+                  <div
+                    class="result-badge"
+                    :class="prediction.is_correct ? 'correct' : 'incorrect'"
+                  >
+                    {{ prediction.is_correct ? 'Correct!' : 'Incorrect' }}
+                  </div>
+
+                  <div v-if="prediction.points" class="points-earned">
+                    <span class="points-label">Points:</span>
+                    <span class="points-value">{{ prediction.points }}</span>
+                  </div>
+
+                  <div class="actual-result">
+                    <span class="actual-label">Result:</span>
+                    <span class="actual-value">{{ getActualResultText(prediction) }}</span>
+                  </div>
+                </div>
+
+                <!-- Pending state -->
+                <div v-else class="prediction-pending">
+                  <div class="pending-badge">Pending</div>
+                  <p class="pending-message">
+                    This prediction is awaiting chart release to be processed.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View more button -->
+        <div class="view-more-predictions">
+          <button @click="goToPredictionsView" class="view-all-predictions-btn">
+            View All Predictions
+          </button>
+        </div>
+      </div>
     </div>
 
     <div v-else class="unauthenticated">
@@ -908,6 +1292,12 @@ const navigateToChart = (chartId: string, added_at: string) => {
   margin: 0 0 16px;
   color: #333;
   font-size: 1.1rem;
+}
+
+.profile-section h4 {
+  margin: 24px 0 16px;
+  color: #495057;
+  font-size: 1rem;
 }
 
 .profile-detail {
@@ -1365,6 +1755,404 @@ const navigateToChart = (chartId: string, added_at: string) => {
 
   .sort-select {
     flex: 1;
+  }
+}
+
+/* New styles for prediction statistics */
+.prediction-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.stat-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.prediction-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.prediction-type-card {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  transition: transform 0.2s;
+}
+
+.prediction-type-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.type-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.type-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stats-label {
+  color: #6c757d;
+  margin-right: 5px;
+}
+
+.stats-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.success-rate {
+  color: #28a745;
+}
+
+.prediction-actions {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.view-all-predictions-btn,
+.make-prediction-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.view-all-predictions-btn:hover,
+.make-prediction-btn:hover {
+  background: #0069d9;
+}
+
+/* Predictions tab styles */
+.predictions-header {
+  margin-bottom: 24px;
+}
+
+.predictions-header h3 {
+  margin: 0 0 16px;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.prediction-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.reset-filters-btn {
+  padding: 8px 12px;
+  background: #e9ecef;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  color: #495057;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-filters-btn:hover {
+  background: #dee2e6;
+}
+
+.predictions-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px;
+  color: #6c757d;
+}
+
+.no-predictions {
+  text-align: center;
+  padding: 40px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.predictions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.prediction-card {
+  position: relative;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: transform 0.2s;
+  display: flex;
+}
+
+.prediction-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.prediction-card.pending .prediction-status-indicator {
+  background-color: #ffc107;
+}
+
+.prediction-card.correct .prediction-status-indicator {
+  background-color: #28a745;
+}
+
+.prediction-card.incorrect .prediction-status-indicator {
+  background-color: #dc3545;
+}
+
+.prediction-status-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 6px;
+}
+
+.prediction-content {
+  flex: 1;
+  padding: 16px 16px 16px 22px; /* Extra left padding for the status indicator */
+}
+
+.prediction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-top: 4px;
+}
+
+.prediction-type-badge {
+  background: #e9ecef;
+  color: #495057;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.prediction-chart-badge {
+  background: #f8f9fa;
+  color: #6c757d;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.prediction-date {
+  color: #6c757d;
+  font-size: 0.75rem;
+}
+
+.prediction-song-title {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.prediction-artist {
+  color: #6c757d;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.prediction-details {
+  margin-top: 12px;
+}
+
+.prediction-value {
+  background: #f0f7ff;
+  color: #007bff;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  margin-bottom: 8px;
+}
+
+.prediction-result {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.result-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.result-badge.correct {
+  background: #d4edda;
+  color: #155724;
+}
+
+.result-badge.incorrect {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.points-earned,
+.actual-result {
+  font-size: 0.9rem;
+  margin: 4px 0;
+}
+
+.points-label,
+.actual-label {
+  color: #6c757d;
+  margin-right: 4px;
+}
+
+.points-value {
+  font-weight: 600;
+  color: #007bff;
+}
+
+.actual-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.prediction-pending {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e9ecef;
+}
+
+.pending-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  background: #fff3cd;
+  color: #856404;
+}
+
+.pending-message {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.view-more-predictions {
+  text-align: center;
+  margin-top: 24px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .prediction-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .prediction-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .prediction-filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filter-select {
+    width: 100%;
+  }
+
+  .prediction-card {
+    flex-direction: column;
+  }
+
+  .prediction-status-indicator {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: auto;
+    height: 6px;
+    width: auto;
+  }
+
+  .prediction-content {
+    padding-top: 22px; /* Extra top padding for the status indicator */
+    padding-left: 16px;
   }
 }
 </style>
