@@ -1,10 +1,30 @@
+#!/usr/bin/env python3
+# initialize_contest.py
 # Manually create a prediction contest for the March 4-10, 2025 cycle
+
 import logging
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from datetime import datetime, timedelta
 import sys
+import dotenv
+
+# Try to load environment variables from .env file
+dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env')
+if os.path.exists(dotenv_path):
+    dotenv.load_dotenv(dotenv_path)
+else:
+    # Try loading from .envrc file as an alternative
+    envrc_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.envrc')
+    if os.path.exists(envrc_path):
+        with open(envrc_path, 'r') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    var = line.strip().split('=', 1)
+                    if len(var) == 2:
+                        key, value = var
+                        os.environ[key] = value
 
 # Configure logging
 logging.basicConfig(
@@ -13,16 +33,17 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Database connection
-DATABASE_URL = os.getenv("DATABASE_URL")
-if not DATABASE_URL:
-    logger.error("DATABASE_URL environment variable not set")
-    sys.exit(1)
+# Database connection - using the provided connection string
+DATABASE_URL = "postgresql://wavegerdatabase_user:cafvWdvIlSiZbBe7hX9uXki02Bv3UcP1@dpg-cu8g5bggph6c73cpbaj0-a.frankfurt-postgres.render.com/wavegerdatabase"
+logger.info("Using provided database URL")
 
 def get_db_connection():
     """Get a connection to the database"""
     try:
-        return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+        conn = psycopg2.connect(DATABASE_URL)
+        # Ensure autocommit is off (we want to control transactions)
+        conn.autocommit = False
+        return conn
     except Exception as e:
         logger.error(f"Database connection error: {e}")
         raise
@@ -30,7 +51,7 @@ def get_db_connection():
 def get_current_active_contest():
     """Check if there's already an active contest"""
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
         cursor.execute(
