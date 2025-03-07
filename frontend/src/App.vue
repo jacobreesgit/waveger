@@ -86,6 +86,7 @@ type AppRoute = {
   name: string
   title: string
   action?: () => boolean
+  meta?: { requiresAuth?: boolean }
 }
 
 const routes = computed(() => {
@@ -100,6 +101,17 @@ const routes = computed(() => {
       name: 'Charts',
       title: 'Charts',
       action: navigateToLastViewed,
+    },
+    {
+      path: '/predictions',
+      name: 'Predictions',
+      title: 'Predictions',
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/leaderboard',
+      name: 'Leaderboard',
+      title: 'Leaderboard',
     },
   ]
 
@@ -116,12 +128,29 @@ const routes = computed(() => {
 
 // Custom function to determine if a link should be active
 const isActive = (path: string) => {
-  if (path === '/charts') {
+  if (path === '/') {
+    // Home link should be active only on the home page, not on subpaths
+    return route.path === '/'
+  } else if (path === '/charts') {
     // Charts link should be active on both /charts and /:date routes, but not on / or /login or /profile
     return route.path === '/charts' || route.name === 'chart-date'
+  } else if (path === '/predictions') {
+    // Predictions link active on predictions route
+    return route.path === '/predictions'
+  } else if (path === '/leaderboard') {
+    // Leaderboard link active on leaderboard route
+    return route.path === '/leaderboard'
   }
-  // For other routes, just check if the current path starts with the link path
-  return route.path.startsWith(path)
+  // For other routes, check for exact match rather than startsWith
+  return route.path === path
+}
+
+// Hide prediction links for unauthenticated users
+const shouldShowLink = (routeItem: AppRoute) => {
+  if (routeItem.meta?.requiresAuth && !authStore.user) {
+    return false
+  }
+  return true
 }
 
 onMounted(async () => {
@@ -150,23 +179,25 @@ onMounted(async () => {
     <h1><RouterLink to="/" class="logo-link">Billboard Charts</RouterLink></h1>
     <nav>
       <template v-for="navRoute in routes" :key="navRoute.name">
-        <RouterLink
-          v-if="!navRoute.action"
-          :to="navRoute.path"
-          class="nav-link"
-          :class="{ 'router-link-active': isActive(navRoute.path) }"
-        >
-          {{ navRoute.title }}
-        </RouterLink>
+        <template v-if="shouldShowLink(navRoute)">
+          <RouterLink
+            v-if="!navRoute.action"
+            :to="navRoute.path"
+            class="nav-link"
+            :class="{ 'router-link-active': isActive(navRoute.path) }"
+          >
+            {{ navRoute.title }}
+          </RouterLink>
 
-        <button
-          v-else
-          @click.prevent="navRoute.action"
-          class="nav-link button-link"
-          :class="{ 'router-link-active': isActive(navRoute.path) }"
-        >
-          {{ navRoute.title }}
-        </button>
+          <button
+            v-else
+            @click.prevent="navRoute.action"
+            class="nav-link button-link"
+            :class="{ 'router-link-active': isActive(navRoute.path) }"
+          >
+            {{ navRoute.title }}
+          </button>
+        </template>
       </template>
     </nav>
   </header>
