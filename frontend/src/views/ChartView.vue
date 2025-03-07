@@ -117,46 +117,19 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
   const normalizedCurrentChartId = store.selectedChartId.replace(/\/$/, '')
   const normalizedRequestedChartId = chartId.replace(/\/$/, '')
 
-  // IMPORTANT: Compare the current chart title with the requested chart ID
-  // This additional check helps catch desynchronization between URL and displayed data
-  const currentChartTitle = store.currentChart.title || ''
-  const isBillboard200 =
-    currentChartTitle.includes('Billboard 200') && normalizedRequestedChartId !== 'billboard-200'
-  const isHot100 = currentChartTitle.includes('Hot 100') && normalizedRequestedChartId !== 'hot-100'
-  const chartTitleMismatch =
-    isBillboard200 ||
-    isHot100 ||
-    (currentChartTitle &&
-      !currentChartTitle.toLowerCase().includes(normalizedRequestedChartId.toLowerCase()))
-
-  // Debug logging to help diagnose comparison issues
-  console.log('Comparing chart IDs and titles:', {
-    currentChartId: normalizedCurrentChartId,
-    requestedChartId: normalizedRequestedChartId,
-    currentTitle: currentChartTitle,
-    titleMismatch: chartTitleMismatch,
-    areEqual: normalizedCurrentChartId === normalizedRequestedChartId,
-  })
-
-  if (normalizedCurrentChartId !== normalizedRequestedChartId || chartTitleMismatch) {
+  // If the chart IDs are different, we need to reload
+  if (normalizedCurrentChartId !== normalizedRequestedChartId) {
     console.log(
-      `Chart changed from ${normalizedCurrentChartId} (${currentChartTitle}) to ${normalizedRequestedChartId}, need to reload`,
+      `Chart ID changed from ${normalizedCurrentChartId} to ${normalizedRequestedChartId}, need to reload`,
     )
     return true
   }
 
-  // Rest of the function remains the same...
-  // Parse the current chart week to a comparable format
+  // Skip title check if IDs match - fixes unnecessary reloads
+
+  // Rest of date comparison logic remains the same
   const currentChartDate = parseChartDate(store.currentChart.week)
 
-  // Log both dates for debugging
-  console.log('Comparing dates:', {
-    currentChartWeek: store.currentChart.week,
-    parsedCurrentDate: currentChartDate,
-    requestedDate: date,
-  })
-
-  // Check if the dates are different (allowing a small window for differences in week start/end)
   try {
     const currentDate = new Date(currentChartDate)
     const requestedDate = new Date(date)
@@ -171,7 +144,6 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
     }
   } catch (e) {
     console.error('Error comparing dates:', e)
-    // If date comparison fails, assume we need to reload to be safe
     return true
   }
 

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
 import type { User, AuthResponse, LoginCredentials, RegisterCredentials } from '@/types/auth'
+import { useFavouritesStore } from '@/stores/favourites'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -417,6 +418,10 @@ export const useAuthStore = defineStore('auth', () => {
     // Add an explicit "logged out" flag
     sessionStorage.setItem('logged_out', 'true')
     localStorage.setItem('logged_out', 'true')
+
+    // Reset related stores
+    const favouritesStore = useFavouritesStore()
+    favouritesStore.reset()
   }
 
   const checkUsernameAvailability = async (username: string): Promise<boolean> => {

@@ -24,6 +24,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
   const favourites = ref<FavouriteSong[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
+  const loadingComplete = ref(false) // Add a flag to track if loading has completed
   // Keep track of favourites being added/removed to show immediate UI feedback
   const pendingFavouriteChanges = ref<{ [key: string]: boolean }>({})
 
@@ -64,18 +65,22 @@ export const useFavouritesStore = defineStore('favourites', () => {
   }
 
   // Load all favourites for the current user
-  // Add these debugging lines to the loadFavourites function in your favouritesStore
-
-  // In favourites.ts
   const loadFavourites = async () => {
-    // Skip if already loaded or loading in progress
-    if (favourites.value.length > 0 || loading.value) {
-      console.debug('Skipping favourites load - already loaded or in progress')
+    // Skip if loading in progress
+    if (loading.value) {
+      console.debug('Skipping favourites load - loading in progress')
+      return
+    }
+
+    // Skip if already loaded
+    if (favourites.value.length > 0 && loadingComplete.value) {
+      console.debug('Skipping favourites load - already loaded')
       return
     }
 
     if (!axios.defaults.headers.common['Authorization']) {
       console.log('No auth token, skipping favourites load')
+      loadingComplete.value = true // Mark as complete even if we skip
       return
     }
 
@@ -83,13 +88,10 @@ export const useFavouritesStore = defineStore('favourites', () => {
       loading.value = true
       error.value = null
 
-      // Log before API call - change to debug level
-      console.debug('Fetching favourites from API...')
+      // Log only once
+      console.log(`Loading favourites from API...`)
 
       const response = await axios.get('/favourites')
-
-      // Log raw response at debug level only
-      console.debug('Favourites API raw response:', response)
 
       // Check if the expected data structure is present
       if (!response.data || !response.data.favourites) {
@@ -99,8 +101,9 @@ export const useFavouritesStore = defineStore('favourites', () => {
       }
 
       favourites.value = response.data.favourites || []
+      loadingComplete.value = true
 
-      console.debug(`Loaded ${favourites.value.length} favourite songs`)
+      console.log(`Loaded ${favourites.value.length} favourite songs`)
 
       // Log the structure of the first favourite item at debug level only
       if (favourites.value.length > 0) {
@@ -221,6 +224,15 @@ export const useFavouritesStore = defineStore('favourites', () => {
     }
   }
 
+  // Reset store state (for logout)
+  const reset = () => {
+    favourites.value = []
+    loading.value = false
+    error.value = null
+    loadingComplete.value = false
+    pendingFavouriteChanges.value = {}
+  }
+
   return {
     favourites,
     loading,
@@ -233,5 +245,6 @@ export const useFavouritesStore = defineStore('favourites', () => {
     removeFavourite,
     toggleFavourite,
     checkFavouriteStatus,
+    reset,
   }
 })

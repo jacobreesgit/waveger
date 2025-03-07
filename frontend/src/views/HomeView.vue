@@ -10,7 +10,8 @@ const authStore = useAuthStore()
 const chartsStore = useChartsStore()
 const favouritesStore = useFavouritesStore()
 
-const isLoading = ref(true)
+// Only use loading state for user-specific data
+const isLoadingUserData = ref(authStore.user ? true : false)
 
 // Chart types to display on the home page
 const popularCharts = [
@@ -83,104 +84,102 @@ const navigateToChart = (chartId: string) => {
 }
 
 onMounted(async () => {
-  // Initialize stores
-  try {
-    if (!chartsStore.initialized) {
-      await chartsStore.initialize()
-    }
+  // Initialize charts store in the background
+  if (!chartsStore.initialized) {
+    chartsStore.initialize().catch((error) => {
+      console.error('Error initializing charts store:', error)
+    })
+  }
 
-    if (authStore.user && !favouritesStore.favourites.length) {
+  // Only load user-specific data if user is logged in
+  if (authStore.user) {
+    try {
       await favouritesStore.loadFavourites()
+    } catch (error) {
+      console.error('Error loading favourites:', error)
+    } finally {
+      isLoadingUserData.value = false
     }
-  } catch (error) {
-    console.error('Error initializing home view:', error)
-  } finally {
-    isLoading.value = false
   }
 })
 </script>
 
 <template>
   <div class="home-container">
-    <!-- Loading Indicator -->
-    <div v-if="isLoading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Loading...</p>
-    </div>
-
-    <template v-else>
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="hero-content">
-          <h1>Billboard Charts Explorer</h1>
-          <p class="current-date">{{ currentDate }}</p>
-          <p class="hero-description">
-            Explore the latest Billboard charts, track your favorite songs, and discover new music
-            trending around the world.
-          </p>
-        </div>
-      </section>
-
-      <!-- User Welcome -->
-      <section v-if="authStore.user" class="welcome-section">
-        <h2>Welcome back, {{ authStore.user.username }}!</h2>
-
-        <!-- User Stats -->
-        <div class="stats-container" v-if="userStats">
-          <div class="stat-card">
-            <h3>{{ userStats?.favourites }}</h3>
-            <p>Favorite Songs</p>
-          </div>
-          <div class="stat-card">
-            <h3>{{ userStats?.chartAppearances }}</h3>
-            <p>Chart Appearances</p>
-          </div>
-          <div class="stat-card">
-            <h3>{{ userStats?.accuracy }}</h3>
-            <p>Prediction Accuracy</p>
-          </div>
-          <div class="stat-card">
-            <h3>{{ userStats?.totalPoints }}</h3>
-            <p>Total Points</p>
-          </div>
-        </div>
-
-        <div class="action-buttons">
-          <router-link to="/profile" class="action-button profile-button">View Profile</router-link>
-        </div>
-      </section>
-
-      <!-- Popular Charts Section -->
-      <section class="charts-section">
-        <h2>Explore Popular Charts</h2>
-        <div class="charts-grid">
-          <div
-            v-for="chart in popularCharts"
-            :key="chart.id"
-            class="chart-card"
-            @click="navigateToChart(chart.id)"
-          >
-            <h3>{{ chart.title }}</h3>
-            <p>{{ chart.description }}</p>
-            <div class="chart-card-footer">
-              <span class="view-chart">View Chart →</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA Section for Non-Logged In Users -->
-      <section v-if="!authStore.user" class="cta-section">
-        <h2>Get More from Billboard Charts</h2>
-        <p>
-          Create an account to favorite songs, make predictions, and personalize your experience.
+    <!-- Hero Section (always visible) -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <h1>Billboard Charts Explorer</h1>
+        <p class="current-date">{{ currentDate }}</p>
+        <p class="hero-description">
+          Explore the latest Billboard charts, track your favorite songs, and discover new music
+          trending around the world.
         </p>
-        <div class="cta-buttons">
-          <router-link to="/login" class="cta-button login-button">Log In</router-link>
-          <router-link to="/register" class="cta-button register-button">Sign Up</router-link>
+      </div>
+    </section>
+
+    <!-- Popular Charts Section (always visible) -->
+    <section class="charts-section">
+      <h2>Explore Popular Charts</h2>
+      <div class="charts-grid">
+        <div
+          v-for="chart in popularCharts"
+          :key="chart.id"
+          class="chart-card"
+          @click="navigateToChart(chart.id)"
+        >
+          <h3>{{ chart.title }}</h3>
+          <p>{{ chart.description }}</p>
+          <div class="chart-card-footer">
+            <span class="view-chart">View Chart →</span>
+          </div>
         </div>
-      </section>
-    </template>
+      </div>
+    </section>
+
+    <!-- User Welcome - Only show loading state for this section -->
+    <section v-if="authStore.user" class="welcome-section">
+      <h2>Welcome back, {{ authStore.user.username }}!</h2>
+
+      <!-- User Stats with dedicated loading state -->
+      <div v-if="isLoadingUserData" class="loading-user-data">
+        <div class="loading-spinner-small"></div>
+        <p>Loading your stats...</p>
+      </div>
+
+      <div class="stats-container" v-else-if="userStats">
+        <div class="stat-card">
+          <h3>{{ userStats?.favourites }}</h3>
+          <p>Favorite Songs</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ userStats?.chartAppearances }}</h3>
+          <p>Chart Appearances</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ userStats?.accuracy }}</h3>
+          <p>Prediction Accuracy</p>
+        </div>
+        <div class="stat-card">
+          <h3>{{ userStats?.totalPoints }}</h3>
+          <p>Total Points</p>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <router-link to="/profile" class="action-button profile-button">View Profile</router-link>
+      </div>
+    </section>
+
+    <!-- CTA Section for Non-Logged In Users (always visible) -->
+    <section v-if="!authStore.user" class="cta-section">
+      <h2>Get More from Billboard Charts</h2>
+      <p>Create an account to favorite songs, make predictions, and personalize your experience.</p>
+      <div class="cta-buttons">
+        <router-link to="/login" class="cta-button login-button">Log In</router-link>
+        <router-link to="/register" class="cta-button register-button">Sign Up</router-link>
+      </div>
+    </section>
   </div>
 </template>
 
@@ -456,5 +455,25 @@ onMounted(async () => {
   .stats-container {
     grid-template-columns: 1fr;
   }
+}
+
+.loading-user-data {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.loading-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 10px;
 }
 </style>
