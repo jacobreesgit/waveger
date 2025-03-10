@@ -200,25 +200,28 @@ const userPredictions = computed(() => {
   return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
 })
 
-// Format date for display
+// Format date for display - converting from ET to GMT
 const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return 'N/A'
 
   try {
+    // Parse the date string (which should be in ISO format)
     const date = new Date(dateString)
-    // Format with explicit GMT/UTC timezone
-    return (
-      date.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true,
-        timeZone: 'UTC',
-      }) + ' GMT'
-    )
+
+    // Format the date in GMT/UTC
+    const gmtFormatter = new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'UTC', // Greenwich Mean Time
+    })
+
+    // Return the formatted date with GMT indicator
+    return gmtFormatter.format(date) + ' GMT'
   } catch (e) {
     return dateString || 'N/A'
   }

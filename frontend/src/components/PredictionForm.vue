@@ -544,18 +544,30 @@ const goToLogin = () => {
   router.push('/login')
 }
 
-// Format date for display
-const formatDate = (dateString: string): string => {
+// Format date for display - converting from ET to GMT
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return 'N/A'
+
   try {
+    // Parse the date string (which should be in ISO format)
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
+
+    // Format the date in GMT/UTC
+    const gmtFormatter = new Intl.DateTimeFormat('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: 'UTC', // Greenwich Mean Time
     })
+
+    // Return the formatted date with GMT indicator
+    return gmtFormatter.format(date) + ' GMT'
   } catch (e) {
-    return dateString
+    return dateString || 'N/A'
   }
 }
 
