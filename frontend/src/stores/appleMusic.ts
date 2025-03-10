@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
 import { getAppleMusicToken } from '@/services/api'
 
+// Create a separate axios instance for Apple Music API calls
+// This prevents the global interceptors from affecting these requests
+const appleMusicAxios = axios.create()
+
 export const useAppleMusicStore = defineStore('appleMusic', () => {
   const token = ref<string | null>(null)
   const loading = ref(false)
@@ -28,16 +32,21 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
         await fetchToken()
       }
 
-      const response = await axios.get(`https://api.music.apple.com/v1/catalog/us/search`, {
-        params: {
-          term: query,
-          types: 'songs',
-          limit: 1,
+      // Use the dedicated appleMusicAxios instance instead of global axios
+      // This prevents auth interceptors from adding the wrong token
+      const response = await appleMusicAxios.get(
+        `https://api.music.apple.com/v1/catalog/us/search`,
+        {
+          params: {
+            term: query,
+            types: 'songs',
+            limit: 1,
+          },
+          headers: {
+            Authorization: `Bearer ${token.value}`,
+          },
         },
-        headers: {
-          Authorization: `Bearer ${token.value}`,
-        },
-      })
+      )
 
       return response.data.results.songs?.data[0] || null
     } catch (e) {
