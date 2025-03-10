@@ -4,6 +4,7 @@ import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useAuthStore } from '@/stores/auth'
+import { useTimezoneStore } from '@/stores/timezone'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
@@ -21,6 +22,7 @@ const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const favouritesStore = useFavouritesStore()
 const authStore = useAuthStore()
+const timezoneStore = useTimezoneStore()
 const loadMoreTrigger = ref<HTMLElement | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
@@ -106,6 +108,21 @@ const parseChartDate = (chartWeek: string): string => {
     return chartWeek // Return original if parsing fails
   }
 }
+
+// Add a function to format chart week string with the current timezone
+const formatChartWeek = computed(() => {
+  if (!store.currentChart) return ''
+
+  const chartWeek = store.currentChart.week
+  const dateMatch = chartWeek.match(/Week of ([A-Za-z]+ \d+, \d+)/)
+
+  if (!dateMatch || !dateMatch[1]) {
+    return chartWeek
+  }
+
+  const dateStr = dateMatch[1]
+  return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
+})
 
 const shouldReloadData = (chartId: string, date: string): boolean => {
   // If no chart data is loaded yet, we need to load
@@ -402,7 +419,7 @@ watch(
       <div class="chart-header">
         <h1>{{ store.currentChart.title }}</h1>
         <p class="chart-info">{{ store.currentChart.info }}</p>
-        <p class="chart-week">{{ store.currentChart.week }}</p>
+        <p class="chart-week">{{ formatChartWeek }}</p>
       </div>
 
       <transition-group name="song-list" tag="div" class="songs">

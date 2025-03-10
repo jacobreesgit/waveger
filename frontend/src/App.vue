@@ -3,11 +3,14 @@ import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useChartsStore } from '@/stores/charts'
+import { useTimezoneStore } from '@/stores/timezone'
+import CountrySelector from '@/components/CountrySelector.vue'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const chartsStore = useChartsStore()
+const timezoneStore = useTimezoneStore()
 
 // Track last viewed chart and date
 const lastViewedChart = ref<string | null>(null)
@@ -186,8 +189,11 @@ onMounted(async () => {
 
 <template>
   <header class="app-header">
-    <h1><RouterLink to="/" class="logo-link">Billboard Charts</RouterLink></h1>
-    <nav>
+    <div class="header-left">
+      <h1><RouterLink to="/" class="logo-link">Billboard Charts</RouterLink></h1>
+    </div>
+
+    <nav class="header-nav">
       <template v-for="navRoute in routes" :key="navRoute.name">
         <template v-if="shouldShowLink(navRoute)">
           <RouterLink
@@ -210,6 +216,10 @@ onMounted(async () => {
         </template>
       </template>
     </nav>
+
+    <div class="header-right">
+      <CountrySelector />
+    </div>
   </header>
 
   <main>
@@ -227,6 +237,24 @@ onMounted(async () => {
   border-bottom: 1px solid #e9ecef;
 }
 
+.header-left {
+  flex: 1;
+}
+
+.header-nav {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex: 2;
+  justify-content: center;
+}
+
+.header-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
 .logo-link {
   text-decoration: none;
   color: #333;
@@ -235,12 +263,6 @@ onMounted(async () => {
   &:hover {
     color: #007bff;
   }
-}
-
-nav {
-  display: flex;
-  gap: 20px;
-  align-items: center;
 }
 
 .nav-link {
@@ -266,5 +288,34 @@ nav {
 .nav-link.router-link-active {
   background: #007bff;
   color: white;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .header-left,
+  .header-nav,
+  .header-right {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-right {
+    margin-top: 10px;
+    order: 3;
+  }
+
+  .header-nav {
+    order: 2;
+  }
+
+  .nav-link {
+    padding: 6px 12px;
+    font-size: 0.9rem;
+  }
 }
 </style>

@@ -1,3 +1,132 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { usePredictionsStore } from '@/stores/predictions'
+import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
+import PredictionForm from '@/components/PredictionForm.vue'
+import type { Prediction } from '@/types/predictions'
+import axios from 'axios'
+import { useTimezoneStore } from '@/stores/timezone'
+
+const router = useRouter()
+const predictionStore = usePredictionsStore()
+const authStore = useAuthStore()
+const timezoneStore = useTimezoneStore()
+
+// UI state
+const activeTab = ref<'hot-100' | 'billboard-200'>('hot-100')
+const isLoading = ref(true)
+const error = ref('')
+
+// Computed properties
+const hasActiveContest = computed(() => Boolean(predictionStore.currentContest))
+
+const remainingPredictions = computed(() => {
+  if (!predictionStore.currentContest) return 0
+  return predictionStore.remainingPredictions
+})
+
+const userPredictions = computed(() => {
+  if (!predictionStore.currentContest) return []
+  return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
+})
+
+// Format date for display
+const formatDate = (dateString: string | null | undefined): string => {
+  return timezoneStore.formatDate(dateString)
+}
+
+// Calculate the days remaining until the contest ends
+const daysUntilDeadline = computed(() => {
+  if (!predictionStore.currentContest?.end_date) return null
+
+  // Parse the deadline date from ISO string
+  const endDate = new Date(predictionStore.currentContest.end_date)
+  const now = new Date()
+
+  // If the deadline has already passed, return 0
+  if (endDate <= now) return 0
+
+  // Calculate difference in milliseconds (keeping full date-time information)
+  const diffTime = endDate.getTime() - now.getTime()
+
+  // Convert to days and round up
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  return diffDays
+})
+
+// Get prediction results for display
+const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
+  if (prediction.is_correct === null || prediction.is_correct === undefined) {
+    return 'pending'
+  }
+
+  return prediction.is_correct ? 'correct' : 'incorrect'
+}
+
+// Navigate to authentication page if needed
+const navigateToAuth = () => {
+  router.push('/login')
+}
+
+// Change the active chart tab
+const changeTab = (tab: 'hot-100' | 'billboard-200') => {
+  activeTab.value = tab
+}
+
+// Initialize component
+onMounted(async () => {
+  try {
+    isLoading.value = true
+
+    // Ensure auth is initialized and token is properly set
+    await authStore.initialize()
+
+    // Log the current Authorization header
+    console.log(
+      'Current Authorization header:',
+      axios.defaults.headers.common['Authorization'] || 'None set',
+    )
+
+    // If no token is set in axios, try to set it again
+    if (!axios.defaults.headers.common['Authorization']) {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      if (token) {
+        console.log('Setting missing Authorization header')
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
+    }
+
+    // Initialize the predictions store
+    if (!predictionStore.initialized) {
+      await predictionStore.initialize()
+    }
+
+    // Rest of your code...
+  } catch (e) {
+    console.error('Error initializing prediction view:', e)
+    error.value = e instanceof Error ? e.message : 'Failed to load prediction data'
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// Update predictions when tab changes
+watch(activeTab, async () => {
+  if (authStore.user && predictionStore.currentContest) {
+    try {
+      await predictionStore.fetchUserPredictions({
+        contest_id: predictionStore.currentContest.id,
+        chart_type: activeTab.value,
+      })
+    } catch (e) {
+      console.error('Error fetching predictions for tab:', e)
+    }
+  }
+})
+</script>
+
 <template>
   <div class="prediction-view">
     <h1>Billboard Chart Predictions</h1>
@@ -168,152 +297,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { usePredictionsStore } from '@/stores/predictions'
-import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-import PredictionForm from '@/components/PredictionForm.vue'
-import type { Prediction } from '@/types/predictions'
-import axios from 'axios'
-
-const router = useRouter()
-const predictionStore = usePredictionsStore()
-const authStore = useAuthStore()
-
-// UI state
-const activeTab = ref<'hot-100' | 'billboard-200'>('hot-100')
-const isLoading = ref(true)
-const error = ref('')
-
-// Computed properties
-const hasActiveContest = computed(() => Boolean(predictionStore.currentContest))
-
-const remainingPredictions = computed(() => {
-  if (!predictionStore.currentContest) return 0
-  return predictionStore.remainingPredictions
-})
-
-const userPredictions = computed(() => {
-  if (!predictionStore.currentContest) return []
-  return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
-})
-
-// Format date for display - converting from ET to GMT
-const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'N/A'
-
-  try {
-    // Parse the date string (which should be in ISO format)
-    const date = new Date(dateString)
-
-    // Format the date in GMT/UTC
-    const gmtFormatter = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC', // Greenwich Mean Time
-    })
-
-    // Return the formatted date with GMT indicator
-    return gmtFormatter.format(date) + ' GMT'
-  } catch (e) {
-    return dateString || 'N/A'
-  }
-}
-
-// Calculate the days remaining until the contest ends
-const daysUntilDeadline = computed(() => {
-  if (!predictionStore.currentContest?.end_date) return null
-
-  const endDate = new Date(predictionStore.currentContest.end_date)
-  const today = new Date()
-
-  // Reset time parts to compare just the dates
-  endDate.setHours(23, 59, 59, 999)
-  today.setHours(0, 0, 0, 0)
-
-  const diffTime = endDate.getTime() - today.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  return diffDays > 0 ? diffDays : 0
-})
-
-// Get prediction results for display
-const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
-  if (prediction.is_correct === null || prediction.is_correct === undefined) {
-    return 'pending'
-  }
-
-  return prediction.is_correct ? 'correct' : 'incorrect'
-}
-
-// Navigate to authentication page if needed
-const navigateToAuth = () => {
-  router.push('/login')
-}
-
-// Change the active chart tab
-const changeTab = (tab: 'hot-100' | 'billboard-200') => {
-  activeTab.value = tab
-}
-
-// Initialize component
-onMounted(async () => {
-  try {
-    isLoading.value = true
-
-    // Ensure auth is initialized and token is properly set
-    await authStore.initialize()
-
-    // Log the current Authorization header
-    console.log(
-      'Current Authorization header:',
-      axios.defaults.headers.common['Authorization'] || 'None set',
-    )
-
-    // If no token is set in axios, try to set it again
-    if (!axios.defaults.headers.common['Authorization']) {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      if (token) {
-        console.log('Setting missing Authorization header')
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      }
-    }
-
-    // Initialize the predictions store
-    if (!predictionStore.initialized) {
-      await predictionStore.initialize()
-    }
-
-    // Rest of your code...
-  } catch (e) {
-    console.error('Error initializing prediction view:', e)
-    error.value = e instanceof Error ? e.message : 'Failed to load prediction data'
-  } finally {
-    isLoading.value = false
-  }
-})
-
-// Update predictions when tab changes
-watch(activeTab, async () => {
-  if (authStore.user && predictionStore.currentContest) {
-    try {
-      await predictionStore.fetchUserPredictions({
-        contest_id: predictionStore.currentContest.id,
-        chart_type: activeTab.value,
-      })
-    } catch (e) {
-      console.error('Error fetching predictions for tab:', e)
-    }
-  }
-})
-</script>
 
 <style lang="scss" scoped>
 .prediction-view {

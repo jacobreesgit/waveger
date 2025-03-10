@@ -7,9 +7,7 @@ import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useRouter } from 'vue-router'
 import type { PredictionSubmission } from '@/types/predictions'
-import type { Song } from '@/types/api'
-import type { AppleMusicData } from '@/types/appleMusic'
-import type { FavouriteSong } from '@/stores/favourites'
+import { useTimezoneStore } from '@/stores/timezone'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -17,6 +15,7 @@ const chartsStore = useChartsStore()
 const authStore = useAuthStore()
 const appleMusicStore = useAppleMusicStore()
 const favouritesStore = useFavouritesStore()
+const timezoneStore = useTimezoneStore()
 
 // Form state
 const predictionType = ref<'entry' | 'position_change' | 'exit'>('entry')
@@ -544,31 +543,9 @@ const goToLogin = () => {
   router.push('/login')
 }
 
-// Format date for display - converting from ET to GMT
+// Format date for display
 const formatDate = (dateString: string | null | undefined): string => {
-  if (!dateString) return 'N/A'
-
-  try {
-    // Parse the date string (which should be in ISO format)
-    const date = new Date(dateString)
-
-    // Format the date in GMT/UTC
-    const gmtFormatter = new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: 'UTC', // Greenwich Mean Time
-    })
-
-    // Return the formatted date with GMT indicator
-    return gmtFormatter.format(date) + ' GMT'
-  } catch (e) {
-    return dateString || 'N/A'
-  }
+  return timezoneStore.formatDate(dateString)
 }
 
 // Handle click outside search results
