@@ -474,7 +474,11 @@ h1 {
 
 .prediction-form-section,
 .user-predictions-section {
-  padding: 0;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
 }
 
 .user-predictions-section h2 {

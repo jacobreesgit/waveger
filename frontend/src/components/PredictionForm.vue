@@ -917,14 +917,6 @@ const isDeadlinePassed = computed(() => {
 </template>
 
 <style lang="scss" scoped>
-.prediction-form {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-}
-
 h2 {
   margin-top: 0;
   margin-bottom: 20px;
