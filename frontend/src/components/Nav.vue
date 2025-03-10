@@ -68,9 +68,16 @@ const menuItems = computed<MenuItem[]>(() => {
       return true
     })
     .map((route) => {
+      // Check if this route is active
+      const isActive =
+        route.path === '/'
+          ? route.path === appRouter.currentRoute.value.path
+          : appRouter.currentRoute.value.path.startsWith(route.path)
+
       return {
         label: (route.meta?.title as string) || String(route.name),
         icon: (route.meta?.icon as string) || undefined,
+        class: isActive ? 'active-menu-item' : '',
         command: () => {
           // Special case for chart routes with useLastViewed flag
           if (route.meta?.useLastViewed) {
@@ -104,24 +111,28 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .nav-container {
   display: flex;
   align-items: center;
   padding: 0.5rem 1rem;
   background-color: #f8f9fa;
   gap: 1rem;
-}
-
-.logo-link {
-  text-decoration: none;
-  color: black;
-  font-weight: bold;
-}
-
-.nav-menu {
-  flex-grow: 1;
-  background: transparent;
-  border: none;
+  & .logo-link {
+    text-decoration: none;
+    color: black;
+    font-weight: bold;
+  }
+  & .nav-menu {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    & :deep(.active-menu-item .p-menubar-item-content) {
+      background-color: black !important;
+    }
+    & :deep(.active-menu-item *) {
+      color: white !important;
+    }
+  }
 }
 </style>

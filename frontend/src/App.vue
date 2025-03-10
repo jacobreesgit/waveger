@@ -14,10 +14,24 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Nav />
-  <main>
-    <RouterView />
-  </main>
+  <div class="app-container">
+    <Nav />
+    <main class="main-content">
+      <RouterView />
+    </main>
+  </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  overflow-y: auto;
+}
+</style>

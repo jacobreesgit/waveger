@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTimezoneStore } from '@/stores/timezone'
+import Dropdown from 'primevue/dropdown'
 
 const timezoneStore = useTimezoneStore()
 
@@ -92,29 +93,6 @@ const detectCountry = () => {
   }
 }
 
-// Toggle dropdown visibility
-const isDropdownOpen = ref(false)
-const toggleDropdown = () => {
-  isDropdownOpen.value = !isDropdownOpen.value
-}
-
-// Close dropdown when clicking outside
-const dropdownRef = ref<HTMLElement | null>(null)
-const handleClickOutside = (event: MouseEvent) => {
-  if (dropdownRef.value && !dropdownRef.value.contains(event.target as Node)) {
-    isDropdownOpen.value = false
-  }
-}
-
-// Setup and cleanup click handler
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside)
-})
-
-const onUnmounted = () => {
-  document.removeEventListener('click', handleClickOutside)
-}
-
 // Get country flag emoji
 const getCountryFlagEmoji = (countryCode: string): string => {
   if (countryCode === 'UTC') {
@@ -137,120 +115,38 @@ const currentCountryName = computed(() => {
 </script>
 
 <template>
-  <div class="country-selector" ref="dropdownRef">
-    <button @click="toggleDropdown" class="country-selector-button">
-      <span class="country-flag">{{ getCountryFlagEmoji(selectedCountry) }}</span>
-      <span class="country-name">{{ currentCountryName }}</span>
-      <span class="dropdown-arrow" :class="{ open: isDropdownOpen }">▼</span>
-    </button>
-
-    <div v-if="isDropdownOpen" class="country-dropdown">
-      <div
-        v-for="country in countryOptions"
-        :key="country.code"
-        class="country-option"
-        :class="{ selected: country.code === selectedCountry }"
-        @click="
-          () => {
-            selectedCountry = country.code
-            isDropdownOpen = false
-          }
-        "
-      >
-        <span class="country-flag">{{ getCountryFlagEmoji(country.code) }}</span>
-        <span class="country-name">{{ country.name }}</span>
-      </div>
-    </div>
+  <div class="country-selector">
+    <Dropdown
+      v-model="selectedCountry"
+      :options="countryOptions"
+      optionLabel="name"
+      optionValue="code"
+      class="country-dropdown-component"
+    >
+      <template #value="slotProps">
+        <div class="flex align-items-center">
+          <span class="country-flag">{{ getCountryFlagEmoji(slotProps.value) }}</span>
+          <span class="country-name">{{ currentCountryName }}</span>
+        </div>
+      </template>
+      <template #option="slotProps">
+        <div class="country-option-item">
+          <span class="country-flag">{{ getCountryFlagEmoji(slotProps.option.code) }}</span>
+          <span class="country-name">{{ slotProps.option.name }}</span>
+        </div>
+      </template>
+    </Dropdown>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.country-selector {
-  position: relative;
-  display: inline-block;
-}
-
-.country-selector-button {
+.flex {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  color: #495057;
-  transition: all 0.2s;
-
-  &:hover {
-    background: #e9ecef;
-  }
 }
 
 .country-flag {
   font-size: 16px;
-}
-
-.dropdown-arrow {
-  font-size: 10px;
-  transition: transform 0.2s;
-
-  &.open {
-    transform: rotate(180deg);
-  }
-}
-
-.country-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  width: 220px;
-  max-height: 300px;
-  overflow-y: auto;
-  background: white;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  margin-top: 4px;
-}
-
-.country-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background-color: #f8f9fa;
-  }
-
-  &.selected {
-    background-color: #e7f5ff;
-    font-weight: 500;
-  }
-}
-
-.country-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-@media (max-width: 768px) {
-  .country-name {
-    display: none;
-  }
-
-  .country-dropdown {
-    width: 180px;
-
-    .country-name {
-      display: inline;
-    }
-  }
+  margin-right: 8px;
 }
 </style>

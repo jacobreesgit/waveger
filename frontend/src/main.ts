@@ -7,6 +7,9 @@ import router from './router'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 
+// Import global CSS
+import '@/global.css'
+
 // Configure axios defaults
 axios.defaults.baseURL = 'https://wavegerpython.onrender.com/api'
 
