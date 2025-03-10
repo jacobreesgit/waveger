@@ -115,38 +115,54 @@ const currentCountryName = computed(() => {
 </script>
 
 <template>
-  <div class="country-selector">
-    <Dropdown
-      v-model="selectedCountry"
-      :options="countryOptions"
-      optionLabel="name"
-      optionValue="code"
-      class="country-dropdown-component"
-    >
-      <template #value="slotProps">
-        <div class="flex align-items-center">
-          <span class="country-flag">{{ getCountryFlagEmoji(slotProps.value) }}</span>
-          <span class="country-name">{{ currentCountryName }}</span>
-        </div>
-      </template>
-      <template #option="slotProps">
-        <div class="country-option-item">
-          <span class="country-flag">{{ getCountryFlagEmoji(slotProps.option.code) }}</span>
-          <span class="country-name">{{ slotProps.option.name }}</span>
-        </div>
-      </template>
-    </Dropdown>
-  </div>
+  <Dropdown
+    v-model="selectedCountry"
+    :options="countryOptions"
+    optionLabel="name"
+    optionValue="code"
+    class="country-selector"
+  >
+    <template #value="slotProps">
+      <div class="country-selector__value align-items-center">
+        <span class="country-selector__value__country-flag">{{
+          getCountryFlagEmoji(slotProps.value)
+        }}</span>
+        <span class="country-selector__value__country-name">{{ currentCountryName }}</span>
+      </div>
+    </template>
+    <template #option="slotProps">
+      <div class="country-selector__item">
+        <span class="country-selector__item__country-flag">{{
+          getCountryFlagEmoji(slotProps.option.code)
+        }}</span>
+        <span class="country-selector__item__country-name">{{ slotProps.option.name }}</span>
+      </div>
+    </template>
+  </Dropdown>
 </template>
 
 <style lang="scss" scoped>
-.flex {
-  display: flex;
-  align-items: center;
-}
-
-.country-flag {
-  font-size: 16px;
-  margin-right: 8px;
+.country-selector {
+  &__value {
+    display: flex;
+    align-items: center;
+    &__country-flag {
+      font-size: 16px;
+    }
+    &__country-name {
+      display: none;
+    }
+  }
+  &__item {
+    display: flex;
+    align-items: center;
+    &__country-flag {
+      font-size: 16px;
+      margin-right: 8px;
+    }
+    &__country-name {
+      display: inline;
+    }
+  }
 }
 </style>

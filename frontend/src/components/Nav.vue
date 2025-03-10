@@ -99,11 +99,11 @@ onMounted(() => {
 
 <template>
   <div class="nav-container">
-    <div class="logo">
-      <RouterLink to="/" class="logo-link">Waveger</RouterLink>
+    <div class="nav-container__logo">
+      <RouterLink to="/" class="nav-container__logo__logo-link">Waveger</RouterLink>
     </div>
 
-    <Menubar :model="menuItems" class="nav-menu" />
+    <Menubar :model="menuItems" class="nav-container__nav-menu" />
 
     <div class="nav-right">
       <CountrySelector />
@@ -118,12 +118,14 @@ onMounted(() => {
   padding: 0.5rem 1rem;
   background-color: #f8f9fa;
   gap: 1rem;
-  & .logo-link {
-    text-decoration: none;
-    color: black;
-    font-weight: bold;
+  &__logo {
+    &__logo-link {
+      text-decoration: none;
+      color: black;
+      font-weight: bold;
+    }
   }
-  & .nav-menu {
+  &__nav-menu {
     flex-grow: 1;
     background: transparent;
     border: none;

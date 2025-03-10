@@ -16,7 +16,7 @@ onMounted(async () => {
 <template>
   <div class="app-container">
     <Nav />
-    <main class="main-content">
+    <main class="app-container__main-content">
       <RouterView />
     </main>
   </div>
@@ -27,11 +27,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-}
-
-.main-content {
-  flex: 1;
-  padding: 1rem;
-  overflow-y: auto;
+  &__main-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+  }
 }
 </style>
