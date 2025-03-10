@@ -200,13 +200,13 @@ watch(activeTab, async () => {
 
       <div class="prediction-sections">
         <!-- Prediction form -->
-        <div class="prediction-form-section">
+        <div class="prediction-form-section" v-if="!isDeadlinePassed">
           <PredictionForm />
         </div>
 
         <!-- User predictions -->
         <div class="user-predictions-section">
-          <h2>Your {{ activeTab.toUpperCase() }} Predictions</h2>
+          <h2 :class="{ isDeadlinePassed }">Your {{ activeTab.toUpperCase() }} Predictions</h2>
 
           <div v-if="predictionStore.loading.predictions" class="predictions-loading">
             <div class="loading-spinner-small"></div>
@@ -482,6 +482,12 @@ h1 {
   margin-bottom: 16px;
   color: #333;
   font-size: 1.25rem;
+  &.isDeadlinePassed {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 1.5rem;
+  }
 }
 
 .predictions-loading {
