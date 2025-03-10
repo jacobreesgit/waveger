@@ -31,13 +31,14 @@ const searchResults = ref<Array<SearchResult>>([])
 const selectedSong = ref<SearchResult | null>(null)
 const searchResultsVisible = ref(false)
 const dataSource = ref<'chart' | 'appleMusic' | 'favourites' | 'custom'>('chart')
+const activeTab = ref<'search' | 'favourites'>('search')
 
 // Search result types
 interface SearchResult {
   name: string
   artist: string
   imageUrl?: string
-  position?: number
+  chartPosition?: number // Changed from position to chartPosition
   source: 'chart' | 'appleMusic' | 'favourites' | 'custom'
   id?: string
   originalData?: any
@@ -75,7 +76,7 @@ const filteredChartSongs = computed(() => {
       name: song.name,
       artist: song.artist,
       imageUrl: song.image,
-      position: song.position,
+      chartPosition: song.position, // Changed from position to chartPosition
       source: 'chart' as const,
       originalData: song,
     }))
@@ -90,13 +91,21 @@ const filteredFavorites = computed(() => {
 
   if (predictionType.value === 'entry') {
     // For entry, we might want to show all favorites
-    return favorites.map((fav) => ({
-      name: fav.song_name,
-      artist: fav.artist,
-      imageUrl: fav.image_url,
-      source: 'favourites' as const,
-      originalData: fav,
-    }))
+    return favorites.map((fav) => {
+      // First check if this favorite is on the current chart
+      const chartSong = chartsStore.currentChart?.songs.find(
+        (s) => s.name === fav.song_name && s.artist === fav.artist,
+      )
+
+      return {
+        name: fav.song_name,
+        artist: fav.artist,
+        imageUrl: fav.image_url,
+        chartPosition: chartSong?.position, // Use chartPosition instead of position
+        source: 'favourites' as const,
+        originalData: fav,
+      }
+    })
   } else if (predictionType.value === 'position_change' || predictionType.value === 'exit') {
     // For position_change and exit, only show favorites that are on current chart
     // This would require cross-referencing with chart data
@@ -116,7 +125,7 @@ const filteredFavorites = computed(() => {
           name: fav.song_name,
           artist: fav.artist,
           imageUrl: fav.image_url,
-          position: chartSong?.position,
+          chartPosition: chartSong?.position, // Use chartPosition instead of position
           source: 'favourites' as const,
           originalData: fav,
         }
@@ -188,41 +197,107 @@ const performSearch = async () => {
 
     if (!query) return
 
-    // Get results based on active tab
-    if (activeSearchTab.value === 'chart') {
-      // Search in current chart data
-      searchResults.value = filteredChartSongs.value
-        .filter(
-          (song) =>
-            song.name.toLowerCase().includes(query) || song.artist.toLowerCase().includes(query),
-        )
-        .slice(0, 5)
-    } else if (activeSearchTab.value === 'appleMusic') {
-      // Search in Apple Music API
-      const appleMusicResult = await appleMusicStore.searchSong(query)
+    if (activeTab.value === 'search') {
+      // First, check if this song is in the current chart
+      // This ensures we prioritize getting chart position if available
+      let chartMatchFound = false
 
-      if (appleMusicResult) {
-        searchResults.value = [
-          {
-            name: appleMusicResult.attributes.name,
-            artist: appleMusicResult.attributes.artistName,
-            imageUrl: appleMusicResult.attributes.artwork.url
-              .replace('{w}', '100')
-              .replace('{h}', '100'),
-            source: 'appleMusic',
-            id: appleMusicResult.id,
-            originalData: appleMusicResult,
-          },
-        ]
+      if (chartsStore.currentChart?.songs) {
+        const allChartSongs = chartsStore.currentChart.songs
+
+        // Look for exact or close matches in chart data
+        for (const song of allChartSongs) {
+          if (
+            song.name.toLowerCase() === query ||
+            song.name.toLowerCase().includes(query) ||
+            song.artist.toLowerCase() === query ||
+            song.artist.toLowerCase().includes(query)
+          ) {
+            chartMatchFound = true
+            searchResults.value.push({
+              name: song.name,
+              artist: song.artist,
+              imageUrl: song.image,
+              chartPosition: song.position,
+              source: 'chart' as const,
+              originalData: song,
+            })
+
+            // Limit to first 5 matches
+            if (searchResults.value.length >= 5) break
+          }
+        }
+
+        // If no exact matches but query length is reasonable, try partial matches
+        if (!chartMatchFound && query.length > 2) {
+          // First, search in current chart data using looser criteria
+          const chartResults = filteredChartSongs.value
+            .filter(
+              (song) =>
+                song.name.toLowerCase().includes(query) ||
+                song.artist.toLowerCase().includes(query),
+            )
+            .slice(0, 5)
+
+          if (chartResults.length > 0) {
+            chartMatchFound = true
+            searchResults.value = chartResults
+          }
+        }
       }
-    } else if (activeSearchTab.value === 'favourites') {
-      // Search in user favorites
+
+      // If no chart results found or fewer than 5, search Apple Music to fill the list
+      if (searchResults.value.length < 5) {
+        try {
+          const appleMusicResult = await appleMusicStore.searchSong(query)
+
+          if (appleMusicResult) {
+            // Check if we already have this song in our results to avoid duplicates
+            const isDuplicate = searchResults.value.some(
+              (song) =>
+                song.name.toLowerCase() === appleMusicResult.attributes.name.toLowerCase() &&
+                song.artist.toLowerCase() === appleMusicResult.attributes.artistName.toLowerCase(),
+            )
+
+            if (!isDuplicate) {
+              // Check if this Apple Music song is in the chart to get position
+              let chartPosition = undefined
+              if (chartsStore.currentChart?.songs) {
+                const matchingChartSong = chartsStore.currentChart.songs.find(
+                  (s) =>
+                    s.name.toLowerCase() === appleMusicResult.attributes.name.toLowerCase() &&
+                    s.artist.toLowerCase() === appleMusicResult.attributes.artistName.toLowerCase(),
+                )
+                if (matchingChartSong) {
+                  chartPosition = matchingChartSong.position
+                }
+              }
+
+              searchResults.value.push({
+                name: appleMusicResult.attributes.name,
+                artist: appleMusicResult.attributes.artistName,
+                imageUrl: appleMusicResult.attributes.artwork.url
+                  .replace('{w}', '100')
+                  .replace('{h}', '100'),
+                chartPosition: chartPosition,
+                source: 'appleMusic',
+                id: appleMusicResult.id,
+                originalData: appleMusicResult,
+              })
+            }
+          }
+        } catch (appleMusicError) {
+          console.error('Apple Music search error:', appleMusicError)
+        }
+      }
+    } else if (activeTab.value === 'favourites') {
+      // Just filter favorites based on query
       searchResults.value = filteredFavorites.value
         .filter(
           (fav) =>
             fav.name.toLowerCase().includes(query) || fav.artist.toLowerCase().includes(query),
         )
-        .slice(0, 5)
+        .slice(0, 10)
     }
   } catch (error) {
     console.error('Search error:', error)
@@ -243,7 +318,7 @@ const selectSong = (result: SearchResult) => {
   formErrors.value.artist = ''
 
   // For position_change, show current position
-  if (predictionType.value === 'position_change' && result.position) {
+  if (predictionType.value === 'position_change' && result.chartPosition) {
     // Maybe suggest a value based on trends?
   }
 }
@@ -356,7 +431,7 @@ const validateForm = (): boolean => {
     if (
       selectedSong.value &&
       selectedSong.value.source !== 'chart' &&
-      !selectedSong.value.position
+      !selectedSong.value.chartPosition
     ) {
       formErrors.value.general =
         'Position change predictions must be for songs currently on the chart'
@@ -370,7 +445,7 @@ const validateForm = (): boolean => {
     if (
       selectedSong.value &&
       selectedSong.value.source !== 'chart' &&
-      !selectedSong.value.position
+      !selectedSong.value.chartPosition
     ) {
       formErrors.value.general = 'Exit predictions must be for songs currently on the chart'
       isValid = false
@@ -616,8 +691,8 @@ const onUnmounted = () => {
             <div class="selected-song-details">
               <div class="selected-song-name">{{ selectedSong.name }}</div>
               <div class="selected-song-artist">{{ selectedSong.artist }}</div>
-              <div v-if="selectedSong.position" class="selected-song-position">
-                Current position: #{{ selectedSong.position }}
+              <div v-if="selectedSong.chartPosition" class="selected-song-position">
+                Current position: #{{ selectedSong.chartPosition }}
               </div>
               <div class="selected-song-source">
                 Source:
@@ -642,85 +717,140 @@ const onUnmounted = () => {
 
         <!-- Search Input -->
         <div v-else class="search-container">
-          <input
-            id="song-search"
-            v-model="searchQuery"
-            type="text"
-            :disabled="isSubmitting"
-            placeholder="Search for a song or artist"
-            class="search-input"
-            @input="handleSearchInput"
-            @focus="searchResultsVisible = !!searchQuery.trim()"
-          />
-
-          <!-- Search Source Tabs -->
-          <div class="search-tabs">
+          <!-- Search/Favorites Tabs -->
+          <div class="search-tabs main-tabs">
             <button
               type="button"
-              @click="activeSearchTab = 'chart'"
-              :class="['tab-button', { active: activeSearchTab === 'chart' }]"
-              :disabled="predictionType === 'entry'"
+              @click="activeTab = 'search'"
+              :class="['tab-button', { active: activeTab === 'search' }]"
             >
-              Current Chart
+              Search
             </button>
             <button
               type="button"
-              @click="activeSearchTab = 'appleMusic'"
-              :class="['tab-button', { active: activeSearchTab === 'appleMusic' }]"
+              @click="activeTab = 'favourites'"
+              :class="['tab-button', { active: activeTab === 'favourites' }]"
             >
-              Apple Music
-            </button>
-            <button
-              type="button"
-              @click="activeSearchTab = 'favourites'"
-              :class="['tab-button', { active: activeSearchTab === 'favourites' }]"
-            >
-              Favorites
+              My Favorites
             </button>
           </div>
 
-          <!-- Search Results -->
-          <div v-if="searchResultsVisible" class="search-results">
-            <div v-if="isSearching" class="search-loading">
-              <div class="search-spinner"></div>
-              <span>Searching...</span>
+          <!-- Search Tab Content -->
+          <div v-if="activeTab === 'search'" class="search-tab-content">
+            <input
+              id="song-search"
+              v-model="searchQuery"
+              type="text"
+              :disabled="isSubmitting"
+              placeholder="Search current chart & Apple Music..."
+              class="search-input"
+              @input="handleSearchInput"
+              @focus="searchResultsVisible = !!searchQuery.trim()"
+            />
+
+            <!-- Search Results -->
+            <div v-if="searchResultsVisible" class="search-results">
+              <div v-if="isSearching" class="search-loading">
+                <div class="search-spinner"></div>
+                <span>Searching...</span>
+              </div>
+
+              <div v-else-if="searchResults.length === 0" class="no-results">
+                <p>No results found</p>
+                <button type="button" @click="createCustomEntry" class="create-custom-btn">
+                  Create custom entry
+                </button>
+              </div>
+
+              <div v-else class="results-list">
+                <div
+                  v-for="(result, index) in searchResults"
+                  :key="index"
+                  class="result-item"
+                  @click="selectSong(result)"
+                >
+                  <img
+                    v-if="result.imageUrl"
+                    :src="result.imageUrl"
+                    :alt="result.name"
+                    class="result-image"
+                  />
+                  <div v-else class="result-image-placeholder"></div>
+
+                  <div class="result-details">
+                    <div class="result-name">{{ result.name }}</div>
+                    <div class="result-artist">{{ result.artist }}</div>
+                    <div v-if="result.chartPosition" class="result-position">
+                      Current position: #{{ result.chartPosition }}
+                    </div>
+                    <div class="result-source">
+                      {{ result.source === 'chart' ? 'Current Chart' : 'Apple Music' }}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Custom Entry Option -->
+                <button type="button" @click="createCustomEntry" class="create-custom-option">
+                  Create custom entry for "{{ searchQuery }}"
+                </button>
+              </div>
             </div>
+          </div>
 
-            <div v-else-if="searchResults.length === 0" class="no-results">
-              <p>No results found</p>
-              <button type="button" @click="createCustomEntry" class="create-custom-btn">
-                Create custom entry
-              </button>
-            </div>
+          <!-- Favorites Tab Content -->
+          <div v-else-if="activeTab === 'favourites'" class="favourites-tab-content">
+            <input
+              id="favorites-search"
+              v-model="searchQuery"
+              type="text"
+              :disabled="isSubmitting"
+              placeholder="Filter your favorites..."
+              class="search-input"
+              @input="handleSearchInput"
+            />
 
-            <div v-else class="results-list">
-              <div
-                v-for="(result, index) in searchResults"
-                :key="index"
-                class="result-item"
-                @click="selectSong(result)"
-              >
-                <img
-                  v-if="result.imageUrl"
-                  :src="result.imageUrl"
-                  :alt="result.name"
-                  class="result-image"
-                />
-                <div v-else class="result-image-placeholder"></div>
+            <div class="favourites-list">
+              <div v-if="isSearching" class="search-loading">
+                <div class="search-spinner"></div>
+                <span>Filtering favorites...</span>
+              </div>
 
-                <div class="result-details">
-                  <div class="result-name">{{ result.name }}</div>
-                  <div class="result-artist">{{ result.artist }}</div>
-                  <div v-if="result.position" class="result-position">
-                    Current position: #{{ result.position }}
+              <div v-else-if="favouritesStore.loading" class="search-loading">
+                <div class="search-spinner"></div>
+                <span>Loading favorites...</span>
+              </div>
+
+              <div v-else-if="filteredFavorites.length === 0" class="no-results">
+                <p v-if="searchQuery">No favorites match your search</p>
+                <p v-else>You don't have any favorites yet</p>
+              </div>
+
+              <div v-else class="results-list">
+                <div
+                  v-for="(favorite, index) in searchResults.length > 0
+                    ? searchResults
+                    : filteredFavorites"
+                  :key="index"
+                  class="result-item"
+                  @click="selectSong(favorite)"
+                >
+                  <img
+                    v-if="favorite.imageUrl"
+                    :src="favorite.imageUrl"
+                    :alt="favorite.name"
+                    class="result-image"
+                  />
+                  <div v-else class="result-image-placeholder"></div>
+
+                  <div class="result-details">
+                    <div class="result-name">{{ favorite.name }}</div>
+                    <div class="result-artist">{{ favorite.artist }}</div>
+                    <div v-if="favorite.chartPosition" class="result-position">
+                      Current position: #{{ favorite.chartPosition }}
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <!-- Custom Entry Option -->
-              <button type="button" @click="createCustomEntry" class="create-custom-option">
-                Create custom entry for "{{ searchQuery }}"
-              </button>
             </div>
           </div>
         </div>
@@ -752,8 +882,8 @@ const onUnmounted = () => {
         <label for="prediction-change">Predicted Position Change</label>
 
         <!-- Current position reminder -->
-        <div v-if="selectedSong && selectedSong.position" class="current-position-reminder">
-          Current position of "{{ selectedSong.name }}": #{{ selectedSong.position }}
+        <div v-if="selectedSong && selectedSong.chartPosition" class="current-position-reminder">
+          Current position of "{{ selectedSong.name }}": #{{ selectedSong.chartPosition }}
         </div>
 
         <input
@@ -1014,6 +1144,10 @@ h2 {
   border-bottom: 1px solid #dee2e6;
 }
 
+.main-tabs {
+  margin-bottom: 16px;
+}
+
 .tab-button {
   padding: 6px 12px;
   background: none;
@@ -1112,6 +1246,7 @@ h2 {
   cursor: pointer;
   transition: background-color 0.2s;
   align-items: center;
+  position: relative;
 }
 
 .result-item:hover {
@@ -1152,6 +1287,12 @@ h2 {
 .result-position {
   color: #007bff;
   font-size: 0.75rem;
+  margin-top: 2px;
+}
+
+.result-source {
+  font-size: 0.7rem;
+  color: #6c757d;
   margin-top: 2px;
 }
 
