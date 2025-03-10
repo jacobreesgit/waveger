@@ -33,7 +33,7 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
-// Update the route when the date changes
+// Updated updateRoute function in ChartDatePicker.vue
 const updateRoute = async (newDate: string) => {
   const formattedDate = formatDate(newDate)
   const urlDate = formatDateForURL(formattedDate)
@@ -44,8 +44,9 @@ const updateRoute = async (newDate: string) => {
   console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
 
   // Update the URL with new date while preserving chart ID
+  // Changed from `/${urlDate}` to `/charts/${urlDate}`
   await router.push({
-    path: `/${urlDate}`,
+    path: `/charts/${urlDate}`,
     query: { id: chartId },
   })
 }

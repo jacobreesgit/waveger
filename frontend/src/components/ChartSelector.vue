@@ -45,7 +45,7 @@ const formatDateForURL = (date: string): string => {
   return `${day}-${month}-${year}`
 }
 
-// Update route and ALWAYS load chart data
+// Updated updateRoute function in ChartSelector.vue
 const updateRoute = async () => {
   // Normalize chart ID for consistency (remove trailing slash if needed)
   const chartId = selectedChartId.value.replace(/\/$/, '')
@@ -71,8 +71,9 @@ const updateRoute = async () => {
   })
 
   // Update the URL after fetching data
+  // Changed from `/${datePath}` to `/charts/${datePath}`
   await router.push({
-    path: `/${datePath}`,
+    path: `/charts/${datePath}`,
     query: { id: chartId },
   })
 }

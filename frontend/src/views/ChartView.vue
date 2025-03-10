@@ -315,7 +315,6 @@ watch(
   },
 )
 
-// Watch for route changes to reload data if necessary
 watch(
   () => route.params.date,
   async (newDate) => {

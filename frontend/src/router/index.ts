@@ -1,3 +1,4 @@
+// Updated router/index.ts configuration
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import HomeView from '@/views/HomeView.vue'
@@ -23,6 +24,12 @@ const router = createRouter({
       name: 'charts',
       component: ChartView,
     },
+    // Changed route from '/:date' to '/charts/:date'
+    {
+      path: '/charts/:date',
+      name: 'chart-date',
+      component: ChartView,
+    },
     {
       path: '/login',
       name: 'login',
@@ -38,11 +45,6 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
       meta: { requiresAuth: true },
-    },
-    {
-      path: '/:date',
-      name: 'chart-date',
-      component: ChartView,
     },
     {
       path: '/forgot-password',

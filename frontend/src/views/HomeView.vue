@@ -67,7 +67,7 @@ const currentDate = computed(() => {
   return today.toLocaleDateString('en-US', options)
 })
 
-// Navigate to a chart
+// Updated navigateToChart function in HomeView.vue
 const navigateToChart = (chartId: string) => {
   // Store selected chart for later use
   localStorage.setItem('lastViewedChart', chartId)
@@ -79,8 +79,9 @@ const navigateToChart = (chartId: string) => {
   const year = today.getFullYear()
   const formattedDate = `${day}-${month}-${year}`
 
+  // Changed from `/${formattedDate}?id=${chartId}` to `/charts/${formattedDate}?id=${chartId}`
   // Navigate to chart with today's date
-  router.push(`/${formattedDate}?id=${chartId}`)
+  router.push(`/charts/${formattedDate}?id=${chartId}`)
 }
 
 onMounted(async () => {

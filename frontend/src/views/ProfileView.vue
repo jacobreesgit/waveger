@@ -514,7 +514,7 @@ const filteredFavourites = computed(() => {
 
 // The FavouriteButton component now handles favouriting/unfavouriting
 
-// Navigate to a specific chart
+// Updated navigateToChart function in ProfileView.vue
 const navigateToChart = (chartId: string, added_at: string) => {
   // Extract date from added_at string if available
   let dateParam = ''
@@ -530,9 +530,10 @@ const navigateToChart = (chartId: string, added_at: string) => {
   }
 
   if (dateParam) {
-    router.push(`/${dateParam}?id=${chartId}`)
+    // Changed from `/${dateParam}?id=${chartId}` to `/charts/${dateParam}?id=${chartId}`
+    router.push(`/charts/${dateParam}?id=${chartId}`)
   } else {
-    router.push(`/?id=${chartId}`)
+    router.push(`/charts?id=${chartId}`)
   }
 }
 

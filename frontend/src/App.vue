@@ -48,7 +48,7 @@ watch(
   },
 )
 
-// Function to navigate to the last viewed chart/date
+// Updated navigateToLastViewed function in App.vue
 const navigateToLastViewed = () => {
   // Check memory first, then localStorage
   let chartId = lastViewedChart.value
@@ -66,7 +66,8 @@ const navigateToLastViewed = () => {
   // If we have both, navigate to the specific chart/date
   if (chartId && dateParam) {
     console.log('Navigating to last viewed:', { chartId, dateParam })
-    router.push(`/${dateParam}?id=${chartId}`)
+    // Changed from `/${dateParam}?id=${chartId}` to `/charts/${dateParam}?id=${chartId}`
+    router.push(`/charts/${dateParam}?id=${chartId}`)
     return true
   }
   // If we just have a chart ID, navigate to that chart with today's date
