@@ -136,36 +136,39 @@ def submit_prediction():
                 return jsonify({"error": "Maximum prediction limit reached for this contest (10)"}), 400
                 
             # Validate chart_type (normalize by removing trailing slash)
-            chart_type = data["chart_type"].rstrip('/')
-            if chart_type not in ["hot-100", "billboard-200"]:
+            chart_id = data["chart_type"].rstrip('/')
+            if chart_id not in ["hot-100", "billboard-200"]:
                 return jsonify({"error": "Invalid chart type. Must be 'hot-100' or 'billboard-200'"}), 400
                 
             # Validate prediction_type
             if data["prediction_type"] not in ["entry", "exit", "position_change"]:
                 return jsonify({"error": "Invalid prediction type. Must be 'entry', 'exit', or 'position_change'"}), 400
                 
+            # Insert the prediction
             cursor.execute(
                 """
                 INSERT INTO predictions (
                     user_id, contest_id, chart_id, chart_date, prediction_type, 
-                    song_name, artist_name, predicted_position, predicted_change, created_at
+                    song_name, artist_name, predicted_position, predicted_change, processed, created_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
                     user_id,
                     data["contest_id"],
-                    chart_type,
-                    datetime.utcnow().date(), # or some appropriate date value
+                    chart_id,
+                    datetime.utcnow().date(),  # Current date for chart_date
                     data["prediction_type"],
                     data["target_name"],
                     data.get("artist", ""),
                     data["position"] if data["prediction_type"] == "entry" else None,
                     data["position"] if data["prediction_type"] == "position_change" else None,
+                    False,  # Newly inserted predictions aren't processed yet
                     datetime.utcnow()
                 )
             )
+            
             prediction_id = cursor.fetchone()[0]
             conn.commit()
             
@@ -206,9 +209,15 @@ def get_user_predictions():
             # Build the query based on parameters
             query = """
                 SELECT p.id, p.contest_id, p.chart_id AS chart_type, p.prediction_type, 
-                    p.target_name, p.artist_name AS artist, p.position, 
-                    p.created_at AS prediction_date, pr.is_correct, pr.points_earned as points, pr.processed_at as result_date,
-                    wc.chart_release_date, wc.status
+                       p.song_name AS target_name, p.artist_name AS artist, 
+                       CASE 
+                         WHEN p.prediction_type = 'entry' THEN p.predicted_position
+                         WHEN p.prediction_type = 'position_change' THEN p.predicted_change
+                         ELSE NULL
+                       END AS position, 
+                       p.created_at AS prediction_date, pr.is_correct, pr.points_earned as points, 
+                       pr.processed_at as result_date,
+                       wc.chart_release_date, wc.status
                 FROM predictions p
                 LEFT JOIN prediction_results pr ON p.id = pr.prediction_id
                 LEFT JOIN weekly_contests wc ON p.contest_id = wc.id
@@ -222,9 +231,9 @@ def get_user_predictions():
                 
             if chart_type:
                 query += " AND p.chart_id = %s"
-                params.append(chart_type.rstrip('/'))
+                params.append(chart_type.rstrip('/'))  # Normalize chart type
                 
-            query += " ORDER BY p.prediction_date DESC"
+            query += " ORDER BY p.created_at DESC"
             
             # Add debug logging
             logger.info(f"Executing query for user_id {user_id} with params: {params}")
@@ -293,7 +302,7 @@ def get_leaderboard():
                 query = """
                     SELECT u.id, u.username, COUNT(p.id) as predictions_made,
                            SUM(CASE WHEN pr.is_correct = TRUE THEN 1 ELSE 0 END) as correct_predictions,
-                           SUM(COALESCE(pr.points, 0)) as total_points
+                           SUM(COALESCE(pr.points_earned, 0)) as total_points
                     FROM users u
                     JOIN predictions p ON u.id = p.user_id
                     LEFT JOIN prediction_results pr ON p.id = pr.prediction_id

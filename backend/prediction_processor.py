@@ -281,7 +281,7 @@ def evaluate_entry_prediction(prediction: Dict, current_chart: Dict, previous_ch
         Dictionary with result details
     """
     song_name = prediction["song_name"]
-    artist = prediction["artist"]
+    artist = prediction["artist"]  # Using the aliased column in the query
     predicted_position = prediction["predicted_position"]
     
     # Extract songs from charts data - ensure we handle the data structure correctly
@@ -341,7 +341,7 @@ def evaluate_position_prediction(prediction: Dict, current_chart: Dict, previous
         Dictionary with result details
     """
     song_name = prediction["song_name"]
-    artist = prediction["artist"]
+    artist = prediction["artist"]  # Using the aliased column in the query
     predicted_change = prediction["predicted_change"]
     
     # Extract songs from charts data - ensure we handle the data structure correctly
@@ -397,7 +397,7 @@ def evaluate_exit_prediction(prediction: Dict, current_chart: Dict, previous_cha
         Dictionary with result details
     """
     song_name = prediction["song_name"]
-    artist = prediction["artist"]
+    artist = prediction["artist"]  # Using the aliased column in the query
     
     # Extract songs from charts data - ensure we handle the data structure correctly
     current_songs = current_chart.get("data", {}).get("songs", [])
@@ -644,8 +644,8 @@ def process_predictions(contest_id: int) -> bool:
         # Get all predictions for this contest
         cursor.execute(
             """
-            SELECT id, user_id, prediction_type, song_name, artist, predicted_position, 
-                   predicted_change, chart_type
+            SELECT id, user_id, prediction_type, song_name, artist_name AS artist, predicted_position, 
+                   predicted_change, chart_id AS chart_type
             FROM predictions
             WHERE contest_id = %s AND processed = FALSE
             """,
@@ -670,7 +670,7 @@ def process_predictions(contest_id: int) -> bool:
             # Evaluate the prediction based on its type
             if prediction["prediction_type"] == "entry":
                 result = evaluate_entry_prediction(prediction, current_chart, previous_chart)
-            elif prediction["prediction_type"] == "position":
+            elif prediction["prediction_type"] == "position_change":
                 result = evaluate_position_prediction(prediction, current_chart, previous_chart)
             elif prediction["prediction_type"] == "exit":
                 result = evaluate_exit_prediction(prediction, current_chart, previous_chart)
