@@ -198,7 +198,7 @@ watch(activeTab, async () => {
         </button>
       </div>
 
-      <div class="prediction-sections">
+      <div class="prediction-sections" :class="{ 'deadline-passed': isDeadlinePassed }">
         <!-- Prediction form -->
         <div class="prediction-form-section" v-if="!isDeadlinePassed">
           <PredictionForm />
@@ -470,6 +470,10 @@ h1 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+.prediction-sections.deadline-passed {
+  grid-template-columns: 1fr;
 }
 
 .prediction-form-section,
