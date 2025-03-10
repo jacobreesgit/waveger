@@ -206,15 +206,19 @@ const formatDate = (dateString: string | null | undefined): string => {
 
   try {
     const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    })
+    // Format with explicit GMT/UTC timezone
+    return (
+      date.toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: 'UTC',
+      }) + ' GMT'
+    )
   } catch (e) {
     return dateString || 'N/A'
   }
