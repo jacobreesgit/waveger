@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
+import Dropdown from 'primevue/dropdown'
 
 const store = useChartsStore()
 const route = useRoute()
@@ -150,41 +151,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="chart-selector">
+  <div class="chart-selector mb-4">
     <div class="selector-header">
-      <select v-model="selectedChartId" class="chart-select">
-        <option v-for="chart in chartOptions" :key="chart.id" :value="chart.id">
-          {{ chart.title }}
-        </option>
-      </select>
+      <Dropdown
+        v-model="selectedChartId"
+        :options="chartOptions"
+        optionLabel="title"
+        optionValue="id"
+        placeholder="Select a chart"
+        class="w-full"
+        :disabled="store.loading"
+      />
     </div>
   </div>
 </template>
 
-<style lang="scss" scoped>
-.chart-selector {
-  margin-bottom: 20px;
-}
-
-.selector-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.chart-select {
-  flex: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: white;
-  cursor: pointer;
-}
-
-.chart-select:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-</style>
+<style lang="scss" scoped></style>

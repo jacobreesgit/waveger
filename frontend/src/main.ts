@@ -10,6 +10,9 @@ import Aura from '@primeuix/themes/aura'
 // Import global CSS
 import '@/global.css'
 
+// Icons
+import 'primeicons/primeicons.css'
+
 // Configure axios defaults
 axios.defaults.baseURL = 'https://wavegerpython.onrender.com/api'
 

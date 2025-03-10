@@ -43,8 +43,9 @@ const navigateToLastViewed = () => {
   const dateParam = lastViewedDate.value || localStorage.getItem('lastViewedDate')
 
   if (chartId) {
-    const query: Record<string, string> = { id: chartId }
+    const query: Record<string, string> = {}
     if (dateParam) query.date = dateParam
+    query.id = chartId
     appRouter.push({ path: '/charts', query })
     return true
   }

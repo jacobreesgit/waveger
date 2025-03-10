@@ -1,4 +1,3 @@
-// Updated router/index.ts configuration with icons and navigation metadata
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import HomeView from '@/views/HomeView.vue'
@@ -32,7 +31,7 @@ const router = createRouter({
         title: 'Charts',
         icon: 'pi pi-chart-bar',
         showInNav: true,
-        useLastViewed: true, // Special flag for charts navigation
+        useLastViewed: true,
       },
     },
     {
@@ -43,7 +42,7 @@ const router = createRouter({
         title: 'Login',
         icon: 'pi pi-sign-in',
         showInNav: true,
-        hideWhenAuth: true, // Hide when user is authenticated
+        hideWhenAuth: true,
       },
     },
     {
@@ -53,8 +52,8 @@ const router = createRouter({
       meta: {
         title: 'Register',
         icon: 'pi pi-user-plus',
-        showInNav: false, // Don't show in nav
-        hideWhenAuth: true, // Hide when user is authenticated
+        showInNav: false,
+        hideWhenAuth: true,
       },
     },
     {
@@ -75,7 +74,7 @@ const router = createRouter({
       meta: {
         title: 'Forgot Password',
         icon: 'pi pi-question-circle',
-        showInNav: false, // Utility route, don't show in nav
+        showInNav: false,
       },
     },
     {
@@ -85,7 +84,7 @@ const router = createRouter({
       meta: {
         title: 'Reset Password',
         icon: 'pi pi-lock',
-        showInNav: false, // Utility route, don't show in nav
+        showInNav: false,
       },
     },
     {

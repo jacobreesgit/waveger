@@ -396,8 +396,8 @@ watch(
 
 <template>
   <div class="chart-list">
-    <ChartDatePicker />
     <ChartSelector />
+    <ChartDatePicker />
 
     <!-- Show loading indicator for the entire chart when loading (but not when just loading more songs) -->
     <div v-if="isLoading" class="loading">

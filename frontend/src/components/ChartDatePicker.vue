@@ -2,6 +2,7 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
+import Calendar from 'primevue/calendar' // Import PrimeVue's Calendar component
 
 const props = defineProps<{
   initialDate?: string
@@ -10,33 +11,31 @@ const props = defineProps<{
 const router = useRouter()
 const route = useRoute()
 const store = useChartsStore()
-const today = new Date().toISOString().split('T')[0]
-const selectedDate = ref(today)
+const today = new Date() // PrimeVue Calendar uses Date objects
+const selectedDate = ref(today) // Use Date object for Calendar component
 
-const formatDate = (date: string): string => {
-  const [year, month, day] = date.split('-')
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
-}
-
-const formatDateForURL = (date: string): string => {
-  const [year, month, day] = date.split('-')
+// Convert Date to URL format (dd-mm-yyyy)
+const formatDateForURL = (dateObj: Date): string => {
+  const day = dateObj.getDate().toString().padStart(2, '0')
+  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
+  const year = dateObj.getFullYear()
   return `${day}-${month}-${year}`
 }
 
-const parseDateFromURL = (urlDate: string): string => {
+// Parse URL date format (dd-mm-yyyy) to Date object
+const parseDateFromURL = (urlDate: string): Date => {
   try {
     const [day, month, year] = urlDate.split('-')
-    return `${year}-${month}-${day}`
+    return new Date(`${year}-${month}-${day}`)
   } catch (e) {
     console.error('Date parsing error:', e)
-    return new Date().toISOString().split('T')[0]
+    return new Date() // Return today as fallback
   }
 }
 
 // Update the route when the date changes - using query parameters
-const updateRoute = async (newDate: string) => {
-  const formattedDate = formatDate(newDate)
-  const urlDate = formatDateForURL(formattedDate)
+const updateRoute = async (newDate: Date) => {
+  const urlDate = formatDateForURL(newDate)
 
   // Get current chart ID or default to hot-100
   const chartId = route.query.id || 'hot-100'
@@ -67,11 +66,13 @@ watch(
 
 // Handle date picker changes
 watch(selectedDate, async (newDate) => {
+  if (!newDate) return // Skip if date is null
+
   console.log(`Date picker changed to: ${newDate}`)
 
   // Only update route if the date actually changed
-  const currentUrlDate = route.query.date
-  const newUrlDate = formatDateForURL(formatDate(newDate))
+  const currentUrlDate = route.query.date as string
+  const newUrlDate = formatDateForURL(newDate)
 
   if (!currentUrlDate || currentUrlDate !== newUrlDate) {
     await updateRoute(newDate)
@@ -90,40 +91,18 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="date-picker">
-    <input
-      type="date"
+  <div class="chart-date-picker">
+    <Calendar
       v-model="selectedDate"
-      class="date-input"
-      :max="today"
+      :maxDate="today"
       :disabled="store.loading"
+      dateFormat="yy-mm-dd"
+      showIcon
+      inputId="date-picker"
+      class="w-full md:w-auto"
+      aria-label="Select date"
     />
   </div>
 </template>
 
-<style lang="scss" scoped>
-.date-picker {
-  margin-bottom: 16px;
-}
-
-.date-input {
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #333;
-  background-color: white;
-  cursor: pointer;
-}
-
-.date-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
-}
-
-.date-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-</style>
+<style lang="scss" scoped></style>
