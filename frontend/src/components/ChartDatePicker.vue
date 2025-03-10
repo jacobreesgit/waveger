@@ -33,7 +33,7 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
-// Updated updateRoute function in ChartDatePicker.vue
+// Update the route when the date changes - using query parameters
 const updateRoute = async (newDate: string) => {
   const formattedDate = formatDate(newDate)
   const urlDate = formatDateForURL(formattedDate)
@@ -43,20 +43,22 @@ const updateRoute = async (newDate: string) => {
 
   console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
 
-  // Update the URL with new date while preserving chart ID
-  // Changed from `/${urlDate}` to `/charts/${urlDate}`
+  // Update the URL with date as query parameter
   await router.push({
-    path: `/charts/${urlDate}`,
-    query: { id: chartId },
+    path: '/charts',
+    query: {
+      date: urlDate,
+      id: chartId,
+    },
   })
 }
 
 // Watch for route changes to update the date picker
 watch(
-  () => route.params.date,
+  () => route.query.date,
   (newDate) => {
     if (newDate) {
-      console.log(`Route date param changed to: ${newDate}`)
+      console.log(`Route date query param changed to: ${newDate}`)
       selectedDate.value = parseDateFromURL(newDate as string)
     }
   },
@@ -68,7 +70,7 @@ watch(selectedDate, async (newDate) => {
   console.log(`Date picker changed to: ${newDate}`)
 
   // Only update route if the date actually changed
-  const currentUrlDate = route.params.date
+  const currentUrlDate = route.query.date
   const newUrlDate = formatDateForURL(formatDate(newDate))
 
   if (!currentUrlDate || currentUrlDate !== newUrlDate) {
@@ -78,8 +80,8 @@ watch(selectedDate, async (newDate) => {
 
 onMounted(() => {
   // Initialize the date picker from the URL or today's date
-  if (route.params.date) {
-    selectedDate.value = parseDateFromURL(route.params.date as string)
+  if (route.query.date) {
+    selectedDate.value = parseDateFromURL(route.query.date as string)
   } else {
     // If no date in URL, update the route to today's date
     updateRoute(today)

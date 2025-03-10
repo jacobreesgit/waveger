@@ -24,12 +24,7 @@ const router = createRouter({
       name: 'charts',
       component: ChartView,
     },
-    // Changed route from '/:date' to '/charts/:date'
-    {
-      path: '/charts/:date',
-      name: 'chart-date',
-      component: ChartView,
-    },
+    // Removed the '/charts/:date' route since we'll use query parameters instead
     {
       path: '/login',
       name: 'login',

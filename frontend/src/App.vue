@@ -48,7 +48,7 @@ watch(
   },
 )
 
-// Updated navigateToLastViewed function in App.vue
+// Function to navigate to the last viewed chart/date
 const navigateToLastViewed = () => {
   // Check memory first, then localStorage
   let chartId = lastViewedChart.value
@@ -66,13 +66,22 @@ const navigateToLastViewed = () => {
   // If we have both, navigate to the specific chart/date
   if (chartId && dateParam) {
     console.log('Navigating to last viewed:', { chartId, dateParam })
-    // Changed from `/${dateParam}?id=${chartId}` to `/charts/${dateParam}?id=${chartId}`
-    router.push(`/charts/${dateParam}?id=${chartId}`)
+    // Using query parameters for both date and chart ID
+    router.push({
+      path: '/charts',
+      query: {
+        date: dateParam,
+        id: chartId,
+      },
+    })
     return true
   }
-  // If we just have a chart ID, navigate to that chart with today's date
+  // If we just have a chart ID, navigate to that chart without a date
   else if (chartId) {
-    router.push(`/charts?id=${chartId}`)
+    router.push({
+      path: '/charts',
+      query: { id: chartId },
+    })
     return true
   }
 
@@ -133,8 +142,8 @@ const isActive = (path: string) => {
     // Home link should be active only on the home page, not on subpaths
     return route.path === '/'
   } else if (path === '/charts') {
-    // Charts link should be active on both /charts and /:date routes, but not on / or /login or /profile
-    return route.path === '/charts' || route.name === 'chart-date'
+    // Charts link should be active on the /charts route, regardless of query parameters
+    return route.path === '/charts'
   } else if (path === '/predictions') {
     // Predictions link active on predictions route
     return route.path === '/predictions'

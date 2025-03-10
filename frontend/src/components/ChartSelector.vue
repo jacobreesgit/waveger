@@ -45,7 +45,7 @@ const formatDateForURL = (date: string): string => {
   return `${day}-${month}-${year}`
 }
 
-// Updated updateRoute function in ChartSelector.vue
+// Update route and ALWAYS load chart data
 const updateRoute = async () => {
   // Normalize chart ID for consistency (remove trailing slash if needed)
   const chartId = selectedChartId.value.replace(/\/$/, '')
@@ -54,13 +54,13 @@ const updateRoute = async () => {
   // Update the store's selected chart ID
   store.selectedChartId = selectedChartId.value
 
-  // Get current date path or default to today's date in URL format
+  // Get current date from query parameter or default to today's date in URL format
   let datePath =
-    (route.params.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
+    (route.query.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
 
   // Get the current date in YYYY-MM-DD format for API call
-  const formattedDate = route.params.date
-    ? parseDateFromURL(route.params.date as string)
+  const formattedDate = route.query.date
+    ? parseDateFromURL(route.query.date as string)
     : new Date().toISOString().split('T')[0]
 
   // Always force a data reload with new chart ID
@@ -70,11 +70,13 @@ const updateRoute = async () => {
     range: '1-10',
   })
 
-  // Update the URL after fetching data
-  // Changed from `/${datePath}` to `/charts/${datePath}`
+  // Update the URL after fetching data using query parameters
   await router.push({
-    path: `/charts/${datePath}`,
-    query: { id: chartId },
+    path: '/charts',
+    query: {
+      date: datePath,
+      id: chartId,
+    },
   })
 }
 

@@ -529,11 +529,20 @@ const navigateToChart = (chartId: string, added_at: string) => {
     // If date parsing fails, don't use a date param
   }
 
+  // Navigate using query parameters
   if (dateParam) {
-    // Changed from `/${dateParam}?id=${chartId}` to `/charts/${dateParam}?id=${chartId}`
-    router.push(`/charts/${dateParam}?id=${chartId}`)
+    router.push({
+      path: '/charts',
+      query: {
+        date: dateParam,
+        id: chartId,
+      },
+    })
   } else {
-    router.push(`/charts?id=${chartId}`)
+    router.push({
+      path: '/charts',
+      query: { id: chartId },
+    })
   }
 }
 

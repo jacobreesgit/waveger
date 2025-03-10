@@ -79,11 +79,15 @@ const navigateToChart = (chartId: string) => {
   const year = today.getFullYear()
   const formattedDate = `${day}-${month}-${year}`
 
-  // Changed from `/${formattedDate}?id=${chartId}` to `/charts/${formattedDate}?id=${chartId}`
-  // Navigate to chart with today's date
-  router.push(`/charts/${formattedDate}?id=${chartId}`)
+  // Navigate to chart with today's date using query parameters
+  router.push({
+    path: '/charts',
+    query: {
+      date: formattedDate,
+      id: chartId,
+    },
+  })
 }
-
 onMounted(async () => {
   // Initialize charts store in the background
   if (!chartsStore.initialized) {

@@ -8,10 +8,11 @@ import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import FavouriteButton from '@/components/FavouriteButton.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
 
 const route = useRoute()
+const router = useRouter()
 const props = defineProps<{
   initialDate?: string
 }>()
@@ -152,7 +153,6 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
 }
 
 // Load or fetch Apple Music data for current songs
-// Update the loadAppleMusicData function in ChartView.vue
 const loadAppleMusicData = async () => {
   if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
     console.log('No songs available to fetch Apple Music data')
@@ -188,17 +188,23 @@ const loadAppleMusicData = async () => {
   }
 }
 
+// Helper function to format date for URL
+const formatDateForURL = (date: string): string => {
+  const [year, month, day] = date.split('-')
+  return `${day}-${month}-${year}`
+}
+
 onMounted(async () => {
   // Initialize Apple Music token regardless
   await appleMusicStore.fetchToken()
 
   // Determine the chart ID and date to display
-  let urlDate = route.params.date as string | undefined
+  let urlDate = route.query.date as string | undefined
   let formattedDate: string
   let chartId = (route.query.id as string) || 'hot-100'
 
-  // If no date in URL but we're on the home route, check for stored last viewed date
-  if (!urlDate && route.name === 'home') {
+  // If no date in URL but we're on the charts route, check for stored last viewed date
+  if (!urlDate && route.name === 'charts') {
     const storedDate = localStorage.getItem('lastViewedDate')
     if (storedDate) {
       console.log('Using last viewed date from storage:', storedDate)
@@ -207,7 +213,7 @@ onMounted(async () => {
   }
 
   // If no chart ID in URL, check for stored last viewed chart
-  if (!route.query.id && route.name === 'home') {
+  if (!route.query.id && route.name === 'charts') {
     const storedChart = localStorage.getItem('lastViewedChart')
     if (storedChart) {
       console.log('Using last viewed chart from storage:', storedChart)
@@ -251,6 +257,20 @@ onMounted(async () => {
   // If user is logged in, load their favourites
   if (authStore.user) {
     await favouritesStore.loadFavourites()
+  }
+
+  // If we don't have a date in the URL, update the URL with today's date
+  if (!urlDate) {
+    const today = new Date().toISOString().split('T')[0]
+    const formattedToday = formatDateForURL(today)
+
+    router.replace({
+      path: '/charts',
+      query: {
+        date: formattedToday,
+        id: chartId,
+      },
+    })
   }
 })
 
@@ -315,8 +335,9 @@ watch(
   },
 )
 
+// Watch for date query parameter changes
 watch(
-  () => route.params.date,
+  () => route.query.date,
   async (newDate) => {
     if (newDate) {
       const formattedDate = parseDateFromURL(newDate as string)
@@ -339,7 +360,7 @@ watch(
   async (newChartId) => {
     if (newChartId) {
       const chartId = newChartId as string
-      const urlDate = route.params.date as string | undefined
+      const urlDate = route.query.date as string | undefined
       const formattedDate = urlDate
         ? parseDateFromURL(urlDate)
         : new Date().toISOString().split('T')[0]
