@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useChartsStore } from '@/stores/charts'
 import { useAuthStore } from '@/stores/auth'
@@ -572,9 +572,19 @@ onMounted(() => {
 })
 
 // Clean up event handlers
-const onUnmounted = () => {
+onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-}
+})
+
+// Check if deadline has passed
+const isDeadlinePassed = computed(() => {
+  if (!predictionStore.currentContest?.end_date) return false
+
+  const endDate = new Date(predictionStore.currentContest.end_date)
+  const now = new Date()
+
+  return endDate < now
+})
 </script>
 
 <template>

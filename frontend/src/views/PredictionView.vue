@@ -40,20 +40,21 @@ const formatDate = (dateString: string | null | undefined): string => {
 const daysUntilDeadline = computed(() => {
   if (!predictionStore.currentContest?.end_date) return null
 
-  // Parse the deadline date from ISO string
   const endDate = new Date(predictionStore.currentContest.end_date)
   const now = new Date()
 
-  // If the deadline has already passed, return 0
-  if (endDate <= now) return 0
+  // If deadline has passed, return a negative number to indicate expiration
+  if (endDate < now) return -1
 
-  // Calculate difference in milliseconds (keeping full date-time information)
   const diffTime = endDate.getTime() - now.getTime()
-
-  // Convert to days and round up
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays
+})
+
+// Then add a computed property to check if deadline is passed
+const isDeadlinePassed = computed(() => {
+  return daysUntilDeadline.value !== null && daysUntilDeadline.value < 0
 })
 
 // Get prediction results for display
@@ -156,10 +157,11 @@ watch(activeTab, async () => {
         <div v-if="hasActiveContest">
           <h3>Current Prediction Contest</h3>
           <div class="contest-details">
-            <div class="contest-deadline">
+            <div class="contest-deadline" :class="{ 'deadline-expired': isDeadlinePassed }">
               <strong>Deadline:</strong> {{ formatDate(predictionStore.currentContest?.end_date) }}
               <span class="deadline-countdown" v-if="daysUntilDeadline !== null">
-                ({{ daysUntilDeadline }} days remaining)
+                <span v-if="isDeadlinePassed" class="expired-tag">CLOSED</span>
+                <span v-else>({{ daysUntilDeadline }} days remaining)</span>
               </span>
             </div>
             <div class="contest-release">
@@ -630,5 +632,19 @@ h1 {
   .tab-button {
     width: 100%;
   }
+}
+
+.deadline-expired {
+  color: #dc3545;
+}
+
+.expired-tag {
+  display: inline-block;
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 8px;
 }
 </style>
