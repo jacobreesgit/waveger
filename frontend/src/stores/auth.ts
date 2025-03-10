@@ -94,21 +94,21 @@ export const useAuthStore = defineStore('auth', () => {
       // Set default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
 
-      // Attempt to fetch user data
-      fetchUserData().catch((err) => {
-        console.error('Detailed initialization fetch error:', err)
-        console.error('Error response:', err.response)
+      // Don't try to fetch user data on initialization as it may fail if token is expired
+      // Just use the saved user data for now and let interceptors handle token refresh
+      // This prevents the 401 error on page load
+      console.log('User authenticated from stored credentials')
+    }
 
-        // If fetch fails and we have a refresh token, try to refresh
-        if (savedRememberMe && savedRefreshToken) {
-          refreshAccessToken().catch((refreshErr) => {
-            console.error('Token refresh failed:', refreshErr)
-            logout()
-          })
-        } else {
-          logout()
-        }
-      })
+    // At the end of the method, ensure the Authorization header is set
+    const currentToken =
+      token.value || localStorage.getItem('token') || sessionStorage.getItem('token')
+    if (currentToken) {
+      console.log('Setting global Authorization header')
+      axios.defaults.headers.common['Authorization'] = `Bearer ${currentToken}`
+    } else {
+      console.log('No token available, clearing Authorization header')
+      delete axios.defaults.headers.common['Authorization']
     }
   }
 

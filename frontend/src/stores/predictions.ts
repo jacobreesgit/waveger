@@ -13,6 +13,7 @@ import type {
   LeaderboardEntry,
 } from '@/types/predictions'
 import { useAuthStore } from './auth'
+import axios from 'axios'
 
 export const usePredictionsStore = defineStore('predictions', () => {
   // State
@@ -117,11 +118,35 @@ export const usePredictionsStore = defineStore('predictions', () => {
       loading.value.predictions = true
       error.value.predictions = null
 
+      // Make a direct test to verify token
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      console.log('Token from storage when fetching predictions:', token ? 'Present' : 'Missing')
+
       const response = await getUserPredictions(params)
       userPredictions.value = response.predictions
     } catch (e) {
       console.error('Error fetching user predictions:', e)
       error.value.predictions = e instanceof Error ? e.message : 'Failed to fetch predictions'
+
+      // Check if this is an authentication error
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        console.log('Authentication error detected, trying to handle...')
+
+        // Option 1: Try to refresh the token
+        try {
+          // Try to reload the user info which might refresh the token
+          await authStore.fetchUserData()
+          console.log('User data refreshed, retrying prediction fetch')
+
+          // Try again
+          const response = await getUserPredictions(params)
+          userPredictions.value = response.predictions
+          error.value.predictions = null // Clear error if successful
+        } catch (refreshError) {
+          console.error('Failed to refresh authentication:', refreshError)
+          error.value.predictions = 'Your session may have expired. Please try logging in again.'
+        }
+      }
     } finally {
       loading.value.predictions = false
     }

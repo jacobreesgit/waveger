@@ -75,13 +75,33 @@ export const submitPrediction = async (prediction: PredictionSubmission) => {
 // Get user's predictions
 export const getUserPredictions = async (params?: { contest_id?: number; chart_type?: string }) => {
   try {
+    // Get token from storage to ensure it's the most recent
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+
+    // Explicitly set the Authorization header for this request
+    const requestConfig = {
+      params,
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    }
+
     console.log('API Call - Fetching user predictions with params:', params)
-    const response = await api.get<UserPredictionsResponse>('/predictions/user', { params })
+    console.log('Authorization header being sent:', requestConfig.headers.Authorization)
+
+    const response = await api.get('/predictions/user', requestConfig)
     console.log('User predictions response:', response.data)
     return response.data
   } catch (error) {
     console.error('API Error getting user predictions:', error)
     if (axios.isAxiosError(error)) {
+      // Log more details about the error
+      if (error.response) {
+        console.error('Response error data:', error.response.data)
+        console.error('Response status:', error.response.status)
+      } else if (error.request) {
+        console.error('Request made but no response received')
+      }
       throw new Error(`Failed to get predictions: ${error.message}`)
     }
     throw error

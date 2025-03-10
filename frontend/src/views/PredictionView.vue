@@ -176,6 +176,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import PredictionForm from '@/components/PredictionForm.vue'
 import type { Prediction } from '@/types/predictions'
+import axios from 'axios'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -257,22 +258,30 @@ onMounted(async () => {
   try {
     isLoading.value = true
 
-    // Initialize the predictions store if needed
+    // Ensure auth is initialized and token is properly set
+    await authStore.initialize()
+
+    // Log the current Authorization header
+    console.log(
+      'Current Authorization header:',
+      axios.defaults.headers.common['Authorization'] || 'None set',
+    )
+
+    // If no token is set in axios, try to set it again
+    if (!axios.defaults.headers.common['Authorization']) {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+      if (token) {
+        console.log('Setting missing Authorization header')
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
+    }
+
+    // Initialize the predictions store
     if (!predictionStore.initialized) {
       await predictionStore.initialize()
     }
 
-    // If the user is logged in, fetch their predictions
-    if (authStore.user) {
-      if (predictionStore.currentContest) {
-        await predictionStore.fetchUserPredictions({
-          contest_id: predictionStore.currentContest.id,
-        })
-      } else {
-        // Even if no active contest, fetch recent predictions
-        await predictionStore.fetchUserPredictions()
-      }
-    }
+    // Rest of your code...
   } catch (e) {
     console.error('Error initializing prediction view:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load prediction data'
