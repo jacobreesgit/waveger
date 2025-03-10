@@ -144,28 +144,28 @@ def submit_prediction():
             if data["prediction_type"] not in ["entry", "exit", "position_change"]:
                 return jsonify({"error": "Invalid prediction type. Must be 'entry', 'exit', or 'position_change'"}), 400
                 
-            # Insert the prediction
             cursor.execute(
                 """
                 INSERT INTO predictions (
-                    user_id, contest_id, chart_type, prediction_type, 
-                    target_name, artist, position, prediction_date
+                    user_id, contest_id, chart_id, chart_date, prediction_type, 
+                    song_name, artist_name, predicted_position, predicted_change, created_at
                 )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
                     user_id,
                     data["contest_id"],
                     chart_type,
+                    datetime.utcnow().date(), # or some appropriate date value
                     data["prediction_type"],
                     data["target_name"],
                     data.get("artist", ""),
-                    data["position"],
+                    data["position"] if data["prediction_type"] == "entry" else None,
+                    data["position"] if data["prediction_type"] == "position_change" else None,
                     datetime.utcnow()
                 )
             )
-            
             prediction_id = cursor.fetchone()[0]
             conn.commit()
             
@@ -205,10 +205,10 @@ def get_user_predictions():
         try:
             # Build the query based on parameters
             query = """
-                SELECT p.id, p.contest_id, p.chart_type, p.prediction_type, 
-                       p.target_name, p.artist, p.position, 
-                       p.prediction_date, pr.is_correct, pr.points_earned as points, pr.created_at as result_date,
-                       wc.chart_release_date, wc.status
+                SELECT p.id, p.contest_id, p.chart_id AS chart_type, p.prediction_type, 
+                    p.target_name, p.artist_name AS artist, p.position, 
+                    p.created_at AS prediction_date, pr.is_correct, pr.points_earned as points, pr.processed_at as result_date,
+                    wc.chart_release_date, wc.status
                 FROM predictions p
                 LEFT JOIN prediction_results pr ON p.id = pr.prediction_id
                 LEFT JOIN weekly_contests wc ON p.contest_id = wc.id
@@ -221,8 +221,8 @@ def get_user_predictions():
                 params.append(contest_id)
                 
             if chart_type:
-                query += " AND p.chart_type = %s"
-                params.append(chart_type.rstrip('/'))  # Normalize chart type
+                query += " AND p.chart_id = %s"
+                params.append(chart_type.rstrip('/'))
                 
             query += " ORDER BY p.prediction_date DESC"
             
