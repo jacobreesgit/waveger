@@ -358,6 +358,7 @@ def refresh():
             # Extract user information
             user_id = decoded_token.get('sub')
             if not user_id:
+                logger.error("Missing user ID in token")
                 raise ValueError("Missing user ID in token")
                 
             # Connect to DB to get user details
@@ -373,6 +374,7 @@ def refresh():
             if not db_user:
                 cursor.close()
                 conn.close()
+                logger.error(f"User not found with ID: {user_id}")
                 raise ValueError("User not found")
                 
             username = db_user[0]
@@ -391,6 +393,7 @@ def refresh():
                 }
             )
             
+            # Return both access token and user info
             return jsonify({
                 "access_token": access_token,
                 "user": {

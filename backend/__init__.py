@@ -43,7 +43,7 @@ app.config.update(
 # Initialize JWT Manager with additional error handling
 jwt = JWTManager(app)
 
-# Optional: Add error handlers for JWT-related errors
+# Enhanced JWT error handlers with improved logging
 @jwt.invalid_token_loader
 def handle_invalid_token(error_message):
     logging.error(f"Invalid token error: {error_message}")
@@ -92,6 +92,16 @@ def get_real_ip():
 
 # Make sure get_real_ip is available for import in other modules
 __all__ = ['app', 'bcrypt', 'limiter', 'get_real_ip', 'jwt']
+
+# Add authentication logging middleware
+@app.before_request
+def log_request_info():
+    # Log important information for debugging authentication issues
+    auth_header = request.headers.get('Authorization', None)
+    masked_auth = f"{auth_header[:15]}..." if auth_header and len(auth_header) > 15 else auth_header
+    logging.info(f"Request: {request.method} {request.path}")
+    logging.debug(f"Auth header: {masked_auth}")
+    logging.debug(f"Request IP: {get_real_ip()}")
 
 # Before request logging to debug rate limiting
 @app.before_request

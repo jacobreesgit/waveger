@@ -171,6 +171,9 @@ export const useAuthStore = defineStore('auth', () => {
             const newToken = refreshResponse.access_token
             originalRequest.headers['Authorization'] = `Bearer ${newToken}`
 
+            // IMPORTANT: Update the default axios headers as well
+            axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+
             // Process any pending requests with the new token
             console.log(
               `🔄 Auth - Processing ${pendingRequests.length} pending requests with new token`,

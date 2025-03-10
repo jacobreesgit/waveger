@@ -16,19 +16,15 @@ if (token) {
 }
 
 // Set up request interceptor to always use the latest token
-axios.interceptors.request.use((request) => {
-  // Get the most recent token from storage on every request
-  const latestToken = localStorage.getItem('token') || sessionStorage.getItem('token')
-  if (latestToken) {
-    request.headers.Authorization = `Bearer ${latestToken}`
-    console.log('🔄 Request interceptor: Adding Authorization header')
-  } else {
-    console.log('⚠️ Request interceptor: No token available')
+axios.interceptors.request.use((config) => {
+  // Always get the most recent token on every request
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+    console.log('🔑 Request interceptor: Using fresh token from storage')
   }
-  return request
+  return config
 })
-
-// Response interceptor will be set up in the auth store to handle token refresh
 
 const app = createApp(App)
 

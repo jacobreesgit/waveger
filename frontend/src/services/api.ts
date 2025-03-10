@@ -59,7 +59,16 @@ export const getCurrentContest = async () => {
 export const submitPrediction = async (prediction: PredictionSubmission) => {
   try {
     console.log('API Call - Submitting prediction:', prediction)
-    const response = await api.post<PredictionResponse>('/predictions', prediction)
+
+    // Get the most recent token directly from storage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token')
+
+    const response = await api.post<PredictionResponse>('/predictions', prediction, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : '',
+      },
+    })
+
     console.log('Prediction submission response:', response.data)
     return response.data
   } catch (error) {

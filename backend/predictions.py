@@ -79,7 +79,14 @@ def get_current_contest():
 @limiter.limit("60 per minute", key_func=get_real_ip)
 def submit_prediction():
     """Submit a new prediction for a Billboard chart"""
+    
+    # Debug the authentication state
     user_id = get_jwt_identity()
+    auth_header = request.headers.get('Authorization', None)
+    
+    # Log the authentication details
+    logging.info(f"Submitting prediction with user_id: {user_id}")
+    logging.debug(f"Auth header: {auth_header[:15]}..." if auth_header else "No auth header")
     
     try:
         data = request.get_json()
@@ -93,7 +100,7 @@ def submit_prediction():
         # Get contest information
         conn = get_db_connection()
         cursor = conn.cursor()
-        
+                
         try:
             # Check if contest exists and is open
             cursor.execute(
