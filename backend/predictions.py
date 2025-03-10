@@ -207,7 +207,7 @@ def get_user_predictions():
             query = """
                 SELECT p.id, p.contest_id, p.chart_type, p.prediction_type, 
                        p.target_name, p.artist, p.position, 
-                       p.prediction_date, pr.is_correct, pr.points, pr.result_date,
+                       p.prediction_date, pr.is_correct, pr.points_earned as points, pr.created_at as result_date,
                        wc.chart_release_date, wc.status
                 FROM predictions p
                 LEFT JOIN prediction_results pr ON p.id = pr.prediction_id
@@ -226,36 +226,52 @@ def get_user_predictions():
                 
             query += " ORDER BY p.prediction_date DESC"
             
+            # Add debug logging
+            logger.info(f"Executing query for user_id {user_id} with params: {params}")
+            logger.debug(f"SQL Query: {query}")
+            
             cursor.execute(query, params)
             predictions = cursor.fetchall()
             
+            # Add debug logging for result count
+            logger.info(f"Retrieved {len(predictions)} predictions for user {user_id}")
+            
             result = []
             for prediction in predictions:
-                result.append({
-                    "id": prediction[0],
-                    "contest_id": prediction[1],
-                    "chart_type": prediction[2],
-                    "prediction_type": prediction[3],
-                    "target_name": prediction[4],
-                    "artist": prediction[5],
-                    "position": prediction[6],
-                    "prediction_date": prediction[7].isoformat() if prediction[7] else None,
-                    "is_correct": prediction[8],
-                    "points": prediction[9],
-                    "result_date": prediction[10].isoformat() if prediction[10] else None,
-                    "chart_release_date": prediction[11].isoformat() if prediction[11] else None,
-                    "contest_status": prediction[12]
-                })
+                # Add debug logging if any prediction processing fails
+                try:
+                    result.append({
+                        "id": prediction[0],
+                        "contest_id": prediction[1],
+                        "chart_type": prediction[2],
+                        "prediction_type": prediction[3],
+                        "target_name": prediction[4],
+                        "artist": prediction[5],
+                        "position": prediction[6],
+                        "prediction_date": prediction[7].isoformat() if prediction[7] else None,
+                        "is_correct": prediction[8],
+                        "points": prediction[9],
+                        "result_date": prediction[10].isoformat() if prediction[10] else None,
+                        "chart_release_date": prediction[11].isoformat() if prediction[11] else None,
+                        "contest_status": prediction[12]
+                    })
+                except Exception as row_err:
+                    logger.error(f"Error processing prediction row: {row_err}")
+                    logger.error(f"Problem row data: {prediction}")
+                    # Continue processing other rows
                 
             return jsonify({"predictions": result}), 200
             
+        except Exception as db_err:
+            logger.error(f"Database error in get_user_predictions: {db_err}")
+            return jsonify({"error": "Database error", "details": str(db_err)}), 500
         finally:
             cursor.close()
             conn.close()
             
     except Exception as e:
-        logger.error(f"Error getting user predictions: {e}")
-        return jsonify({"error": "Failed to retrieve predictions"}), 500
+        logger.error(f"Unexpected error in get_user_predictions: {e}")
+        return jsonify({"error": "Failed to retrieve predictions", "details": str(e)}), 500
 
 # GET /api/predictions/leaderboard - Get global leaderboard
 @predictions_bp.route("/predictions/leaderboard", methods=["GET"])
