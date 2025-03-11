@@ -464,6 +464,10 @@ watch(
   gap: 16px;
   margin-bottom: 24px;
   width: 100%;
+  @media (max-width: 639px) {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 .chart-container {

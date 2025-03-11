@@ -3,3 +3,7 @@ body {
   margin: 0;
   font-family: sans-serif;
 }
+
+.p-select.country-selector .p-select-label {
+  padding-right: 0;
+}

@@ -125,7 +125,6 @@ onMounted(() => {
       v-if="isNotToday"
       @click="goToToday"
       :disabled="store.loading"
-      icon="pi pi-calendar"
       label="Today"
       aria-label="Set date to today"
       class="chart-date-picker__button"
@@ -140,6 +139,12 @@ onMounted(() => {
   gap: 8px;
   &__button {
     padding: 8px 24px;
+  }
+  @media (max-width: 639px) {
+    flex-grow: 1;
+    & .p-datepicker {
+      flex-grow: 1;
+    }
   }
 }
 </style>

@@ -1026,52 +1026,26 @@ const resetPredictionFilters = () => {
 
         <!-- Favourites list -->
         <div v-else class="favourites-list">
-          <div
+          <ChartItemCard
             v-for="favourite in filteredFavourites"
             :key="`${favourite.song_name}-${favourite.artist}`"
-            class="favourite-card"
-          >
-            <div class="favourite-image">
-              <img :src="favourite.image_url" :alt="favourite.song_name" class="song-image" />
-            </div>
-
-            <div class="favourite-details">
-              <div class="favourite-title">{{ favourite.song_name }}</div>
-              <div class="favourite-artist">{{ favourite.artist }}</div>
-
-              <div class="charts-list">
-                <div
-                  v-for="chart in favourite.charts"
-                  :key="chart.id"
-                  class="chart-badge"
-                  @click="navigateToChart(chart.chart_id, chart.added_at)"
-                >
-                  <span class="chart-title">{{ chart.chart_title }}</span>
-                  <span class="chart-position">#{{ chart.position }}</span>
-
-                  <!-- Use FavouriteButton component instead -->
-                  <div class="favourite-btn-container" @click.stop>
-                    <FavouriteButton
-                      :song="{
-                        name: favourite.song_name,
-                        artist: favourite.artist,
-                        position: chart.position,
-                        peak_position: chart.peak_position,
-                        weeks_on_chart: chart.weeks_on_chart,
-                        image: favourite.image_url,
-                        last_week_position: 0,
-                        url: '',
-                      }"
-                      :chart-id="chart.chart_id"
-                      :chart-title="chart.chart_title"
-                      size="small"
-                      class="chart-favourite-btn"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            :song="{
+              name: favourite.song_name,
+              artist: favourite.artist,
+              position: favourite.charts[0]?.position || 0,
+              peak_position: favourite.charts[0]?.peak_position || 0,
+              weeks_on_chart: favourite.charts[0]?.weeks_on_chart || 0,
+              image: favourite.image_url,
+              last_week_position: 0,
+              url: '',
+            }"
+            :chart-id="favourite.charts[0]?.chart_id || ''"
+            :chart-title="favourite.charts[0]?.chart_title || ''"
+            :compact="true"
+            @click="
+              () => navigateToChart(favourite.charts[0]?.chart_id, favourite.charts[0]?.added_at)
+            "
+          />
         </div>
       </div>
 

@@ -130,7 +130,7 @@ onMounted(() => {
 
     <Menubar :model="menuItems" class="nav-container__nav-menu" />
 
-    <div class="nav-right">
+    <div class="nav-container__nav-right">
       <CountrySelector />
     </div>
   </div>
@@ -159,6 +159,19 @@ onMounted(() => {
     }
     & :deep(.active-menu-item *) {
       color: white !important;
+    }
+  }
+  @media (max-width: 639px) {
+    &__nav-menu {
+      order: 0;
+      flex-grow: 0;
+    }
+    &__logo {
+      order: 1;
+      flex-grow: 1;
+    }
+    &__nav-right {
+      order: 2;
     }
   }
 }
