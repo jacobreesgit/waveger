@@ -567,8 +567,8 @@ export const useAuthStore = defineStore('auth', () => {
     const favouritesStore = useFavouritesStore()
     favouritesStore.reset()
 
-    // Maintain initialization status to prevent re-initialization
-    isInitialized.value = true
+    // Set initialization status to false so it can be reinitialized on login
+    isInitialized.value = false
 
     console.log('✅ Auth - Logout complete')
   }

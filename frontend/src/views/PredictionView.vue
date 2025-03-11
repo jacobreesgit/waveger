@@ -7,6 +7,7 @@ import PredictionForm from '@/components/PredictionForm.vue'
 import type { Prediction } from '@/types/predictions'
 import axios from 'axios'
 import { useTimezoneStore } from '@/stores/timezone'
+import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -117,8 +118,18 @@ onMounted(async () => {
   try {
     isLoading.value = true
 
-    // Ensure auth is initialized and token is properly set
-    await authStore.initialize()
+    // Check what's already initialized
+    const storeStatus = checkStoreInitialization()
+
+    // Use store manager to ensure proper initialization tracking
+    await initializeStores({
+      auth: !storeStatus.auth,
+      timezone: false, // Already initialized in App.vue
+      predictions: !storeStatus.predictions,
+      charts: false,
+      favourites: false,
+      appleMusic: false,
+    })
 
     // Log the current Authorization header
     console.log(
@@ -133,11 +144,6 @@ onMounted(async () => {
         console.log('Setting missing Authorization header')
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       }
-    }
-
-    // Initialize the predictions store
-    if (!predictionStore.initialized) {
-      await predictionStore.initialize()
     }
 
     // Rest of your code...
@@ -311,6 +317,14 @@ watch(activeTab, async () => {
                       }}{{ (prediction as any).actual_change }}
                     </strong>
                   </div>
+                </div>
+
+                <!-- Pending state -->
+                <div v-else class="prediction-pending">
+                  <div class="pending-badge">Pending</div>
+                  <p class="pending-message">
+                    This prediction is awaiting chart release to be processed.
+                  </p>
                 </div>
               </div>
             </div>

@@ -102,7 +102,6 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
     // Skip if already initialized with data
     if (initialized.value && favourites.value.length > 0) {
-      console.debug('Favourites - Already loaded, skipping')
       return
     }
 
