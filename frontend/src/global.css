@@ -7,3 +7,14 @@ body {
 .p-select.country-selector .p-select-label {
   padding-right: 0;
 }
+
+@media (min-width: 640px) {
+  .p-menubar-root-list,
+  .p-menubar-root-list li:last-child {
+    flex-grow: 1;
+  }
+  .p-menubar-root-list li:last-child {
+    display: flex;
+    justify-content: flex-end;
+  }
+}

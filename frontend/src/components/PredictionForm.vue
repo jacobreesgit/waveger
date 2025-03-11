@@ -598,9 +598,10 @@ const isDeadlinePassed = computed(() => {
         Make your predictions for the Billboard chart that will be released on
         <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong>
       </p>
-      <p class="deadline">
+      <p class="text-sm text-gray-600 mt-1">
         Predictions close on
-        <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong>
+        <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong
+        >. Results will be processed and points awarded at 2:00 PM GMT on chart release day.
       </p>
       <div class="remaining-count">
         You have <strong>{{ remainingPredictions }}</strong> predictions remaining

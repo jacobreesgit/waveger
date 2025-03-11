@@ -35,39 +35,6 @@ const router = createRouter({
       },
     },
     {
-      path: '/login',
-      name: 'login',
-      component: LoginView,
-      meta: {
-        title: 'Login',
-        icon: 'pi pi-sign-in',
-        showInNav: true,
-        hideWhenAuth: true,
-      },
-    },
-    {
-      path: '/register',
-      name: 'register',
-      component: RegisterView,
-      meta: {
-        title: 'Register',
-        icon: 'pi pi-user-plus',
-        showInNav: false,
-        hideWhenAuth: true,
-      },
-    },
-    {
-      path: '/profile',
-      name: 'profile',
-      component: ProfileView,
-      meta: {
-        title: 'Profile',
-        icon: 'pi pi-user',
-        requiresAuth: true,
-        showInNav: true,
-      },
-    },
-    {
       path: '/forgot-password',
       name: 'forgot-password',
       component: ForgotPasswordView,
@@ -105,6 +72,39 @@ const router = createRouter({
       meta: {
         title: 'Leaderboard',
         icon: 'pi pi-list',
+        showInNav: true,
+      },
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta: {
+        title: 'Login',
+        icon: 'pi pi-sign-in',
+        showInNav: true,
+        hideWhenAuth: true,
+      },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: RegisterView,
+      meta: {
+        title: 'Register',
+        icon: 'pi pi-user-plus',
+        showInNav: false,
+        hideWhenAuth: true,
+      },
+    },
+    {
+      path: '/profile',
+      name: 'profile',
+      component: ProfileView,
+      meta: {
+        title: 'Profile',
+        icon: 'pi pi-user',
+        requiresAuth: true,
         showInNav: true,
       },
     },

@@ -189,25 +189,12 @@ watch(activeTab, async () => {
     <!-- Main prediction content -->
     <div v-else class="prediction-content">
       <!-- Contest info bar -->
-      <div class="contest-info-bar" :class="{ 'contest-active': hasActiveContest }">
-        <div v-if="hasActiveContest">
-          <h3>Current Prediction Contest</h3>
-          <div class="contest-details">
-            <div class="contest-date-range" :class="{ closed: isDeadlinePassed }">
-              <strong>Contest Period:</strong>
-              {{ formatDate(predictionStore.currentContest?.start_date) }} to
-              {{ formatDate(predictionStore.currentContest?.end_date) }}
-              <span v-if="isDeadlinePassed" class="expired-tag">CLOSED</span>
-            </div>
-
-            <div class="contest-release-info">
-              <strong>Chart Release:</strong>
-              {{ formatDate(predictionStore.currentContest?.chart_release_date) }} - Results out at
-              {{ formatTransitionTime() }}
-            </div>
-          </div>
-        </div>
-        <div v-else class="no-contest">
+      <div
+        v-if="!hasActiveContest"
+        class="contest-info-bar"
+        :class="{ 'contest-active': hasActiveContest }"
+      >
+        <div class="no-contest">
           <h3>No Active Contest</h3>
           <p>
             New prediction contests open every Tuesday at 2:00 PM UTC ({{ formatTransitionTime() }}

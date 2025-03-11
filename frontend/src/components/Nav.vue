@@ -108,6 +108,7 @@ const menuItems = computed<MenuItem[]>(() => {
         icon: (route.meta?.icon as string) || undefined,
         class: isActive ? 'active-menu-item' : '',
         url: url, // Set the URL for standard HTML links
+        id: route.path === '/profile' ? 'userButton' : undefined,
         // Keep the command for click handling of special cases
         command: () => {
           // Special case for chart routes with useLastViewed flag
@@ -148,8 +149,8 @@ onMounted(() => {
   align-items: center;
   padding: 0.5rem 1rem;
   background-color: #f8f9fa;
-  gap: 1rem;
   &__logo {
+    margin-right: 1rem;
     &__logo-link {
       text-decoration: none;
       color: black;
@@ -176,6 +177,7 @@ onMounted(() => {
     &__logo {
       order: 1;
       flex-grow: 1;
+      margin: 0;
     }
     &__nav-right {
       order: 2;
