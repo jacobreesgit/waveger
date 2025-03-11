@@ -2,6 +2,9 @@
 import { onMounted, ref } from 'vue'
 import { initializeStores } from '@/services/storeManager'
 import Nav from '@/components/Nav.vue'
+import ProgressSpinner from 'primevue/progressspinner'
+import Message from 'primevue/message'
+import Button from 'primevue/button'
 
 const isInitializing = ref(true)
 const initError = ref<string | null>(null)
@@ -37,13 +40,13 @@ onMounted(async () => {
   <div class="app-container">
     <Nav />
     <main class="app-container__main-content">
-      <div v-if="isInitializing" class="app-loading">
-        <div class="loading-spinner"></div>
+      <div v-if="isInitializing" class="app-container__main-content__app-loading">
+        <ProgressSpinner />
         <p>Loading application...</p>
       </div>
-      <div v-else-if="initError" class="app-error">
-        <p>{{ initError }}</p>
-        <button @click="reloadPage">Retry</button>
+      <div v-else-if="initError" class="app-container__main-content__app-error">
+        <Message severity="error" :closable="false">{{ initError }}</Message>
+        <Button label="Retry" @click="reloadPage" />
       </div>
       <RouterView v-else />
     </main>
@@ -60,34 +63,21 @@ onMounted(async () => {
     padding: 1rem;
     overflow-y: auto;
   }
-}
-
-.app-loading,
-.app-error {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 2rem;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 1rem;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  &__app-loading,
+  &__app-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 2rem;
   }
-  100% {
-    transform: rotate(360deg);
+  :deep(.p-message) {
+    margin-bottom: 1rem;
+  }
+
+  :deep(.p-progress-spinner) {
+    margin-bottom: 1rem;
   }
 }
 </style>

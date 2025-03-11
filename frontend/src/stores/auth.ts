@@ -21,9 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
   const BASE_URL = 'https://wavegerpython.onrender.com/api/auth'
 
   const initialize = () => {
-    // Skip if already initialized
     if (isInitialized.value) {
-      console.log('🔄 Auth - Already initialized, skipping')
       return
     }
 
@@ -110,11 +108,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Set default Authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${savedToken}`
-
-      // Don't try to fetch user data on initialization as it may fail if token is expired
-      // Just use the saved user data for now and let interceptors handle token refresh
-      // This prevents the 401 error on page load
-      console.log('✅ Auth - User authenticated from stored credentials')
 
       // Set up interceptors to handle token refresh
       setupAxiosInterceptors()
