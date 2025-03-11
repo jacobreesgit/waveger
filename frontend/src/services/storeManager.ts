@@ -21,8 +21,12 @@ const initializedStores = ref({
   appleMusic: false,
 })
 
+// Keep track of pending initializations
+const pendingInitializations = new Map<string, Promise<void>>()
+
 /**
  * Initialize all stores in the correct order with proper dependency handling
+ * This improved version prevents duplicate initializations and handles race conditions
  */
 export async function initializeStores(
   options: {
@@ -63,46 +67,24 @@ export async function initializeStores(
     })
   }
 
-  // Skip already initialized stores
-  if (initializedStores.value.auth && opts.auth) {
-    console.log('✅ Auth store already initialized, skipping')
-    opts.auth = false
-  }
-
-  if (initializedStores.value.charts && opts.charts) {
-    console.log('✅ Charts store already initialized, skipping')
-    opts.charts = false
-  }
-
-  if (initializedStores.value.favourites && opts.favourites) {
-    console.log('✅ Favourites store already initialized, skipping')
-    opts.favourites = false
-  }
-
-  if (initializedStores.value.predictions && opts.predictions) {
-    console.log('✅ Predictions store already initialized, skipping')
-    opts.predictions = false
-  }
-
-  if (initializedStores.value.timezone && opts.timezone) {
-    console.log('✅ Timezone store already initialized, skipping')
-    opts.timezone = false
-  }
-
-  if (initializedStores.value.appleMusic && opts.appleMusic) {
-    console.log('✅ Apple Music store already initialized, skipping')
-    opts.appleMusic = false
-  }
+  // Filter out already initialized stores
+  const storesNeedingInit = Object.entries(opts)
+    .filter(
+      ([key, value]) =>
+        value && !initializedStores.value[key as keyof typeof initializedStores.value],
+    )
+    .map(([key]) => key)
 
   // If all requested stores are already initialized, skip
-  if (!Object.values(opts).some((val) => val === true)) {
+  if (storesNeedingInit.length === 0) {
     console.log('✅ All requested stores already initialized, skipping')
     return
   }
 
+  console.log(`🚀 Starting store initialization for: ${storesNeedingInit.join(', ')}`)
+
   try {
     initializing.value = true
-    console.log('🚀 Initializing stores with options:', opts)
 
     // Create store instances
     const authStore = useAuthStore()
@@ -112,89 +94,154 @@ export async function initializeStores(
     const predictionsStore = usePredictionsStore()
     const appleMusicStore = useAppleMusicStore()
 
-    // Step 1: Initialize auth (needed for most other stores)
-    if (opts.auth) {
-      console.log('🔐 Initializing auth store...')
-      authStore.initialize()
-      initializedStores.value.auth = true
-    }
+    // Initialize stores in the correct order with dependency handling
 
-    // Step 2: Initialize timezone (needed for date formatting)
-    if (opts.timezone) {
-      console.log('🕒 Initializing timezone store...')
-      // No explicit initialization needed for timezone
-      initializedStores.value.timezone = true
-    }
+    // Step 1: Initialize core stores first (auth and timezone)
+    const initCorePromises: Promise<void>[] = []
 
-    // Step 3: Initialize charts
-    if (opts.charts) {
-      console.log('📊 Initializing charts store...')
-      await chartsStore.initialize()
-      initializedStores.value.charts = true
-    }
-
-    // Step 4: Initialize data that depends on auth being initialized
-    // These can happen in parallel since they don't depend on each other
-    const initPromises: Promise<any>[] = []
-
-    if (opts.favourites && authStore.user) {
-      console.log('❤️ Initializing favourites store...')
-      const favouritesPromise = favouritesStore.initialize()
-      initPromises.push(favouritesPromise)
-      // Mark as initialized after promise resolves
-      favouritesPromise.then(() => {
-        initializedStores.value.favourites = true
-      })
-    } else if (opts.favourites) {
-      console.log('⚠️ Skipping favourites store - no authenticated user')
-      initializedStores.value.favourites = true // Mark as initialized anyway
-    }
-
-    if (opts.predictions) {
-      console.log('🔮 Initializing predictions store...')
-      const predictionsPromise = predictionsStore.initialize()
-      initPromises.push(predictionsPromise)
-      // Mark as initialized after promise resolves
-      predictionsPromise.then(() => {
-        initializedStores.value.predictions = true
-      })
-    }
-
-    if (opts.appleMusic) {
-      console.log('🎵 Initializing Apple Music store...')
-      try {
-        // Use a timeout to prevent hanging if token fetch takes too long
-        const appleMusicPromise = Promise.race([
-          appleMusicStore.fetchToken(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Apple Music token fetch timeout')), 10000),
-          ),
-        ])
-
-        initPromises.push(appleMusicPromise)
-
-        // Mark as initialized after promise resolves
-        appleMusicPromise
+    if (opts.auth && !initializedStores.value.auth) {
+      if (!pendingInitializations.has('auth')) {
+        console.log('🔐 Initializing auth store...')
+        const authPromise = Promise.resolve(authStore.initialize())
           .then(() => {
-            initializedStores.value.appleMusic = true
-            console.log('✅ Apple Music store initialized successfully')
+            initializedStores.value.auth = true
+            console.log('✅ Auth store initialization completed')
+            pendingInitializations.delete('auth')
           })
-          .catch((error) => {
-            console.warn(
-              '⚠️ Apple Music initialization timed out or failed, will retry later:',
-              error,
-            )
-            // Don't mark as initialized if it failed
+          .catch((e) => {
+            console.error('❌ Auth store initialization failed:', e)
+            pendingInitializations.delete('auth')
+            throw e
           })
-      } catch (e) {
-        console.error('❌ Error starting Apple Music initialization:', e)
+
+        pendingInitializations.set('auth', authPromise)
+        initCorePromises.push(authPromise)
+      } else {
+        initCorePromises.push(pendingInitializations.get('auth')!)
       }
     }
 
-    // Wait for all parallel initializations to complete
-    if (initPromises.length > 0) {
-      await Promise.allSettled(initPromises)
+    if (opts.timezone && !initializedStores.value.timezone) {
+      if (!pendingInitializations.has('timezone')) {
+        console.log('🕒 Initializing timezone store...')
+        // No explicit initialization needed for timezone
+        initializedStores.value.timezone = true
+        console.log('✅ Timezone store initialization completed')
+      }
     }
+
+    // Wait for core stores to initialize before proceeding
+    await Promise.all(initCorePromises)
+
+    // Step 2: Initialize charts store (depends on timezone)
+    if (opts.charts && !initializedStores.value.charts) {
+      if (!pendingInitializations.has('charts')) {
+        console.log('📊 Initializing charts store...')
+        const chartsPromise = chartsStore
+          .initialize()
+          .then(() => {
+            initializedStores.value.charts = true
+            console.log('✅ Charts store initialization completed')
+            pendingInitializations.delete('charts')
+          })
+          .catch((e) => {
+            console.error('❌ Charts store initialization failed:', e)
+            pendingInitializations.delete('charts')
+            throw e
+          })
+
+        pendingInitializations.set('charts', chartsPromise)
+        await chartsPromise
+      } else {
+        await pendingInitializations.get('charts')
+      }
+    }
+
+    // Step 3: Initialize remaining stores in parallel
+    const remainingPromises: Promise<void>[] = []
+
+    // Favourites store (depends on auth)
+    if (opts.favourites && !initializedStores.value.favourites && authStore.user) {
+      if (!pendingInitializations.has('favourites')) {
+        console.log('❤️ Initializing favourites store...')
+        const favouritesPromise = favouritesStore
+          .initialize()
+          .then(() => {
+            initializedStores.value.favourites = true
+            console.log('✅ Favourites store initialization completed')
+            pendingInitializations.delete('favourites')
+          })
+          .catch((e) => {
+            console.error('❌ Favourites store initialization failed:', e)
+            pendingInitializations.delete('favourites')
+            throw e
+          })
+
+        pendingInitializations.set('favourites', favouritesPromise)
+        remainingPromises.push(favouritesPromise)
+      } else {
+        remainingPromises.push(pendingInitializations.get('favourites')!)
+      }
+    } else if (opts.favourites && !initializedStores.value.favourites) {
+      console.log('⚠️ Skipping favourites store - no authenticated user')
+      initializedStores.value.favourites = true
+    }
+
+    // Predictions store
+    if (opts.predictions && !initializedStores.value.predictions) {
+      if (!pendingInitializations.has('predictions')) {
+        console.log('🔮 Initializing predictions store...')
+        const predictionsPromise = predictionsStore
+          .initialize()
+          .then(() => {
+            initializedStores.value.predictions = true
+            console.log('✅ Predictions store initialization completed')
+            pendingInitializations.delete('predictions')
+          })
+          .catch((e) => {
+            console.error('❌ Predictions store initialization failed:', e)
+            pendingInitializations.delete('predictions')
+            throw e
+          })
+
+        pendingInitializations.set('predictions', predictionsPromise)
+        remainingPromises.push(predictionsPromise)
+      } else {
+        remainingPromises.push(pendingInitializations.get('predictions')!)
+      }
+    }
+
+    // Apple Music store
+    if (opts.appleMusic && !initializedStores.value.appleMusic) {
+      if (!pendingInitializations.has('appleMusic')) {
+        console.log('🎵 Initializing Apple Music store...')
+
+        const appleMusicPromise = Promise.race([
+          appleMusicStore.fetchToken(),
+          new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('Apple Music token fetch timeout')), 10000),
+          ),
+        ])
+          .then(() => {
+            initializedStores.value.appleMusic = true
+            console.log('✅ Apple Music store initialization completed')
+            pendingInitializations.delete('appleMusic')
+          })
+          .catch((e) => {
+            console.warn('⚠️ Apple Music initialization failed:', e)
+            // Don't mark as failed in case of timeout - will retry later
+            pendingInitializations.delete('appleMusic')
+          })
+
+        pendingInitializations.set('appleMusic', appleMusicPromise)
+        remainingPromises.push(appleMusicPromise)
+      } else {
+        remainingPromises.push(pendingInitializations.get('appleMusic')!)
+      }
+    }
+
+    // Wait for all remaining initializations to complete
+    await Promise.allSettled(remainingPromises)
 
     console.log('✅ Store initialization complete')
     initialized.value = true
@@ -211,19 +258,8 @@ export async function initializeStores(
  * Check if specific stores have been initialized
  */
 export function checkStoreInitialization() {
-  const authStore = useAuthStore()
-  const chartsStore = useChartsStore()
-  const favouritesStore = useFavouritesStore()
-  const predictionsStore = usePredictionsStore()
-  const appleMusicStore = useAppleMusicStore()
-
   return {
-    auth: initializedStores.value.auth || !!authStore.user,
-    charts: initializedStores.value.charts || chartsStore.initialized,
-    favourites: initializedStores.value.favourites || favouritesStore.initialized,
-    predictions: initializedStores.value.predictions || predictionsStore.initialized,
-    timezone: initializedStores.value.timezone,
-    appleMusic: initializedStores.value.appleMusic || !!appleMusicStore.token,
+    ...initializedStores.value,
     allInitialized: initialized.value,
   }
 }
@@ -235,16 +271,12 @@ export function resetStoreInitialization() {
   initialized.value = false
   initializing.value = false
   error.value = null
+  pendingInitializations.clear()
 
   // Reset all store initialization flags
-  initializedStores.value = {
-    auth: false,
-    charts: false,
-    favourites: false,
-    predictions: false,
-    timezone: false,
-    appleMusic: false,
-  }
+  Object.keys(initializedStores.value).forEach((key) => {
+    initializedStores.value[key as keyof typeof initializedStores.value] = false
+  })
 }
 
 export default {
