@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTimezoneStore } from '@/stores/timezone'
-import Select from 'primevue/Select'
+import Select from 'primevue/select'
 
 const timezoneStore = useTimezoneStore()
 

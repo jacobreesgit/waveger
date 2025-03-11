@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
-import Select from 'primevue/Select'
+import Select from 'primevue/select'
 
 const store = useChartsStore()
 const route = useRoute()
