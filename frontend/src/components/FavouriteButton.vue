@@ -75,4 +75,8 @@ watchEffect(async () => {
   </Button>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+i {
+  font-size: 20px;
+}
+</style>

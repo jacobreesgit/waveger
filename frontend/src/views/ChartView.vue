@@ -816,8 +816,8 @@ watch(
 
 .favourite-btn-overlay {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 0px;
+  right: 0px;
   z-index: 2;
 }
 </style>
