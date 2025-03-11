@@ -149,8 +149,7 @@ def close_active_contest() -> Optional[int]:
         cursor.execute(
             """
             UPDATE weekly_contests
-            SET status = 'closed', 
-                closed_at = NOW()
+            SET status = 'closed'
             WHERE id = %s
             """,
             (contest_id,)
@@ -196,11 +195,16 @@ def create_next_contest() -> Optional[int]:
         cursor.execute(
             """
             INSERT INTO weekly_contests
-            (start_date, end_date, chart_release_date, status)
-            VALUES (%s, %s, %s, 'open')
+            (start_date, end_date, chart_release_date, status, title)
+            VALUES (%s, %s, %s, 'open', %s)
             RETURNING id
             """,
-            (start_date, end_date, next_tuesday)
+            (
+                start_date, 
+                end_date, 
+                next_tuesday, 
+                f"Billboard Predictions Contest - {next_tuesday.strftime('%b %d, %Y')}"
+            )
         )
         
         new_contest_id = cursor.fetchone()["id"]
