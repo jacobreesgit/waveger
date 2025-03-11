@@ -1,4 +1,4 @@
-// auth.ts - Updated with improved token refresh logic
+// auth.ts - Updated with improved token refresh logic and initialization check
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import axios from 'axios'
@@ -13,12 +13,20 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
   const rememberMe = ref(false)
   const isRefreshing = ref(false)
+  const isInitialized = ref(false) // New flag to track initialization status
+
   // Queue to store pending requests that failed due to 401
   const pendingRequests: Array<() => void> = []
 
   const BASE_URL = 'https://wavegerpython.onrender.com/api/auth'
 
   const initialize = () => {
+    // Skip if already initialized
+    if (isInitialized.value) {
+      console.log('🔄 Auth - Already initialized, skipping')
+      return
+    }
+
     console.log('🔄 Auth - Initializing authentication state')
     // Check if there's an explicit logged out flag
     if (
@@ -29,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
       // Clear the flags but keep logged out state
       sessionStorage.removeItem('logged_out')
       localStorage.removeItem('logged_out')
+      isInitialized.value = true
       return
     }
 
@@ -61,6 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (isNewSession) {
         console.log('🆕 Auth - New session detected without Remember Me - logging out')
         logout()
+        isInitialized.value = true
         return
       }
     }
@@ -94,6 +104,7 @@ export const useAuthStore = defineStore('auth', () => {
       } catch (e) {
         console.error('❌ Auth - Failed to parse user data:', e)
         logout()
+        isInitialized.value = true
         return
       }
 
@@ -119,6 +130,8 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('⚠️ Auth - No token available, clearing Authorization header')
       delete axios.defaults.headers.common['Authorization']
     }
+
+    isInitialized.value = true
   }
 
   // Setup axios interceptors for token refresh
@@ -393,6 +406,9 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
 
+      // Set initialization flag
+      isInitialized.value = true
+
       return response.data
     } catch (e) {
       console.error('❌ Auth - Login error:', e)
@@ -453,6 +469,9 @@ export const useAuthStore = defineStore('auth', () => {
         console.error('⚠️ Auth - Failed to fetch full user data:', fetchError)
         // Continue even if full user data fetch fails
       }
+
+      // Set initialization flag
+      isInitialized.value = true
 
       return response.data
     } catch (e) {
@@ -547,6 +566,9 @@ export const useAuthStore = defineStore('auth', () => {
     // Reset related stores
     const favouritesStore = useFavouritesStore()
     favouritesStore.reset()
+
+    // Maintain initialization status to prevent re-initialization
+    isInitialized.value = true
 
     console.log('✅ Auth - Logout complete')
   }
@@ -699,6 +721,7 @@ export const useAuthStore = defineStore('auth', () => {
     error,
     rememberMe,
     isRefreshing,
+    isInitialized,
     initialize,
     login,
     register,
