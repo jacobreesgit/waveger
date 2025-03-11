@@ -97,8 +97,14 @@ const menuItems = computed<MenuItem[]>(() => {
       // Build the URL for this menu item
       const url = getMenuItemUrl(route)
 
+      // Use username for profile link when authenticated
+      const label =
+        route.path === '/profile' && authStore.user
+          ? authStore.user.username
+          : (route.meta?.title as string) || String(route.name)
+
       return {
-        label: (route.meta?.title as string) || String(route.name),
+        label: label,
         icon: (route.meta?.icon as string) || undefined,
         class: isActive ? 'active-menu-item' : '',
         url: url, // Set the URL for standard HTML links
@@ -148,6 +154,7 @@ onMounted(() => {
       text-decoration: none;
       color: black;
       font-weight: bold;
+      font-size: 1.25rem;
     }
   }
   &__nav-menu {
