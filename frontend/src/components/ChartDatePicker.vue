@@ -111,33 +111,35 @@ onMounted(() => {
 
 <template>
   <div class="chart-date-picker">
-    <div class="date-picker-container">
-      <Calendar
-        v-model="selectedDate"
-        :maxDate="today"
-        :disabled="store.loading"
-        dateFormat="yy-mm-dd"
-        showIcon
-        inputId="date-picker"
-        class="w-full md:w-auto"
-        aria-label="Select date"
-      />
-      <Button
-        v-if="isNotToday"
-        @click="goToToday"
-        :disabled="store.loading"
-        icon="pi pi-calendar-today"
-        label="Today"
-        aria-label="Set date to today"
-      />
-    </div>
+    <Calendar
+      v-model="selectedDate"
+      :maxDate="today"
+      :disabled="store.loading"
+      dateFormat="yy-mm-dd"
+      showIcon
+      inputId="date-picker"
+      class="w-full md:w-auto"
+      aria-label="Select date"
+    />
+    <Button
+      v-if="isNotToday"
+      @click="goToToday"
+      :disabled="store.loading"
+      icon="pi pi-calendar"
+      label="Today"
+      aria-label="Set date to today"
+      class="chart-date-picker__button"
+    />
   </div>
 </template>
 
 <style lang="scss" scoped>
-.date-picker-container {
+.chart-date-picker {
   display: flex;
   align-items: center;
   gap: 8px;
+  &__button {
+    padding: 8px 24px;
+  }
 }
 </style>
