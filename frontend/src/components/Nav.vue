@@ -54,6 +54,25 @@ const navigateToLastViewed = () => {
   return false
 }
 
+// Build menu URLs for items that need to use the router
+const getMenuItemUrl = (route: any): string => {
+  // Special case for charts with last viewed
+  if (route.meta?.useLastViewed) {
+    const chartId = lastViewedChart.value || localStorage.getItem('lastViewedChart')
+    const dateParam = lastViewedDate.value || localStorage.getItem('lastViewedDate')
+
+    if (chartId) {
+      let url = '/charts?id=' + chartId
+      if (dateParam) url += '&date=' + dateParam
+      return url
+    }
+    return '/charts'
+  }
+
+  // Regular routes just use their path
+  return route.path
+}
+
 const menuItems = computed<MenuItem[]>(() => {
   return router.options.routes
     .filter((route) => {
@@ -75,10 +94,15 @@ const menuItems = computed<MenuItem[]>(() => {
           ? route.path === appRouter.currentRoute.value.path
           : appRouter.currentRoute.value.path.startsWith(route.path)
 
+      // Build the URL for this menu item
+      const url = getMenuItemUrl(route)
+
       return {
         label: (route.meta?.title as string) || String(route.name),
         icon: (route.meta?.icon as string) || undefined,
         class: isActive ? 'active-menu-item' : '',
+        url: url, // Set the URL for standard HTML links
+        // Keep the command for click handling of special cases
         command: () => {
           // Special case for chart routes with useLastViewed flag
           if (route.meta?.useLastViewed) {

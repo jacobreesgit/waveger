@@ -1748,7 +1748,7 @@ const resetPredictionFilters = () => {
   height: 18px;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 639px) {
   .favourites-header {
     flex-direction: column;
     align-items: flex-start;
@@ -2124,7 +2124,7 @@ const resetPredictionFilters = () => {
 }
 
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (max-width: 639px) {
   .prediction-stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }

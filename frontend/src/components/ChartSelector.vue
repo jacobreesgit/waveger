@@ -152,18 +152,24 @@ onMounted(() => {
 
 <template>
   <div class="chart-selector">
-    <div class="selector-header">
-      <Dropdown
-        v-model="selectedChartId"
-        :options="chartOptions"
-        optionLabel="title"
-        optionValue="id"
-        placeholder="Select a chart"
-        class="w-full"
-        :disabled="store.loading"
-      />
-    </div>
+    <Dropdown
+      v-model="selectedChartId"
+      :options="chartOptions"
+      optionLabel="title"
+      optionValue="id"
+      placeholder="Select a chart"
+      class="w-full"
+      :disabled="store.loading"
+    />
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.chart-selector {
+  flex-grow: 1;
+  width: 100%;
+  & :deep(.p-select) {
+    width: 100% !important;
+  }
+}
+</style>

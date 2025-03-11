@@ -40,10 +40,10 @@ export function useBreakpoints(): Breakpoints {
   const xl = useMediaQuery('(min-width: 1280px)')
 
   // Computed helpers for common device categories
-  const isMobile = computed(() => xs.value)
-  const isTablet = computed(() => sm.value || md.value)
-  const isDesktop = computed(() => lg.value)
-  const isLargeDesktop = computed(() => xl.value)
+  const isMobile = computed(() => xs.value) // max-width: 639px
+  const isTablet = computed(() => sm.value || md.value) // min-width: 640px and max-width: 1023px
+  const isDesktop = computed(() => lg.value) // min-width: 1024px and max-width: 1279px
+  const isLargeDesktop = computed(() => xl.value) // min-width: 1280px
 
   return {
     xs,

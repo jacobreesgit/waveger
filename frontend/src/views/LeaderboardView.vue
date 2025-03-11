@@ -413,7 +413,7 @@ h2 {
 }
 
 // Responsive styles
-@media (max-width: 768px) {
+@media (max-width: 639px) {
   .leaderboard-table {
     th,
     td {
