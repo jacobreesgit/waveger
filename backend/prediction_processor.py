@@ -146,6 +146,7 @@ def close_active_contest() -> Optional[int]:
     
     try:
         # Update the contest status to 'closed'
+        # FIXED: Removed the closed_at column that doesn't exist
         cursor.execute(
             """
             UPDATE weekly_contests
@@ -192,18 +193,21 @@ def create_next_contest() -> Optional[int]:
     
     try:
         # Insert the new contest
+        # FIXED: Added the title field with a dynamic value based on the date
+        # FIXED: Added chart_id field which is required (NOT NULL)
         cursor.execute(
             """
             INSERT INTO weekly_contests
-            (start_date, end_date, chart_release_date, status, title)
-            VALUES (%s, %s, %s, 'open', %s)
+            (start_date, end_date, chart_release_date, status, title, chart_id)
+            VALUES (%s, %s, %s, 'open', %s, %s)
             RETURNING id
             """,
             (
                 start_date, 
                 end_date, 
                 next_tuesday, 
-                f"Billboard Predictions Contest - {next_tuesday.strftime('%b %d, %Y')}"
+                f"Billboard Predictions Contest - {next_tuesday.strftime('%b %d, %Y')}",
+                "hot-100"  # Using hot-100 as the default chart_id
             )
         )
         
@@ -477,9 +481,9 @@ def update_user_stats(user_id: int, points: int, is_correct: bool) -> bool:
         cursor.close()
         conn.close()
 
-def generate_contest_stats(contest_id: int) -> bool:
+def generate_contest_stats_to_rules(contest_id: int) -> bool:
     """
-    Generate and store statistics for a contest
+    Generate contest statistics and store them in the 'rules' JSONB field
     
     Args:
         contest_id: Contest ID
@@ -565,22 +569,21 @@ def generate_contest_stats(contest_id: int) -> bool:
                 "avg_points": round(float(stat["avg_points"]), 2)
             })
         
-        # Store the stats in the weekly_contests table
+        # Store the stats in the 'rules' JSONB field of weekly_contests table
+        # FIXED: Using the 'rules' field instead of non-existent fields
         cursor.execute(
             """
             UPDATE weekly_contests
-            SET 
-                total_predictions = %s,
-                correct_predictions = %s,
-                total_points_awarded = %s,
-                contest_stats = %s
+            SET rules = %s
             WHERE id = %s
             """,
             (
-                int(stats["total_predictions"]) if stats["total_predictions"] else 0,
-                int(stats["correct_predictions"]) if stats["correct_predictions"] else 0,
-                int(stats["total_points"]) if stats["total_points"] else 0,
                 Json({
+                    'contest_summary': {
+                        'total_predictions': int(stats["total_predictions"]) if stats["total_predictions"] else 0,
+                        'correct_predictions': int(stats["correct_predictions"]) if stats["correct_predictions"] else 0,
+                        'total_points': int(stats["total_points"]) if stats["total_points"] else 0
+                    },
                     'top_performers': top_performers_json,
                     'prediction_stats': prediction_stats_json
                 }),
@@ -719,7 +722,7 @@ def process_predictions(contest_id: int) -> bool:
         logger.info(f"Successfully processed all predictions for contest {contest_id}")
         
         # Generate contest stats
-        generate_contest_stats(contest_id)
+        generate_contest_stats_to_rules(contest_id)
         
         # Reset weekly points for all users at the end of processing
         cursor.execute(
