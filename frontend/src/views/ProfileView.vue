@@ -10,7 +10,7 @@ import {
   validatePassword,
 } from '@/utils/validation'
 import PasswordInput from '@/components/PasswordInput.vue'
-import FavouriteButton from '@/components/FavouriteButton.vue'
+import ChartItemCard from '@/components/ChartItemCard.vue'
 import type { Prediction } from '@/types/predictions'
 
 const router = useRouter()

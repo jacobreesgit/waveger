@@ -8,7 +8,6 @@ import { useTimezoneStore } from '@/stores/timezone'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
-import FavouriteButton from '@/components/FavouriteButton.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
 import ChartItemCard from '@/components/ChartItemCard.vue'
@@ -421,7 +420,7 @@ watch(
         <p class="chart-week">{{ formatChartWeek }}</p>
       </div>
 
-      <transition-group name="song-list" tag="div" class="songs">
+      <div class="songs">
         <ChartItemCard
           v-for="song in store.currentChart.songs"
           :key="song.position"
@@ -447,7 +446,7 @@ watch(
         </div>
 
         <div v-else :key="'end-message'" class="end-message">No more songs to load</div>
-      </transition-group>
+      </div>
     </div>
   </div>
 </template>
@@ -464,6 +463,7 @@ watch(
   gap: 16px;
   margin-bottom: 24px;
   width: 100%;
+
   @media (max-width: 639px) {
     flex-wrap: wrap;
     gap: 8px;
@@ -471,161 +471,53 @@ watch(
 }
 
 .chart-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  padding: 16px;
 }
 
 .chart-header {
   padding: 24px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 .chart-header h1 {
   margin: 0;
-  color: #212529;
   font-size: 2rem;
 }
 
 .chart-info {
-  color: #6c757d;
   font-size: 0.9rem;
   margin: 8px 0;
 }
 
 .chart-week {
-  color: #495057;
   font-weight: 500;
   margin: 0;
 }
 
 .songs {
-  padding: 16px;
-}
-
-.song-item {
   display: grid;
-  grid-template-columns: 60px 100px 1fr auto;
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   padding: 16px;
-  border-radius: 8px;
-  align-items: center;
 }
 
-.song-rank {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #212529;
+@media (max-width: 1023px) {
+  .songs {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.song-image {
-  width: 100px;
-  height: 100px;
-  border-radius: 8px;
-  object-fit: cover;
+@media (max-width: 767px) {
+  .songs {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.song-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.song-title {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: #212529;
-}
-
-.song-artist {
-  color: #6c757d;
-}
-
-.song-metadata {
-  margin-top: 12px;
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.album-name,
-.composer,
-.genres {
-  color: #666;
-}
-
-.song-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.preview-player {
-  width: 100%;
-  max-width: 300px;
-  height: 32px;
-}
-
-.apple-music-button {
-  display: inline-block;
-  background: #fa324a;
-  color: white;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  text-align: center;
-  transition: background-color 0.2s;
-  width: fit-content;
-}
-
-.apple-music-button:hover {
-  background: #e41e36;
-}
-
-.song-trend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 4px;
-  margin-bottom: 8px;
-}
-
-.trend-indicator {
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.trend-up {
-  color: #28a745;
-  background: #e8f5e9;
-}
-
-.trend-down {
-  color: #dc3545;
-  background: #ffebee;
-}
-
-.trend-same {
-  color: #6c757d;
-  background: #f8f9fa;
-}
-
-.weeks-on-chart {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.song-stats {
-  text-align: right;
-  color: #6c757d;
-  font-size: 0.9rem;
+@media (max-width: 639px) {
+  .songs {
+    grid-template-columns: 1fr;
+  }
 }
 
 .loading,
@@ -635,16 +527,11 @@ watch(
   align-items: center;
   gap: 12px;
   padding: 40px;
-  color: #6c757d;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .loading-text {
   font-size: 1.1rem;
   font-weight: 500;
-  color: #495057;
 }
 
 .loading-spinner {
@@ -654,13 +541,6 @@ watch(
   border-top: 3px solid #3498db;
   border-radius: 50%;
   animation: spin 1s linear infinite;
-}
-
-.apple-loading {
-  width: 24px;
-  height: 24px;
-  margin: 8px 0;
-  border-width: 2px;
 }
 
 @keyframes spin {
@@ -675,78 +555,36 @@ watch(
 .error {
   text-align: center;
   padding: 24px;
-  color: #dc3545;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .retry-button {
+  padding: 8px 16px;
+  margin-top: 12px;
   background: #007bff;
   color: white;
   border: none;
-  padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
-  margin-top: 12px;
-  transition: background-color 0.2s;
-}
-
-.retry-button:hover {
-  background: #0056b3;
 }
 
 .load-more-trigger {
+  grid-column: 1 / -1;
   text-align: center;
+  padding: 20px;
+}
+
+.loading-more {
   padding: 20px;
 }
 
 .load-more-text {
-  color: #6c757d;
   font-size: 0.9rem;
 }
 
 .end-message {
+  grid-column: 1 / -1;
   text-align: center;
   padding: 20px;
-  color: #6c757d;
   font-style: italic;
-}
-
-.song-list-enter-active,
-.song-list-leave-active {
-  transition: all 0.5s ease;
-}
-
-.song-list-enter-from,
-.song-list-leave-to {
-  opacity: 0;
-  transform: translateY(30px);
-}
-
-.song-list-move {
-  transition: transform 0.5s ease;
-}
-
-.song-image-container {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.song-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.favourite-btn-overlay {
-  position: absolute;
-  top: 0px;
-  right: 0px;
-  z-index: 2;
 }
 </style>

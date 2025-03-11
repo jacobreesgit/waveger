@@ -43,7 +43,7 @@ const trendIcon = computed(() => {
 })
 
 // Helper function to get artwork URL with correct dimensions
-const getArtworkUrl = (url: string | undefined, width: number = 100, height: number = 100) => {
+const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
   if (!url) return ''
   return url.replace('{w}', width.toString()).replace('{h}', height.toString())
 }
@@ -51,8 +51,8 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
 
 <template>
   <div class="chart-item-card" :class="{ 'compact-mode': compact }" @click="handleClick">
-    <div class="chart-item-rank">#{{ song.position }}</div>
     <div class="chart-item-image-container">
+      <div class="chart-item-rank">#{{ song.position }}</div>
       <img
         :src="
           appleMusicData?.attributes?.artwork?.url
@@ -70,6 +70,7 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
         size="small"
       />
     </div>
+
     <div class="chart-item-info">
       <div class="chart-item-title">{{ song.name }}</div>
       <div class="chart-item-artist">{{ song.artist }}</div>
@@ -88,118 +89,103 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
           {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
         </span>
       </div>
-
-      <!-- Additional Apple Music metadata if available and showDetails is true -->
-      <div v-if="showDetails && appleMusicData?.attributes" class="chart-item-metadata">
-        <div class="album-name">Album: {{ appleMusicData.attributes.albumName }}</div>
-        <div class="composer" v-if="appleMusicData.attributes.composerName">
-          Composer: {{ appleMusicData.attributes.composerName }}
-        </div>
-        <div class="genres" v-if="appleMusicData.attributes.genreNames?.length">
-          Genres: {{ appleMusicData.attributes.genreNames.join(', ') }}
-        </div>
-        <div class="chart-item-actions" v-if="appleMusicData.attributes.previews?.length">
-          <audio controls class="preview-player">
-            <source :src="appleMusicData.attributes.previews[0].url" type="audio/mp4" />
-          </audio>
-          <a :href="appleMusicData.attributes.url" target="_blank" class="apple-music-button">
-            Listen on Apple Music
-          </a>
-        </div>
-      </div>
     </div>
+
     <div class="chart-item-stats" v-if="!compact">
       <div>Peak: #{{ song.peak_position }}</div>
       <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
+    </div>
+
+    <!-- Additional Apple Music metadata if available and showDetails is true -->
+    <div v-if="showDetails && appleMusicData?.attributes" class="chart-item-metadata">
+      <div class="album-name">Album: {{ appleMusicData.attributes.albumName }}</div>
+      <div class="genres" v-if="appleMusicData.attributes.genreNames?.length">
+        Genres: {{ appleMusicData.attributes.genreNames.join(', ') }}
+      </div>
+      <div class="chart-item-actions" v-if="appleMusicData.attributes.previews?.length">
+        <audio controls class="preview-player">
+          <source :src="appleMusicData.attributes.previews[0].url" type="audio/mp4" />
+        </audio>
+        <a :href="appleMusicData.attributes.url" target="_blank" class="apple-music-button">
+          Listen on Apple Music
+        </a>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .chart-item-card {
-  display: grid;
-  grid-template-columns: 60px 100px 1fr auto;
-  gap: 20px;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid #eee;
   border-radius: 8px;
-  align-items: center;
-  background: white;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  overflow: hidden;
   cursor: pointer;
-  margin-bottom: 12px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-
-  &.compact-mode {
-    grid-template-columns: 40px 60px 1fr;
-    gap: 12px;
-    padding: 12px;
-
-    .chart-item-image-container {
-      width: 60px;
-      height: 60px;
-    }
-
-    .chart-item-title {
-      font-size: 0.95rem;
-    }
-
-    .chart-item-artist {
-      font-size: 0.85rem;
-    }
-
-    .chart-item-rank {
-      font-size: 1.25rem;
-    }
-  }
+  transition: transform 0.2s;
 }
 
-.chart-item-rank {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #212529;
+.chart-item-card:hover {
+  transform: translateY(-5px);
 }
 
 .chart-item-image-container {
   position: relative;
-  width: 100px;
-  height: 100px;
-  border-radius: 8px;
+  width: 100%;
+  padding-bottom: 100%; /* 1:1 Aspect Ratio */
   overflow: hidden;
 }
 
 .chart-item-image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
+.chart-item-rank {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  padding: 5px 10px;
+  border-radius: 4px;
+  z-index: 2;
+}
+
 .chart-item-favourite-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 2;
 }
 
 .chart-item-info {
+  padding: 15px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .chart-item-title {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #212529;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chart-item-artist {
   color: #6c757d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .chart-item-trend {
@@ -207,29 +193,32 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
   align-items: center;
   gap: 12px;
   margin-top: 4px;
-  margin-bottom: 8px;
 }
 
 .trend-indicator {
   font-weight: bold;
   padding: 2px 6px;
   border-radius: 4px;
-  font-size: 0.9rem;
 }
 
 .trend-up {
-  color: #28a745;
   background: #e8f5e9;
+  color: #28a745;
 }
 
 .trend-down {
-  color: #dc3545;
   background: #ffebee;
+  color: #dc3545;
 }
 
 .trend-same {
-  color: #6c757d;
   background: #f8f9fa;
+  color: #6c757d;
+}
+
+.trend-new {
+  background: #e3f2fd;
+  color: #0d6efd;
 }
 
 .weeks-on-chart {
@@ -237,18 +226,20 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
   font-size: 0.9rem;
 }
 
+.chart-item-stats {
+  display: flex;
+  justify-content: space-between;
+  color: #6c757d;
+  font-size: 0.85rem;
+  padding: 0 15px 15px;
+}
+
 .chart-item-metadata {
-  margin-top: 12px;
+  padding: 0 15px 15px;
   font-size: 0.9rem;
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.album-name,
-.composer,
-.genres {
-  color: #666;
 }
 
 .chart-item-actions {
@@ -260,7 +251,6 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
 
 .preview-player {
   width: 100%;
-  max-width: 300px;
   height: 32px;
 }
 
@@ -273,60 +263,24 @@ const getArtworkUrl = (url: string | undefined, width: number = 100, height: num
   border-radius: 6px;
   font-weight: 500;
   text-align: center;
-  transition: background-color 0.2s;
   width: fit-content;
 }
 
-.apple-music-button:hover {
-  background: #e41e36;
-}
-
-.chart-item-stats {
-  text-align: right;
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-// Responsive styles
-@media (max-width: 768px) {
-  .chart-item-card:not(.compact-mode) {
-    grid-template-columns: 48px 80px 1fr;
-    gap: 12px;
-    padding: 12px;
+.compact-mode {
+  .chart-item-image-container {
+    padding-bottom: 70%; /* Shorter image for compact mode */
   }
 
-  .chart-item-card:not(.compact-mode) .chart-item-image-container {
-    width: 80px;
-    height: 80px;
+  .chart-item-info {
+    padding: 10px;
   }
 
-  .chart-item-card:not(.compact-mode) .chart-item-stats {
-    grid-column: 1 / -1;
-    text-align: left;
-    margin-top: 8px;
-    display: flex;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 480px) {
-  .chart-item-card:not(.compact-mode) {
-    grid-template-columns: 40px 1fr;
+  .chart-item-title {
+    font-size: 0.95rem;
   }
 
-  .chart-item-card:not(.compact-mode) .chart-item-image-container {
-    grid-row: span 2;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1/1;
-  }
-
-  .chart-item-card:not(.compact-mode) .chart-item-rank {
-    font-size: 1.25rem;
-  }
-
-  .chart-item-card:not(.compact-mode) .chart-item-title {
-    font-size: 1rem;
+  .chart-item-artist {
+    font-size: 0.85rem;
   }
 }
 </style>
