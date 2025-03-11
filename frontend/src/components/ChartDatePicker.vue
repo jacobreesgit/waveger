@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
-import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
 
 const props = defineProps<{
@@ -111,7 +111,7 @@ onMounted(() => {
 
 <template>
   <div class="chart-date-picker">
-    <Calendar
+    <DatePicker
       v-model="selectedDate"
       :maxDate="today"
       :disabled="store.loading"

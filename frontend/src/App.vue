@@ -1,15 +1,29 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { initializeStores } from '@/services/storeManager'
 import Nav from '@/components/Nav.vue'
 
 const isInitializing = ref(true)
 const initError = ref<string | null>(null)
+const router = useRouter()
 
 // Define a method to reload the page
 const reloadPage = () => {
   window.location.reload()
 }
+
+// Simple router watcher to log route changes
+watch(
+  () => router.currentRoute.value,
+  (newRoute, oldRoute) => {
+    if (oldRoute) {
+      console.log('Route changed:')
+      console.log('- Old route:', oldRoute.path)
+      console.log('- New route:', newRoute.path)
+    }
+  },
+)
 
 onMounted(async () => {
   try {

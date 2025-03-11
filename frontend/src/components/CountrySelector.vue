@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue'
 import { useTimezoneStore } from '@/stores/timezone'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/Select'
 
 const timezoneStore = useTimezoneStore()
 
@@ -115,7 +115,7 @@ const currentCountryName = computed(() => {
 </script>
 
 <template>
-  <Dropdown
+  <Select
     v-model="selectedCountry"
     :options="countryOptions"
     optionLabel="name"
@@ -138,7 +138,7 @@ const currentCountryName = computed(() => {
         <span class="country-selector__item__country-name">{{ slotProps.option.name }}</span>
       </div>
     </template>
-  </Dropdown>
+  </Select>
 </template>
 
 <style lang="scss" scoped>

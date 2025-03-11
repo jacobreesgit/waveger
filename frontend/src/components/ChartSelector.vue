@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/Select'
 
 const store = useChartsStore()
 const route = useRoute()
@@ -152,7 +152,7 @@ onMounted(() => {
 
 <template>
   <div class="chart-selector">
-    <Dropdown
+    <Select
       v-model="selectedChartId"
       :options="chartOptions"
       optionLabel="title"
