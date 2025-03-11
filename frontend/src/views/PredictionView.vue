@@ -36,6 +36,42 @@ const formatDate = (dateString: string | null | undefined): string => {
   return timezoneStore.formatDate(dateString)
 }
 
+// Format a specific time in UTC to the user's timezone
+const formatTransitionTime = () => {
+  // Create a date object for 2PM UTC today
+  const today = new Date()
+  const transitionDate = new Date(
+    Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate(),
+      14, // 2PM UTC (14:00)
+      0, // 0 minutes
+      0, // 0 seconds
+    ),
+  )
+
+  // Format only the time portion
+  return timezoneStore.formatTimeOnly(transitionDate.toISOString())
+}
+
+// Check if the transition time has passed today
+const isTransitionTimePassed = computed(() => {
+  const now = new Date()
+  const transitionTime = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      14, // 2PM UTC (14:00)
+      0, // 0 minutes
+      0, // 0 seconds
+    ),
+  )
+
+  return now > transitionTime
+})
+
 // Calculate the days remaining until the contest ends
 const daysUntilDeadline = computed(() => {
   if (!predictionStore.currentContest?.end_date) return null
@@ -157,27 +193,25 @@ watch(activeTab, async () => {
         <div v-if="hasActiveContest">
           <h3>Current Prediction Contest</h3>
           <div class="contest-details">
-            <div class="contest-deadline" :class="{ 'deadline-expired': isDeadlinePassed }">
-              <strong>Deadline:</strong> {{ formatDate(predictionStore.currentContest?.end_date) }}
-              <span class="deadline-countdown" v-if="daysUntilDeadline !== null">
-                <span v-if="isDeadlinePassed" class="expired-tag">CLOSED</span>
-                <span v-else>({{ daysUntilDeadline }} days remaining)</span>
-              </span>
+            <div class="contest-date-range" :class="{ closed: isDeadlinePassed }">
+              <strong>Contest Period:</strong>
+              {{ formatDate(predictionStore.currentContest?.start_date) }} to
+              {{ formatDate(predictionStore.currentContest?.end_date) }}
+              <span v-if="isDeadlinePassed" class="expired-tag">CLOSED</span>
             </div>
-            <div class="contest-release">
-              <strong>Chart Release Date:</strong>
-              {{ formatDate(predictionStore.currentContest?.chart_release_date) }}
-            </div>
-            <div class="predictions-remaining">
-              <strong>Predictions Remaining:</strong> {{ remainingPredictions }}/10
+
+            <div class="contest-release-info">
+              <strong>Chart Release:</strong>
+              {{ formatDate(predictionStore.currentContest?.chart_release_date) }} - Results out at
+              {{ formatTransitionTime() }}
             </div>
           </div>
         </div>
         <div v-else class="no-contest">
           <h3>No Active Contest</h3>
           <p>
-            There is no active prediction contest at this time. Check back soon for the next
-            prediction window!
+            New prediction contests open every Tuesday at 2:00 PM UTC ({{ formatTransitionTime() }}
+            in your local time)
           </p>
         </div>
       </div>
@@ -423,9 +457,28 @@ h1 {
   gap: 8px;
 }
 
-.deadline-countdown {
-  font-weight: bold;
+.contest-date-range {
+  margin-bottom: 10px;
+  color: #333;
+  font-weight: 500;
+}
+
+.contest-date-range.closed {
   color: #dc3545;
+}
+
+.contest-release-info {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.expired-tag {
+  display: inline-block;
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
   margin-left: 8px;
 }
 
@@ -646,19 +699,5 @@ h1 {
   .tab-button {
     width: 100%;
   }
-}
-
-.deadline-expired {
-  color: #dc3545;
-}
-
-.expired-tag {
-  display: inline-block;
-  background-color: #dc3545;
-  color: white;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-left: 8px;
 }
 </style>
