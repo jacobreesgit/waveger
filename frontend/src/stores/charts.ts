@@ -1,4 +1,3 @@
-// charts.ts
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChartData } from '@/types/api'
@@ -12,6 +11,8 @@ export const useChartsStore = defineStore('charts', () => {
   const hasMore = ref(true)
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
+
+  // Use standardized naming for initialization flags
   const initialized = ref(false)
   const initializing = ref(false)
 
@@ -22,19 +23,19 @@ export const useChartsStore = defineStore('charts', () => {
       // Normalize chart ID format
       const normalizedChartId = lastChart.endsWith('/') ? lastChart : `${lastChart}/`
       selectedChartId.value = normalizedChartId
-      console.log('Loaded last viewed chart from storage:', normalizedChartId)
+      console.log('Charts - Loaded last viewed chart from storage:', normalizedChartId)
     }
   }
 
   // Simplified initialize method that only fetches chart data
   const initialize = async () => {
     if (initialized.value) {
-      console.log('Store - Charts already initialized, skipping')
+      console.log('Charts - Already initialized, skipping')
       return
     }
 
     if (initializing.value) {
-      console.log('Store - Initialization already in progress, skipping')
+      console.log('Charts - Initialization already in progress, skipping')
       return
     }
 
@@ -42,7 +43,7 @@ export const useChartsStore = defineStore('charts', () => {
       initializing.value = true
       loading.value = true
       error.value = null
-      console.log('Store - Initializing charts store')
+      console.log('Charts - Initializing store')
 
       // Load the last viewed chart ID if available
       loadLastViewedChart()
@@ -55,15 +56,15 @@ export const useChartsStore = defineStore('charts', () => {
         // Convert from URL format (DD-MM-YYYY) to API format (YYYY-MM-DD)
         const [day, month, year] = lastDate.split('-')
         dateToUse = `${year}-${month}-${day}`
-        console.log(`Store initialization - Using last viewed date: ${dateToUse}`)
+        console.log(`Charts - Using last viewed date: ${dateToUse}`)
       } else {
         dateToUse = new Date().toISOString().split('T')[0]
-        console.log(`Store initialization - Using today's date: ${dateToUse}`)
+        console.log(`Charts - Using today's date: ${dateToUse}`)
       }
 
       // Use stored chart ID (or default to hot-100 if none stored)
       const chartId = selectedChartId.value.replace(/\/$/, '')
-      console.log(`Store initialization - Using chart ID: ${chartId}`)
+      console.log(`Charts - Using chart ID: ${chartId}`)
 
       // Fetch chart data
       await fetchChartDetails({
@@ -73,9 +74,9 @@ export const useChartsStore = defineStore('charts', () => {
       })
 
       initialized.value = true
-      console.log('Store - Charts initialized successfully')
+      console.log('Charts - Initialized successfully')
     } catch (e) {
-      console.error('Store - Failed to initialize charts:', e)
+      console.error('Charts - Failed to initialize:', e)
       error.value = e instanceof Error ? e.message : 'Failed to initialize charts'
     } finally {
       loading.value = false
@@ -109,8 +110,8 @@ export const useChartsStore = defineStore('charts', () => {
         localStorage.setItem('lastViewedDate', urlFormattedDate)
       }
 
-      console.log('Store - Fetching chart details with params:', params)
-      console.log(`Store - Requesting chart data for date: ${params.week || 'current date'}`)
+      console.log('Charts - Fetching chart details with params:', params)
+      console.log(`Charts - Requesting data for date: ${params.week || 'current date'}`)
 
       const response = await getChartDetails(params)
 
@@ -118,9 +119,9 @@ export const useChartsStore = defineStore('charts', () => {
       currentChart.value = response.data
       dataSource.value = response.source
 
-      console.log(`Store - Loaded chart data for ${chartId}:`, response.data.title)
+      console.log(`Charts - Loaded data for ${chartId}:`, response.data.title)
     } catch (e) {
-      console.error('Store - Error fetching chart details:', e)
+      console.error('Charts - Error fetching chart details:', e)
       error.value = e instanceof Error ? e.message : 'Failed to fetch chart details'
       hasMore.value = false
     } finally {
@@ -130,7 +131,7 @@ export const useChartsStore = defineStore('charts', () => {
 
   const fetchMoreSongs = async () => {
     if (!currentChart.value || loading.value || !hasMore.value) {
-      console.log('Store - Early return conditions:', {
+      console.log('Charts - Early return conditions:', {
         noCurrentChart: !currentChart.value,
         isLoading: loading.value,
         noMoreSongs: !hasMore.value,
@@ -145,13 +146,13 @@ export const useChartsStore = defineStore('charts', () => {
       const start = currentPage.value * 10 + 1
       const end = start + 9
 
-      console.log('Store - Fetching more songs:', {
+      console.log('Charts - Fetching more songs:', {
         currentPage: currentPage.value,
         range: `${start}-${end}`,
       })
 
       if (start > 100) {
-        console.log('Store - Reached end of chart')
+        console.log('Charts - Reached end of chart')
         hasMore.value = false
         return
       }
@@ -163,22 +164,35 @@ export const useChartsStore = defineStore('charts', () => {
 
       if (currentChart.value && response.data.songs) {
         if (response.data.songs.length === 0) {
-          console.log('Store - No more songs returned')
+          console.log('Charts - No more songs returned')
           hasMore.value = false
           return
         }
 
         currentChart.value.songs = [...currentChart.value.songs, ...response.data.songs]
         currentPage.value++
-        console.log('Store - Added new songs. Total count:', currentChart.value.songs.length)
+        console.log('Charts - Added new songs. Total count:', currentChart.value.songs.length)
       }
     } catch (e) {
-      console.error('Store - Error fetching more songs:', e)
+      console.error('Charts - Error fetching more songs:', e)
       error.value = e instanceof Error ? e.message : 'Failed to load more songs'
       hasMore.value = false
     } finally {
       loading.value = false
     }
+  }
+
+  // Reset the store state (useful for testing or when changing users)
+  const reset = () => {
+    currentChart.value = null
+    selectedChartId.value = 'hot-100/'
+    loading.value = false
+    error.value = null
+    hasMore.value = true
+    currentPage.value = 1
+    dataSource.value = 'api'
+    initialized.value = false
+    initializing.value = false
   }
 
   return {
@@ -194,5 +208,6 @@ export const useChartsStore = defineStore('charts', () => {
     initialized,
     initializing,
     loadLastViewedChart,
+    reset,
   }
 })

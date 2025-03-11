@@ -12,26 +12,56 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
+  // Add initialization flags for consistency with other stores
+  const initialized = ref(false)
+  const initializing = ref(false)
+
   const fetchToken = async () => {
+    // Skip if already initializing
+    if (initializing.value) {
+      console.log('Apple Music - Already initializing, skipping')
+      return
+    }
+
+    // Skip if already initialized with a token
+    if (initialized.value && token.value) {
+      console.log('Apple Music - Already initialized with token, skipping')
+      return
+    }
+
     try {
       loading.value = true
+      initializing.value = true
       error.value = null
+
+      console.log('Apple Music - Fetching token')
       const response = await getAppleMusicToken()
       token.value = response.token
+      initialized.value = true
+
+      console.log('Apple Music - Token fetched successfully')
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Failed to fetch Apple Music token'
       console.error('Apple Music token error:', e)
     } finally {
       loading.value = false
+      initializing.value = false
     }
   }
 
   const searchSong = async (query: string) => {
-    try {
-      if (!token.value) {
-        await fetchToken()
-      }
+    // Make sure we have a token first
+    if (!token.value) {
+      await fetchToken()
 
+      // If we still don't have a token after trying to fetch, return null
+      if (!token.value) {
+        console.error('Apple Music - Unable to obtain token for search')
+        return null
+      }
+    }
+
+    try {
       // Use the dedicated appleMusicAxios instance instead of global axios
       // This prevents auth interceptors from adding the wrong token
       const response = await appleMusicAxios.get(
@@ -64,11 +94,23 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     }
   }
 
+  // Reset store state (for cleanup or testing)
+  const reset = () => {
+    token.value = null
+    loading.value = false
+    error.value = null
+    initialized.value = false
+    initializing.value = false
+  }
+
   return {
     token,
     loading,
     error,
+    initialized,
+    initializing,
     fetchToken,
     searchSong,
+    reset,
   }
 })

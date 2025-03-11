@@ -5,6 +5,7 @@ import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useAuthStore } from '@/stores/auth'
 import { useTimezoneStore } from '@/stores/timezone'
+import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
@@ -26,6 +27,7 @@ const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 const isLoadingMore = ref(false)
 const isInitialLoad = ref(true)
+const isPreparingPage = ref(true)
 
 // Use a computed prop to determine if we should show the loading indicator
 const isLoading = computed(() => {
@@ -202,99 +204,94 @@ const retryLoadingChart = async () => {
 }
 
 onMounted(async () => {
-  // Initialize Apple Music token regardless
-  await appleMusicStore.fetchToken()
+  isPreparingPage.value = true
 
-  // Determine the chart ID and date to display
-  let urlDate = route.query.date as string | undefined
-  let formattedDate: string
-  let chartId = (route.query.id as string) || 'hot-100'
+  try {
+    // Check what's already initialized
+    const storeStatus = checkStoreInitialization()
 
-  // If no date in URL but we're on the charts route, check for stored last viewed date
-  if (!urlDate && route.name === 'charts') {
-    const storedDate = localStorage.getItem('lastViewedDate')
-    if (storedDate) {
-      console.log('Using last viewed date from storage:', storedDate)
-      urlDate = storedDate
-    }
-  }
+    // Initialize only what we need for this view that hasn't been initialized
+    await initializeStores({
+      // Core stores should already be initialized in App.vue
+      auth: false, // Skip - should be initialized in App.vue
+      timezone: false, // Skip - should be initialized in App.vue
 
-  // If no chart ID in URL, check for stored last viewed chart
-  if (!route.query.id && route.name === 'charts') {
-    const storedChart = localStorage.getItem('lastViewedChart')
-    if (storedChart) {
-      console.log('Using last viewed chart from storage:', storedChart)
-      chartId = storedChart
-    }
-  }
-
-  // Parse date - either from URL, storage, or current date
-  formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
-
-  // Wait for store initialization if it's in progress
-  if (!store.initialized && isInitialLoad.value) {
-    console.log('Store initialization in progress, waiting for it to complete')
-    isInitialLoad.value = false
-    return
-  }
-
-  // Only fetch data if it's needed (chart changed or date changed)
-  if (shouldReloadData(chartId, formattedDate)) {
-    console.log(`Loading data for chart: ${chartId}, date: ${formattedDate}`)
-    await store.fetchChartDetails({
-      id: chartId,
-      week: formattedDate,
-      range: '1-10',
+      // View-specific stores
+      charts: !storeStatus.charts, // Charts are required for this view
+      appleMusic: !storeStatus.appleMusic, // For song data
+      favourites: authStore.user != null && !storeStatus.favourites, // Only if user is logged in
+      predictions: false, // Not needed for chart view
     })
 
-    // Save the chart selection to localStorage
-    localStorage.setItem('lastViewedChart', chartId)
+    // Determine the chart ID and date to display
+    let urlDate = route.query.date as string | undefined
+    let formattedDate: string
+    let chartId = (route.query.id as string) || 'hot-100'
 
-    // Save the date if it was from URL
-    if (urlDate) {
-      localStorage.setItem('lastViewedDate', urlDate)
+    // If no date in URL but we're on the charts route, check for stored last viewed date
+    if (!urlDate && route.name === 'charts') {
+      const storedDate = localStorage.getItem('lastViewedDate')
+      if (storedDate) {
+        console.log('Using last viewed date from storage:', storedDate)
+        urlDate = storedDate
+      }
     }
-  } else {
-    console.log('Using existing chart data from store')
-  }
 
-  // Load Apple Music data after chart data is available
-  await loadAppleMusicData()
+    // If no chart ID in URL, check for stored last viewed chart
+    if (!route.query.id && route.name === 'charts') {
+      const storedChart = localStorage.getItem('lastViewedChart')
+      if (storedChart) {
+        console.log('Using last viewed chart from storage:', storedChart)
+        chartId = storedChart
+      }
+    }
 
-  // If user is logged in, load their favourites
-  if (authStore.user) {
-    await favouritesStore.loadFavourites()
-  }
+    // Parse date - either from URL, storage, or current date
+    formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
 
-  // If we don't have a date in the URL, update the URL with today's date
-  if (!urlDate) {
-    const today = new Date().toISOString().split('T')[0]
-    const formattedToday = formatDateForURL(today)
-
-    router.replace({
-      path: '/charts',
-      query: {
-        date: formattedToday,
+    // Only fetch data if it's needed (chart changed or date changed)
+    if (shouldReloadData(chartId, formattedDate)) {
+      console.log(`Loading data for chart: ${chartId}, date: ${formattedDate}`)
+      await store.fetchChartDetails({
         id: chartId,
-      },
-    })
+        week: formattedDate,
+        range: '1-10',
+      })
+
+      // Save the chart selection to localStorage
+      localStorage.setItem('lastViewedChart', chartId)
+
+      // Save the date if it was from URL
+      if (urlDate) {
+        localStorage.setItem('lastViewedDate', urlDate)
+      }
+    } else {
+      console.log('Using existing chart data from store')
+    }
+
+    // Load Apple Music data after chart data is available
+    await loadAppleMusicData()
+
+    // If we don't have a date in the URL, update the URL with today's date
+    if (!urlDate) {
+      const today = new Date().toISOString().split('T')[0]
+      const formattedToday = formatDateForURL(today)
+
+      router.replace({
+        path: '/charts',
+        query: {
+          date: formattedToday,
+          id: chartId,
+        },
+      })
+    }
+  } catch (error) {
+    console.error('Error setting up chart view:', error)
+  } finally {
+    isPreparingPage.value = false
+    isInitialLoad.value = false
   }
 })
-
-// Watch for the initialized status of the store
-watch(
-  () => store.initialized,
-  async (isInitialized) => {
-    if (isInitialized && isInitialLoad.value) {
-      isInitialLoad.value = false
-      console.log('Store initialization completed, using existing data')
-
-      // Try to load Apple Music data once store is initialized
-      await loadAppleMusicData()
-    }
-  },
-  { immediate: true },
-)
 
 // Watch for chart changes to clear Apple Music data cache
 watch(
@@ -372,31 +369,39 @@ watch(
 
 <template>
   <div class="chart-view">
-    <div class="chart-view__chart-controls">
-      <ChartSelector />
-      <ChartDatePicker />
+    <!-- Loading State While Preparing Page -->
+    <div v-if="isPreparingPage" class="chart-preparing">
+      <div class="loading-spinner"></div>
+      <p>Loading chart data...</p>
     </div>
 
-    <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
-      <h1>{{ store.currentChart.title }}</h1>
-      <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
-      <p class="chart-view__chart-header__chart-week">{{ formatChartWeek }}</p>
-    </div>
+    <template v-else>
+      <div class="chart-view__chart-controls">
+        <ChartSelector />
+        <ChartDatePicker />
+      </div>
 
-    <ChartCardHolder
-      :current-chart="store.currentChart"
-      :loading="isLoading"
-      :error="store.error"
-      :has-more="store.hasMore"
-      :is-loading-more="isLoadingMore"
-      :selected-chart-id="store.selectedChartId"
-      :song-data="songData"
-      :fetch-more-songs="fetchMoreSongs"
-    >
-      <template #retry-button>
-        <button @click="retryLoadingChart" class="retry-button">Retry</button>
-      </template>
-    </ChartCardHolder>
+      <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
+        <h1>{{ store.currentChart.title }}</h1>
+        <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
+        <p class="chart-view__chart-header__chart-week">{{ formatChartWeek }}</p>
+      </div>
+
+      <ChartCardHolder
+        :current-chart="store.currentChart"
+        :loading="isLoading"
+        :error="store.error"
+        :has-more="store.hasMore"
+        :is-loading-more="isLoadingMore"
+        :selected-chart-id="store.selectedChartId"
+        :song-data="songData"
+        :fetch-more-songs="fetchMoreSongs"
+      >
+        <template #retry-button>
+          <button @click="retryLoadingChart" class="retry-button">Retry</button>
+        </template>
+      </ChartCardHolder>
+    </template>
   </div>
 </template>
 
@@ -433,6 +438,38 @@ watch(
       flex-wrap: wrap;
       gap: 8px;
     }
+  }
+}
+
+.chart-preparing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  p {
+    color: #666;
+    font-size: 1.1rem;
   }
 }
 </style>
