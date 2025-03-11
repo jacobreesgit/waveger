@@ -8,8 +8,7 @@ const props = defineProps<{
   chartId: string
   chartTitle: string
   showDetails?: boolean
-  appleMusicData?: any // For extended data from Apple Music API
-  compact?: boolean // For a more compact display mode
+  appleMusicData?: any
 }>()
 
 // Emit events that parent components might need
@@ -50,7 +49,7 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
 </script>
 
 <template>
-  <div class="chart-item-card" :class="{ 'compact-mode': compact }" @click="handleClick">
+  <div class="chart-item-card" @click="handleClick">
     <div class="chart-item-image-container">
       <div class="chart-item-rank">#{{ song.position }}</div>
       <img
@@ -74,7 +73,7 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
     <div class="chart-item-info">
       <div class="chart-item-title">{{ song.name }}</div>
       <div class="chart-item-artist">{{ song.artist }}</div>
-      <div class="chart-item-trend" v-if="!compact">
+      <div class="chart-item-trend">
         <span
           class="trend-indicator"
           :class="{
@@ -91,7 +90,7 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
       </div>
     </div>
 
-    <div class="chart-item-stats" v-if="!compact">
+    <div class="chart-item-stats">
       <div>Peak: #{{ song.peak_position }}</div>
       <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
     </div>
@@ -264,23 +263,5 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
   font-weight: 500;
   text-align: center;
   width: fit-content;
-}
-
-.compact-mode {
-  .chart-item-image-container {
-    padding-bottom: 70%; /* Shorter image for compact mode */
-  }
-
-  .chart-item-info {
-    padding: 10px;
-  }
-
-  .chart-item-title {
-    font-size: 0.95rem;
-  }
-
-  .chart-item-artist {
-    font-size: 0.85rem;
-  }
 }
 </style>
