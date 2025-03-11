@@ -162,12 +162,33 @@ export async function initializeStores(
 
     if (opts.appleMusic) {
       console.log('🎵 Initializing Apple Music store...')
-      const appleMusicPromise = appleMusicStore.fetchToken()
-      initPromises.push(appleMusicPromise)
-      // Mark as initialized after promise resolves
-      appleMusicPromise.then(() => {
-        initializedStores.value.appleMusic = true
-      })
+      try {
+        // Use a timeout to prevent hanging if token fetch takes too long
+        const appleMusicPromise = Promise.race([
+          appleMusicStore.fetchToken(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Apple Music token fetch timeout')), 10000),
+          ),
+        ])
+
+        initPromises.push(appleMusicPromise)
+
+        // Mark as initialized after promise resolves
+        appleMusicPromise
+          .then(() => {
+            initializedStores.value.appleMusic = true
+            console.log('✅ Apple Music store initialized successfully')
+          })
+          .catch((error) => {
+            console.warn(
+              '⚠️ Apple Music initialization timed out or failed, will retry later:',
+              error,
+            )
+            // Don't mark as initialized if it failed
+          })
+      } catch (e) {
+        console.error('❌ Error starting Apple Music initialization:', e)
+      }
     }
 
     // Wait for all parallel initializations to complete

@@ -16,47 +16,64 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
   const initialized = ref(false)
   const initializing = ref(false)
 
-  const fetchToken = async () => {
-    // Skip if already initializing
-    if (initializing.value) {
-      console.log('Apple Music - Already initializing, skipping')
-      return
-    }
+  // NEW: Add a promise to track initialization
+  let initializationPromise: Promise<void> | null = null
 
-    // Skip if already initialized with a token
+  const fetchToken = async () => {
+    // If we already have a valid token, return immediately
     if (initialized.value && token.value) {
       console.log('Apple Music - Already initialized with token, skipping')
-      return
+      return Promise.resolve()
     }
 
-    try {
-      loading.value = true
-      initializing.value = true
-      error.value = null
-
-      console.log('Apple Music - Fetching token')
-      const response = await getAppleMusicToken()
-      token.value = response.token
-      initialized.value = true
-
-      console.log('Apple Music - Token fetched successfully')
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Failed to fetch Apple Music token'
-      console.error('Apple Music token error:', e)
-    } finally {
-      loading.value = false
-      initializing.value = false
+    // If already initializing, return the existing promise
+    if (initializing.value && initializationPromise) {
+      console.log('Apple Music - Already initializing, returning existing promise')
+      return initializationPromise
     }
+
+    // Start new initialization
+    console.log('Apple Music - Starting token initialization')
+    initializing.value = true
+    error.value = null
+    loading.value = true
+
+    // Create a new promise for the initialization
+    initializationPromise = new Promise<void>(async (resolve, reject) => {
+      try {
+        console.log('Apple Music - Fetching token')
+        const response = await getAppleMusicToken()
+        token.value = response.token
+        initialized.value = true
+
+        console.log('Apple Music - Token fetched successfully')
+        resolve()
+      } catch (e) {
+        error.value = e instanceof Error ? e.message : 'Failed to fetch Apple Music token'
+        console.error('Apple Music token error:', e)
+        reject(e)
+      } finally {
+        loading.value = false
+        initializing.value = false
+      }
+    })
+
+    return initializationPromise
   }
 
   const searchSong = async (query: string) => {
-    // Make sure we have a token first
+    // Make sure we have a token first - wait for initialization to complete
     if (!token.value) {
-      await fetchToken()
+      try {
+        await fetchToken()
+      } catch (e) {
+        console.error('Apple Music - Unable to obtain token for search:', e)
+        return null
+      }
 
-      // If we still don't have a token after trying to fetch, return null
+      // Double-check that we now have a token
       if (!token.value) {
-        console.error('Apple Music - Unable to obtain token for search')
+        console.error('Apple Music - Failed to obtain token even after initialization')
         return null
       }
     }
@@ -78,7 +95,13 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
         },
       )
 
-      return response.data.results.songs?.data[0] || null
+      // Handle case where Apple Music API returns results but no songs data
+      if (!response.data.results.songs?.data?.length) {
+        console.log(`No Apple Music match found for: ${query}`)
+        return null
+      }
+
+      return response.data.results.songs.data[0]
     } catch (e) {
       if (e instanceof AxiosError) {
         console.error('Apple Music API error:', e.response?.data)
@@ -101,6 +124,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     error.value = null
     initialized.value = false
     initializing.value = false
+    initializationPromise = null
   }
 
   return {

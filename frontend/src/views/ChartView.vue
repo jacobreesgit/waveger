@@ -34,20 +34,75 @@ const isLoading = computed(() => {
   return store.loading && !isLoadingMore.value
 })
 
+// Load or fetch Apple Music data for current songs
+const loadAppleMusicData = async () => {
+  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
+    console.log('No songs available to fetch Apple Music data')
+    return
+  }
+
+  // Check if we already have Apple Music data for the current songs
+  const haveAllData = store.currentChart.songs.every((song) =>
+    songData.value.has(`${song.position}`),
+  )
+
+  // If we determined we shouldn't reload data AND we already have all the Apple Music data
+  if (store.currentChart && !isInitialLoad.value && !store.loading && haveAllData) {
+    console.log('Using existing Apple Music data, no need to reload')
+    return
+  }
+
+  console.log('Loading Apple Music data for current songs')
+
+  // Ensure we have an Apple Music token - WAIT for completion
+  try {
+    console.log('Ensuring Apple Music token is ready')
+    await appleMusicStore.fetchToken()
+    console.log('Apple Music token is ready, proceeding with searches')
+  } catch (error) {
+    console.error('Failed to get Apple Music token:', error)
+    return // Exit early if we can't get a token
+  }
+
+  // Process each song
+  for (const song of store.currentChart.songs) {
+    const songPosition = `${song.position}`
+    // Only fetch data if we don't already have it
+    if (!songData.value.has(songPosition) && !appleDataLoading.value.has(songPosition)) {
+      await fetchAppleMusicData(song)
+      // Add a small delay between requests to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+}
+
+// Fetch Apple Music data for a specific song
 const fetchAppleMusicData = async (song: any) => {
+  // Skip if token isn't ready
+  if (!appleMusicStore.token) {
+    console.warn(`Skipping Apple Music search for song #${song.position} - token not ready`)
+    return
+  }
+
   appleDataLoading.value.add(`${song.position}`)
   const query = `${song.name} ${song.artist}`
   console.log(`Searching Apple Music for: #${song.position} - ${query}`)
-  const data = await appleMusicStore.searchSong(query)
-  if (data) {
-    console.log(`Apple Music data for #${song.position} - ${song.name}:`, {
-      data,
-    })
-    songData.value.set(`${song.position}`, data)
-  } else {
-    console.log(`No Apple Music match found for #${song.position} - ${song.name}`)
+
+  try {
+    const data = await appleMusicStore.searchSong(query)
+    if (data) {
+      console.log(`Apple Music data for #${song.position} - ${song.name}:`, {
+        data,
+      })
+      songData.value.set(`${song.position}`, data)
+    } else {
+      console.log(`No Apple Music match found for #${song.position} - ${song.name}`)
+    }
+  } catch (error) {
+    console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
+  } finally {
+    appleDataLoading.value.delete(`${song.position}`)
   }
-  appleDataLoading.value.delete(`${song.position}`)
 }
 
 const parseDateFromURL = (urlDate: string): string => {
@@ -156,42 +211,6 @@ const fetchMoreSongs = async () => {
   }
 }
 
-// Load or fetch Apple Music data for current songs
-const loadAppleMusicData = async () => {
-  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
-    console.log('No songs available to fetch Apple Music data')
-    return
-  }
-
-  // Check if we already have Apple Music data for the current songs
-  const haveAllData = store.currentChart.songs.every((song) =>
-    songData.value.has(`${song.position}`),
-  )
-
-  // If we determined we shouldn't reload data AND we already have all the Apple Music data
-  if (store.currentChart && !isInitialLoad.value && !store.loading && haveAllData) {
-    console.log('Using existing Apple Music data, no need to reload')
-    return
-  }
-
-  console.log('Loading Apple Music data for current songs')
-
-  // Ensure we have an Apple Music token
-  if (!appleMusicStore.token) {
-    console.log('No Apple Music token, fetching one')
-    await appleMusicStore.fetchToken()
-  }
-
-  // Process each song
-  for (const song of store.currentChart.songs) {
-    const songPosition = `${song.position}`
-    // Only fetch data if we don't already have it
-    if (!songData.value.has(songPosition) && !appleDataLoading.value.has(songPosition)) {
-      await fetchAppleMusicData(song)
-    }
-  }
-}
-
 // Helper function to format date for URL
 const formatDateForURL = (date: string): string => {
   const [year, month, day] = date.split('-')
@@ -203,12 +222,24 @@ const retryLoadingChart = async () => {
   await store.fetchChartDetails({ id: 'hot-100', range: '1-10' })
 }
 
+// onMounted hook for ChartView.vue
 onMounted(async () => {
   isPreparingPage.value = true
 
   try {
     // Check what's already initialized
     const storeStatus = checkStoreInitialization()
+
+    // Start Apple Music token initialization early in parallel
+    // This ensures the token fetch begins while we're doing other work
+    let appleMusicPromise: Promise<void> | undefined
+    if (!storeStatus.appleMusic) {
+      console.log('Starting Apple Music token initialization early')
+      appleMusicPromise = appleMusicStore.fetchToken().catch((e) => {
+        console.warn('Early Apple Music token initialization failed:', e)
+        // We'll retry later if needed
+      })
+    }
 
     // Initialize only what we need for this view that hasn't been initialized
     await initializeStores({
@@ -218,7 +249,7 @@ onMounted(async () => {
 
       // View-specific stores
       charts: !storeStatus.charts, // Charts are required for this view
-      appleMusic: !storeStatus.appleMusic, // For song data
+      appleMusic: false, // We're handling this separately with our early initialization
       favourites: authStore.user != null && !storeStatus.favourites, // Only if user is logged in
       predictions: false, // Not needed for chart view
     })
@@ -267,6 +298,17 @@ onMounted(async () => {
       }
     } else {
       console.log('Using existing chart data from store')
+    }
+
+    // Ensure Apple Music initialization has completed before proceeding to load music data
+    // If we started it early, wait for that to complete; otherwise, initialize it now
+    if (appleMusicPromise) {
+      try {
+        console.log('Waiting for Apple Music token initialization to complete')
+        await appleMusicPromise
+      } catch (error) {
+        console.warn('Apple Music token initialization failed, will retry during data loading')
+      }
     }
 
     // Load Apple Music data after chart data is available
