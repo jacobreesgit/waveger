@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch, nextTick, computed } from 'vue'
+import { onMounted, ref, watch, nextTick, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
@@ -8,9 +8,8 @@ import { useTimezoneStore } from '@/stores/timezone'
 import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
+import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useIntersectionObserver } from '@vueuse/core'
-import ChartItemCard from '@/components/ChartItemCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,7 +22,6 @@ const appleMusicStore = useAppleMusicStore()
 const favouritesStore = useFavouritesStore()
 const authStore = useAuthStore()
 const timezoneStore = useTimezoneStore()
-const loadMoreTrigger = ref<HTMLElement | null>(null)
 const songData = ref<Map<string, AppleMusicData>>(new Map())
 const appleDataLoading = ref(new Set<string>())
 const isLoadingMore = ref(false)
@@ -33,28 +31,6 @@ const isInitialLoad = ref(true)
 const isLoading = computed(() => {
   return store.loading && !isLoadingMore.value
 })
-
-// Setup VueUse intersection observer
-const { stop: stopObserver } = useIntersectionObserver(
-  loadMoreTrigger,
-  async ([{ isIntersecting }]) => {
-    if (isIntersecting && !isLoadingMore.value && store.hasMore && !store.error) {
-      console.log('Intersection observed, loading more songs')
-      isLoadingMore.value = true
-      try {
-        await store.fetchMoreSongs()
-      } catch (error) {
-        console.error('Error loading more songs:', error)
-      } finally {
-        isLoadingMore.value = false
-      }
-    }
-  },
-  {
-    rootMargin: '200px', // Start loading before the element is fully in view
-    threshold: 0.1, // Trigger when at least 10% of the element is visible
-  },
-)
 
 const fetchAppleMusicData = async (song: any) => {
   appleDataLoading.value.add(`${song.position}`)
@@ -164,6 +140,20 @@ const shouldReloadData = (chartId: string, date: string): boolean => {
   return false
 }
 
+// Method to fetch more songs
+const fetchMoreSongs = async () => {
+  if (!store.hasMore || isLoadingMore.value) return
+
+  isLoadingMore.value = true
+  try {
+    await store.fetchMoreSongs()
+  } catch (error) {
+    console.error('Error loading more songs:', error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
 // Load or fetch Apple Music data for current songs
 const loadAppleMusicData = async () => {
   if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
@@ -204,6 +194,11 @@ const loadAppleMusicData = async () => {
 const formatDateForURL = (date: string): string => {
   const [year, month, day] = date.split('-')
   return `${day}-${month}-${year}`
+}
+
+// Retry loading chart data
+const retryLoadingChart = async () => {
+  await store.fetchChartDetails({ id: 'hot-100', range: '1-10' })
 }
 
 onMounted(async () => {
@@ -286,11 +281,6 @@ onMounted(async () => {
   }
 })
 
-onUnmounted(() => {
-  // Clean up the intersection observer
-  stopObserver()
-})
-
 // Watch for the initialized status of the store
 watch(
   () => store.initialized,
@@ -338,15 +328,6 @@ watch(
   { deep: true },
 )
 
-watch(
-  () => store.error,
-  (newError) => {
-    if (newError) {
-      stopObserver()
-    }
-  },
-)
-
 // Watch for date query parameter changes
 watch(
   () => route.query.date,
@@ -390,201 +371,68 @@ watch(
 </script>
 
 <template>
-  <div class="chart-list">
-    <!-- Controls in a column layout -->
-    <div class="chart-controls">
+  <div class="chart-view">
+    <div class="chart-view__chart-controls">
       <ChartSelector />
       <ChartDatePicker />
     </div>
 
-    <!-- Show loading indicator for the entire chart when loading (but not when just loading more songs) -->
-    <div v-if="isLoading" class="loading">
-      <div class="loading-spinner"></div>
-      <div class="loading-text">Loading chart data...</div>
+    <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
+      <h1>{{ store.currentChart.title }}</h1>
+      <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
+      <p class="chart-view__chart-header__chart-week">{{ formatChartWeek }}</p>
     </div>
 
-    <div v-else-if="store.error" class="error">
-      <p>{{ store.error }}</p>
-      <button
-        @click="store.fetchChartDetails({ id: 'hot-100', range: '1-10' })"
-        class="retry-button"
-      >
-        Retry
-      </button>
-    </div>
-
-    <div v-else-if="store.currentChart" class="chart-container">
-      <div class="chart-header">
-        <h1>{{ store.currentChart.title }}</h1>
-        <p class="chart-info">{{ store.currentChart.info }}</p>
-        <p class="chart-week">{{ formatChartWeek }}</p>
-      </div>
-
-      <div class="songs">
-        <ChartItemCard
-          v-for="song in store.currentChart.songs"
-          :key="song.position"
-          :song="song"
-          :chart-id="store.selectedChartId.replace(/\/$/, '')"
-          :chart-title="store.currentChart.title"
-          :apple-music-data="songData.get(`${song.position}`)"
-          :show-details="true"
-          @click="() => {}"
-        />
-
-        <div
-          v-if="store.hasMore"
-          ref="loadMoreTrigger"
-          :key="'load-more'"
-          class="load-more-trigger"
-        >
-          <div v-if="isLoadingMore" class="loading-more">
-            <div class="loading-spinner"></div>
-            Loading more songs...
-          </div>
-          <div v-else class="load-more-text">Scroll for more songs</div>
-        </div>
-
-        <div v-else :key="'end-message'" class="end-message">No more songs to load</div>
-      </div>
-    </div>
+    <ChartCardHolder
+      :current-chart="store.currentChart"
+      :loading="isLoading"
+      :error="store.error"
+      :has-more="store.hasMore"
+      :is-loading-more="isLoadingMore"
+      :selected-chart-id="store.selectedChartId"
+      :song-data="songData"
+      :fetch-more-songs="fetchMoreSongs"
+    >
+      <template #retry-button>
+        <button @click="retryLoadingChart" class="retry-button">Retry</button>
+      </template>
+    </ChartCardHolder>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.chart-list {
+.chart-view {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
-}
-
-.chart-controls {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  width: 100%;
-
+  &__chart-controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    width: 100%;
+  }
+  &__chart-header {
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    & h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+    &__chart-info {
+      font-size: 0.9rem;
+      margin: 8px 0;
+    }
+    &__chart-week {
+      font-weight: 500;
+      margin: 0;
+    }
+  }
   @media (max-width: 639px) {
-    flex-wrap: wrap;
-    gap: 8px;
+    &__chart-controls {
+      flex-wrap: wrap;
+      gap: 8px;
+    }
   }
-}
-
-.chart-container {
-  padding: 16px;
-}
-
-.chart-header {
-  padding: 24px;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.chart-header h1 {
-  margin: 0;
-  font-size: 2rem;
-}
-
-.chart-info {
-  font-size: 0.9rem;
-  margin: 8px 0;
-}
-
-.chart-week {
-  font-weight: 500;
-  margin: 0;
-}
-
-.songs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-  padding: 16px;
-}
-
-@media (max-width: 1023px) {
-  .songs {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 767px) {
-  .songs {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 639px) {
-  .songs {
-    grid-template-columns: 1fr;
-  }
-}
-
-.loading,
-.loading-more {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 40px;
-}
-
-.loading-text {
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.error {
-  text-align: center;
-  padding: 24px;
-}
-
-.retry-button {
-  padding: 8px 16px;
-  margin-top: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.load-more-trigger {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 20px;
-}
-
-.loading-more {
-  padding: 20px;
-}
-
-.load-more-text {
-  font-size: 0.9rem;
-}
-
-.end-message {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 20px;
-  font-style: italic;
 }
 </style>
