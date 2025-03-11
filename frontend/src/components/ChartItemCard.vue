@@ -125,10 +125,6 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
   transition: transform 0.2s;
 }
 
-.chart-item-card:hover {
-  transform: translateY(-5px);
-}
-
 .chart-item-image-container {
   position: relative;
   width: 100%;

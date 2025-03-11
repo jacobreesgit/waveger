@@ -10,7 +10,7 @@ import {
   validatePassword,
 } from '@/utils/validation'
 import PasswordInput from '@/components/PasswordInput.vue'
-import ChartItemCard from '@/components/ChartItemCard.vue'
+import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import type { Prediction } from '@/types/predictions'
 
 const router = useRouter()
@@ -512,8 +512,6 @@ const filteredFavourites = computed(() => {
   return result
 })
 
-// The FavouriteButton component now handles favouriting/unfavouriting
-
 // Updated navigateToChart function in ProfileView.vue
 const navigateToChart = (chartId: string, added_at: string) => {
   // Extract date from added_at string if available
@@ -1000,53 +998,18 @@ const resetPredictionFilters = () => {
           </div>
         </div>
 
-        <!-- Loading state -->
-        <div v-if="favouritesStore.loading" class="loading-state">
-          <div class="loading-spinner"></div>
-          <p>Loading your favourites...</p>
-        </div>
-
-        <!-- Error state -->
-        <div v-else-if="favouritesStore.error" class="error-state">
-          <p>{{ favouritesStore.error }}</p>
-          <button @click="favouritesStore.loadFavourites" class="retry-button">Retry</button>
-        </div>
-
-        <!-- No favourites state -->
-        <div v-else-if="favouritesStore.favourites.length === 0" class="empty-state">
-          <p>You haven't added any favourites yet</p>
-          <button @click="router.push('/')" class="browse-button">Browse Charts</button>
-        </div>
-
-        <!-- No search results -->
-        <div v-else-if="filteredFavourites.length === 0" class="empty-state">
-          <p>No favourites match your search</p>
-          <button @click="searchQuery = ''" class="clear-search-button">Clear Search</button>
-        </div>
-
-        <!-- Favourites list -->
-        <div v-else class="favourites-list">
-          <ChartItemCard
-            v-for="favourite in filteredFavourites"
-            :key="`${favourite.song_name}-${favourite.artist}`"
-            :song="{
-              name: favourite.song_name,
-              artist: favourite.artist,
-              position: favourite.charts[0]?.position || 0,
-              peak_position: favourite.charts[0]?.peak_position || 0,
-              weeks_on_chart: favourite.charts[0]?.weeks_on_chart || 0,
-              image: favourite.image_url,
-              last_week_position: 0,
-              url: '',
-            }"
-            :chart-id="favourite.charts[0]?.chart_id || ''"
-            :chart-title="favourite.charts[0]?.chart_title || ''"
-            :compact="true"
-            @click="
-              () => navigateToChart(favourite.charts[0]?.chart_id, favourite.charts[0]?.added_at)
-            "
-          />
-        </div>
+        <!-- Using ChartCardHolder for favourites -->
+        <ChartCardHolder
+          :loading="favouritesStore.loading"
+          :error="favouritesStore.error"
+          :items="filteredFavourites"
+          :isForFavourites="true"
+          emptyMessage="No favourites match your search"
+        >
+          <template #empty-action>
+            <button @click="searchQuery = ''" class="clear-search-button">Clear Search</button>
+          </template>
+        </ChartCardHolder>
       </div>
 
       <!-- PREDICTIONS TAB -->
@@ -1626,122 +1589,6 @@ const resetPredictionFilters = () => {
   gap: 24px;
 }
 
-.favourite-card {
-  background: white;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-}
-
-.favourite-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
-}
-
-.favourite-image {
-  height: 200px;
-  overflow: hidden;
-}
-
-.song-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.favourite-details {
-  padding: 16px;
-}
-
-.favourite-title {
-  font-size: 1.25rem;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-.favourite-artist {
-  font-size: 1rem;
-  color: #6c757d;
-  margin-bottom: 16px;
-}
-
-.charts-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chart-badge {
-  display: flex;
-  align-items: center;
-  background: #f0f7ff;
-  color: #0366d6;
-  padding: 6px 10px;
-  border-radius: 16px;
-  font-size: 0.875rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  position: relative;
-}
-
-.chart-badge:hover {
-  background: #cce5ff;
-}
-
-.chart-title {
-  margin-right: 6px;
-}
-
-.chart-position {
-  font-weight: bold;
-}
-
-.favourite-btn-container {
-  margin-left: 6px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.chart-badge:hover .favourite-btn-container {
-  opacity: 1;
-}
-
-.chart-favourite-btn {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-/* Override the default favourite button size in this context */
-.chart-favourite-btn .heart-icon {
-  width: 18px;
-  height: 18px;
-}
-
-@media (max-width: 639px) {
-  .favourites-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .favourites-controls {
-    flex-direction: column;
-  }
-
-  .sort-control {
-    width: 100%;
-  }
-
-  .sort-select {
-    flex: 1;
-  }
-}
-
 /* New styles for prediction statistics */
 .prediction-stats-grid {
   display: grid;
@@ -1761,18 +1608,6 @@ const resetPredictionFilters = () => {
 .stat-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #007bff;
-  margin-bottom: 8px;
-}
-
-.stat-label {
-  color: #6c757d;
-  font-size: 0.9rem;
 }
 
 .prediction-type-grid {
@@ -2137,6 +1972,24 @@ const resetPredictionFilters = () => {
   .prediction-content {
     padding-top: 22px; /* Extra top padding for the status indicator */
     padding-left: 16px;
+  }
+
+  .favourites-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .favourites-controls {
+    flex-direction: column;
+  }
+
+  .sort-control {
+    width: 100%;
+  }
+
+  .sort-select {
+    flex: 1;
   }
 }
 </style>

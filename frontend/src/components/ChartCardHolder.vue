@@ -2,18 +2,25 @@
 import { ref, onUnmounted } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import ChartItemCard from '@/components/ChartItemCard.vue'
-import type { ChartData } from '@/types/api'
+import type { ChartData, Song } from '@/types/api'
 import type { AppleMusicData } from '@/types/appleMusic'
+import type { FavouriteSong } from '@/stores/favourites'
 
 const props = defineProps<{
-  currentChart: ChartData | null
+  // Original props for chart view
+  currentChart?: ChartData | null
   loading: boolean
   error: string | null
-  hasMore: boolean
-  isLoadingMore: boolean
-  selectedChartId: string
-  songData: Map<string, AppleMusicData>
-  fetchMoreSongs: () => Promise<void>
+  hasMore?: boolean
+  isLoadingMore?: boolean
+  selectedChartId?: string
+  songData?: Map<string, AppleMusicData>
+  fetchMoreSongs?: () => Promise<void>
+
+  // Additional props for profile view
+  items?: Array<FavouriteSong | Song>
+  isForFavourites?: boolean
+  emptyMessage?: string
 }>()
 
 const loadMoreTrigger = ref<HTMLElement | null>(null)
@@ -22,7 +29,13 @@ const loadMoreTrigger = ref<HTMLElement | null>(null)
 const { stop: stopObserver } = useIntersectionObserver(
   loadMoreTrigger,
   async ([{ isIntersecting }]) => {
-    if (isIntersecting && !props.isLoadingMore && props.hasMore && !props.error) {
+    if (
+      isIntersecting &&
+      !props.isLoadingMore &&
+      props.hasMore &&
+      !props.error &&
+      props.fetchMoreSongs
+    ) {
       console.log('Intersection observed, loading more songs')
       await props.fetchMoreSongs()
     }
@@ -40,26 +53,34 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Show loading indicator for the entire chart when loading -->
+  <!-- Show loading indicator when loading -->
   <div v-if="loading" class="loading">
     <div class="loading-spinner"></div>
     <div class="loading-text">Loading chart data...</div>
   </div>
 
+  <!-- Show error message if there's an error -->
   <div v-else-if="error" class="error">
     <p>{{ error }}</p>
     <slot name="retry-button"></slot>
   </div>
 
+  <!-- Show empty state for favourites if needed -->
+  <div v-else-if="isForFavourites && (!items || items.length === 0)" class="empty">
+    <p>{{ emptyMessage || 'No items found' }}</p>
+    <slot name="empty-action"></slot>
+  </div>
+
+  <!-- Normal chart view -->
   <div v-else-if="currentChart" class="chart-container">
     <div class="songs">
       <ChartItemCard
         v-for="song in currentChart.songs"
         :key="song.position"
         :song="song"
-        :chart-id="selectedChartId.replace(/\/$/, '')"
+        :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
         :chart-title="currentChart.title"
-        :apple-music-data="songData.get(`${song.position}`)"
+        :apple-music-data="songData?.get(`${song.position}`)"
         :show-details="true"
         @click="() => {}"
       />
@@ -73,6 +94,42 @@ onUnmounted(() => {
       </div>
 
       <div v-else :key="'end-message'" class="end-message">No more songs to load</div>
+    </div>
+  </div>
+
+  <!-- Favourites view -->
+  <div v-else-if="isForFavourites && items" class="chart-container">
+    <div class="songs">
+      <slot :items="items">
+        <ChartItemCard
+          v-for="(item, index) in items"
+          :key="index"
+          :song="
+            'song_name' in item
+              ? {
+                  name: item.song_name,
+                  artist: item.artist,
+                  position: item.charts?.[0]?.position || 0,
+                  peak_position: item.charts?.[0]?.peak_position || 0,
+                  weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
+                  image: item.image_url,
+                  last_week_position: 0,
+                  url: '',
+                }
+              : item
+          "
+          :chart-id="
+            'song_name' in item
+              ? item.charts?.[0]?.chart_id || ''
+              : selectedChartId?.replace(/\/$/, '') || ''
+          "
+          :chart-title="
+            'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
+          "
+          :compact="true"
+          @click="() => {}"
+        />
+      </slot>
     </div>
   </div>
 </template>
@@ -110,7 +167,8 @@ onUnmounted(() => {
   }
 }
 
-.error {
+.error,
+.empty {
   text-align: center;
   padding: 24px;
 }
