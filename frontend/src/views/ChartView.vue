@@ -396,8 +396,11 @@ watch(
 
 <template>
   <div class="chart-list">
-    <ChartSelector />
-    <ChartDatePicker />
+    <!-- Controls in a column layout -->
+    <div class="chart-controls">
+      <ChartSelector />
+      <ChartDatePicker />
+    </div>
 
     <!-- Show loading indicator for the entire chart when loading (but not when just loading more songs) -->
     <div v-if="isLoading" class="loading">
@@ -539,6 +542,13 @@ watch(
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.chart-controls {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
 }
 
 .chart-container {

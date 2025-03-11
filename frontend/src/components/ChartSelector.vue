@@ -151,7 +151,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="chart-selector mb-4">
+  <div class="chart-selector">
     <div class="selector-header">
       <Dropdown
         v-model="selectedChartId"
