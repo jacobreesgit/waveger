@@ -11,6 +11,7 @@ import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import FavouriteButton from '@/components/FavouriteButton.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
+import ChartItemCard from '@/components/ChartItemCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -55,11 +56,6 @@ const { stop: stopObserver } = useIntersectionObserver(
     threshold: 0.1, // Trigger when at least 10% of the element is visible
   },
 )
-
-const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
-  if (!url) return ''
-  return url.replace('{w}', width.toString()).replace('{h}', height.toString())
-}
 
 const fetchAppleMusicData = async (song: any) => {
   appleDataLoading.value.add(`${song.position}`)
@@ -426,97 +422,16 @@ watch(
       </div>
 
       <transition-group name="song-list" tag="div" class="songs">
-        <div v-for="song in store.currentChart.songs" :key="song.position" class="song-item">
-          <div class="song-rank">#{{ song.position }}</div>
-          <div class="song-image-container">
-            <img
-              :src="
-                songData.get(`${song.position}`)?.attributes.artwork.url
-                  ? getArtworkUrl(songData.get(`${song.position}`)?.attributes.artwork.url)
-                  : song.image
-              "
-              :alt="song.name"
-              class="song-image"
-            />
-            <FavouriteButton
-              :song="song"
-              :chart-id="store.selectedChartId.replace(/\/$/, '')"
-              :chart-title="store.currentChart.title"
-              class="favourite-btn-overlay"
-            />
-          </div>
-          <div class="song-info">
-            <div class="song-title">{{ song.name }}</div>
-            <div class="song-artist">{{ song.artist }}</div>
-            <div class="song-trend">
-              <span
-                class="trend-indicator"
-                :class="{
-                  'trend-up': song.position < (song.last_week_position || Infinity),
-                  'trend-down': song.position > (song.last_week_position || 0),
-                  'trend-same': song.position === song.last_week_position,
-                }"
-              >
-                {{
-                  song.last_week_position
-                    ? song.position < song.last_week_position
-                      ? '↑'
-                      : song.position > song.last_week_position
-                        ? '↓'
-                        : '='
-                    : 'NEW'
-                }}
-              </span>
-              <span class="weeks-on-chart">
-                {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
-              </span>
-            </div>
-            <div
-              v-if="appleDataLoading.has(`${song.position}`)"
-              class="loading-spinner apple-loading"
-            ></div>
-            <div class="song-metadata" v-else-if="songData.get(`${song.position}`)">
-              <div class="album-name">
-                Album: {{ songData.get(`${song.position}`)?.attributes.albumName }}
-              </div>
-              <div
-                class="composer"
-                v-if="songData.get(`${song.position}`)?.attributes.composerName"
-              >
-                Composer: {{ songData.get(`${song.position}`)?.attributes.composerName }}
-              </div>
-              <div
-                class="genres"
-                v-if="songData.get(`${song.position}`)?.attributes.genreNames.length"
-              >
-                Genres: {{ songData.get(`${song.position}`)?.attributes.genreNames.join(', ') }}
-              </div>
-              <div class="song-actions">
-                <audio
-                  v-if="songData.get(`${song.position}`)?.attributes.previews?.[0]"
-                  controls
-                  class="preview-player"
-                >
-                  <source
-                    :src="songData.get(`${song.position}`)?.attributes.previews[0].url"
-                    type="audio/mp4"
-                  />
-                </audio>
-                <a
-                  :href="songData.get(`${song.position}`)?.attributes.url"
-                  target="_blank"
-                  class="apple-music-button"
-                >
-                  Listen on Apple Music
-                </a>
-              </div>
-            </div>
-          </div>
-          <div class="song-stats">
-            <div>Peak: #{{ song.peak_position }}</div>
-            <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
-          </div>
-        </div>
+        <ChartItemCard
+          v-for="song in store.currentChart.songs"
+          :key="song.position"
+          :song="song"
+          :chart-id="store.selectedChartId.replace(/\/$/, '')"
+          :chart-title="store.currentChart.title"
+          :apple-music-data="songData.get(`${song.position}`)"
+          :show-details="true"
+          @click="() => {}"
+        />
 
         <div
           v-if="store.hasMore"

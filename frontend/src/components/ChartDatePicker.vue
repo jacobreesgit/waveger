@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
-import Calendar from 'primevue/calendar' // Import PrimeVue's Calendar component
+import Calendar from 'primevue/calendar'
+import Button from 'primevue/button'
 
 const props = defineProps<{
   initialDate?: string
@@ -13,6 +14,18 @@ const route = useRoute()
 const store = useChartsStore()
 const today = new Date() // PrimeVue Calendar uses Date objects
 const selectedDate = ref(today) // Use Date object for Calendar component
+
+// Computed property to check if selected date is not today
+const isNotToday = computed(() => {
+  const todayDate = new Date()
+  // Reset hours to compare only the date part
+  todayDate.setHours(0, 0, 0, 0)
+  const selectedDateTime = new Date(selectedDate.value)
+  selectedDateTime.setHours(0, 0, 0, 0)
+
+  // Return true if dates are different
+  return todayDate.getTime() !== selectedDateTime.getTime()
+})
 
 // Convert Date to URL format (dd-mm-yyyy)
 const formatDateForURL = (dateObj: Date): string => {
@@ -50,6 +63,12 @@ const updateRoute = async (newDate: Date) => {
       id: chartId,
     },
   })
+}
+
+// Method to set date to today
+const goToToday = async () => {
+  selectedDate.value = new Date() // Set to today
+  await updateRoute(selectedDate.value)
 }
 
 // Watch for route changes to update the date picker
@@ -92,17 +111,33 @@ onMounted(() => {
 
 <template>
   <div class="chart-date-picker">
-    <Calendar
-      v-model="selectedDate"
-      :maxDate="today"
-      :disabled="store.loading"
-      dateFormat="yy-mm-dd"
-      showIcon
-      inputId="date-picker"
-      class="w-full md:w-auto"
-      aria-label="Select date"
-    />
+    <div class="date-picker-container">
+      <Calendar
+        v-model="selectedDate"
+        :maxDate="today"
+        :disabled="store.loading"
+        dateFormat="yy-mm-dd"
+        showIcon
+        inputId="date-picker"
+        class="w-full md:w-auto"
+        aria-label="Select date"
+      />
+      <Button
+        v-if="isNotToday"
+        @click="goToToday"
+        :disabled="store.loading"
+        icon="pi pi-calendar-today"
+        label="Today"
+        aria-label="Set date to today"
+      />
+    </div>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.date-picker-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+</style>
