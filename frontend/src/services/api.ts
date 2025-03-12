@@ -22,8 +22,7 @@ export const getChartDetails = async (params: {
 
     const response = await api.get<ApiResponse>('/chart', {
       params,
-      // Add timeout for better UX
-      timeout: 20000,
+      timeout: 100000,
     })
 
     return response.data
