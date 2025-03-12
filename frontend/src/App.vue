@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { initializeStores } from '@/services/storeManager'
 import Nav from '@/components/Nav.vue'
-import ProgressSpinner from 'primevue/progressspinner'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 
@@ -41,8 +41,7 @@ onMounted(async () => {
     <Nav />
     <main class="app-container__main-content">
       <div v-if="isInitializing" class="app-container__main-content__app-loading">
-        <ProgressSpinner />
-        <p>Loading application...</p>
+        <LoadingSpinner label="Loading application..." centerInContainer />
       </div>
       <div v-else-if="initError" class="app-container__main-content__app-error">
         <Message severity="error" :closable="false">{{ initError }}</Message>
@@ -59,6 +58,7 @@ onMounted(async () => {
   flex-direction: column;
   min-height: 100vh;
   &__main-content {
+    display: flex;
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
@@ -73,10 +73,6 @@ onMounted(async () => {
     padding: 2rem;
   }
   :deep(.p-message) {
-    margin-bottom: 1rem;
-  }
-
-  :deep(.p-progress-spinner) {
     margin-bottom: 1rem;
   }
 }

@@ -20,7 +20,7 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import Card from 'primevue/card'
 import Badge from 'primevue/badge'
 
@@ -1005,7 +1005,7 @@ const resetPredictionFilters = () => {
               <InputText v-model="searchQuery" placeholder="Search favourites..." class="w-full" />
             </span>
 
-            <Dropdown
+            <Select
               v-model="selectedSort"
               :options="sortOptions"
               optionLabel="label"
@@ -1035,7 +1035,7 @@ const resetPredictionFilters = () => {
             <div class="prediction-filters">
               <div class="filter-group">
                 <label for="result-filter">Result:</label>
-                <Dropdown
+                <Select
                   id="result-filter"
                   v-model="predictionFilter"
                   :options="[
@@ -1052,7 +1052,7 @@ const resetPredictionFilters = () => {
 
               <div class="filter-group">
                 <label for="type-filter">Type:</label>
-                <Dropdown
+                <Select
                   id="type-filter"
                   v-model="predictionTypeFilter"
                   :options="[
@@ -1069,7 +1069,7 @@ const resetPredictionFilters = () => {
 
               <div class="filter-group">
                 <label for="chart-filter">Chart:</label>
-                <Dropdown
+                <Select
                   id="chart-filter"
                   v-model="chartTypeFilter"
                   :options="[

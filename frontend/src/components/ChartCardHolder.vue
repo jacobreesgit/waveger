@@ -2,6 +2,7 @@
 import { ref, onUnmounted } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import ChartItemCard from '@/components/ChartItemCard.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { ChartData, Song } from '@/types/api'
 import type { AppleMusicData } from '@/types/appleMusic'
 import type { FavouriteSong } from '@/stores/favourites'
@@ -55,8 +56,7 @@ onUnmounted(() => {
 <template>
   <!-- Show loading indicator when loading -->
   <div v-if="loading" class="loading">
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Loading chart data...</div>
+    <LoadingSpinner label="Loading chart data..." centerInContainer />
   </div>
 
   <!-- Show error message if there's an error -->
@@ -87,8 +87,7 @@ onUnmounted(() => {
 
       <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
         <div v-if="isLoadingMore" class="loading-more">
-          <div class="loading-spinner"></div>
-          Loading more songs...
+          <LoadingSpinner label="Loading more songs..." size="small" inline />
         </div>
         <div v-else class="load-more-text">Scroll for more songs</div>
       </div>
@@ -147,15 +146,6 @@ onUnmounted(() => {
 .loading-text {
   font-size: 1.1rem;
   font-weight: 500;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
