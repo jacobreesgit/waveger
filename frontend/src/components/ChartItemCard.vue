@@ -70,32 +70,32 @@ const isArtistChart = computed(() => {
         :song="song"
         :chart-id="chartId"
         :chart-title="chartTitle"
-        class="chart-item-favourite-btn"
+        class="chart-item-card__image-container__favourite-btn"
         size="small"
       />
     </div>
 
-    <div class="chart-item-info">
-      <div class="chart-item-title">{{ song.name }}</div>
-      <div class="chart-item-artist">{{ song.artist }}</div>
-      <div class="chart-item-trend">
+    <div class="chart-item-card__item-info">
+      <div class="chart-item-card__item-info__title">{{ song.name }}</div>
+      <div class="chart-item-card__item-info__artist">{{ song.artist }}</div>
+      <div class="chart-item-card__item-info__trend">
         <span
-          class="trend-indicator"
+          class="chart-item-card__item-info__trend__indicator"
           :class="{
-            'trend-up': trendDirection === 'UP',
-            'trend-down': trendDirection === 'DOWN',
-            'trend-same': trendDirection === 'SAME',
+            'chart-item-card__item-info__trend--trend-up': trendDirection === 'UP',
+            'chart-item-card__item-info__trend--trend-down': trendDirection === 'DOWN',
+            'chart-item-card__item-info__trend--trend-same': trendDirection === 'SAME',
           }"
         >
           {{ trendIcon }}
         </span>
-        <span class="weeks-on-chart">
+        <span class="chart-item-card__item-info__weeks-on-chart">
           {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
         </span>
       </div>
     </div>
 
-    <div class="chart-item-stats">
+    <div class="chart-item-card__stats">
       <div>Peak: #{{ song.peak_position }}</div>
       <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
     </div>
@@ -103,17 +103,29 @@ const isArtistChart = computed(() => {
     <!-- Additional Apple Music metadata if available and showDetails is true -->
     <div
       v-if="showDetails && appleMusicData?.attributes && !isArtistChart"
-      class="chart-item-metadata"
+      class="chart-item-card__metadata"
     >
-      <div class="album-name">Album: {{ appleMusicData.attributes.albumName }}</div>
-      <div class="genres" v-if="appleMusicData.attributes.genreNames?.length">
+      <div class="chart-item-card__metadata__album-name">
+        Album: {{ appleMusicData.attributes.albumName }}
+      </div>
+      <div
+        class="chart-item-card__metadata__genres"
+        v-if="appleMusicData.attributes.genreNames?.length"
+      >
         Genres: {{ appleMusicData.attributes.genreNames.join(', ') }}
       </div>
-      <div class="chart-item-actions" v-if="appleMusicData.attributes.previews?.length">
-        <audio controls class="preview-player">
+      <div
+        class="chart-item-card__metadata__actions"
+        v-if="appleMusicData.attributes.previews?.length"
+      >
+        <audio controls class="chart-item-card__metadata__actions__preview-player">
           <source :src="appleMusicData.attributes.previews[0].url" type="audio/mp4" />
         </audio>
-        <a :href="appleMusicData.attributes.url" target="_blank" class="apple-music-button">
+        <a
+          :href="appleMusicData.attributes.url"
+          target="_blank"
+          class="chart-item-card__metadata__actions__apple-music-button"
+        >
           Listen on Apple Music
         </a>
       </div>
@@ -156,113 +168,93 @@ const isArtistChart = computed(() => {
       height: 100%;
       object-fit: cover;
     }
+    &__favourite-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 2;
+    }
   }
-}
-
-.chart-item-favourite-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-}
-
-.chart-item-info {
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.chart-item-title {
-  font-weight: 600;
-  font-size: 1.1rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chart-item-artist {
-  color: #6c757d;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chart-item-trend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-.trend-indicator {
-  font-weight: bold;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.trend-up {
-  background: #e8f5e9;
-  color: #28a745;
-}
-
-.trend-down {
-  background: #ffebee;
-  color: #dc3545;
-}
-
-.trend-same {
-  background: #f8f9fa;
-  color: #6c757d;
-}
-
-.trend-new {
-  background: #e3f2fd;
-  color: #0d6efd;
-}
-
-.weeks-on-chart {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.chart-item-stats {
-  display: flex;
-  justify-content: space-between;
-  color: #6c757d;
-  font-size: 0.85rem;
-  padding: 0 15px 15px;
-}
-
-.chart-item-metadata {
-  padding: 0 15px 15px;
-  font-size: 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.chart-item-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.preview-player {
-  width: 100%;
-  height: 32px;
-}
-
-.apple-music-button {
-  display: inline-block;
-  background: #fa324a;
-  color: white;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 500;
-  text-align: center;
-  width: fit-content;
+  &__item-info {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    &__title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    &__artist {
+      color: #6c757d;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    &__trend {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+      &__indicator {
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 4px;
+        &--trend-up {
+          background: #e8f5e9;
+          color: #28a745;
+        }
+        &--trend-down {
+          background: #ffebee;
+          color: #dc3545;
+        }
+        &--trend-same {
+          background: #f8f9fa;
+          color: #6c757d;
+        }
+      }
+    }
+    &__weeks-on-chart {
+      color: #6c757d;
+      font-size: 0.9rem;
+    }
+  }
+  &__stats {
+    display: flex;
+    justify-content: space-between;
+    color: #6c757d;
+    font-size: 0.85rem;
+    padding: 0 15px 15px;
+  }
+  &__metadata {
+    padding: 0 15px 15px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    &__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+      &__preview-player {
+        width: 100%;
+        height: 32px;
+      }
+      &__apple-music-button {
+        display: inline-block;
+        background: #fa324a;
+        color: white;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        text-align: center;
+        width: 100%;
+      }
+    }
+  }
 }
 </style>
