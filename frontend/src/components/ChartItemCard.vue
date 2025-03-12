@@ -46,6 +46,11 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
   if (!url) return ''
   return url.replace('{w}', width.toString()).replace('{h}', height.toString())
 }
+
+// Check if the current chart is an artist chart
+const isArtistChart = computed(() => {
+  return props.chartId.includes('artist')
+})
 </script>
 
 <template>
@@ -96,7 +101,10 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
     </div>
 
     <!-- Additional Apple Music metadata if available and showDetails is true -->
-    <div v-if="showDetails && appleMusicData?.attributes" class="chart-item-metadata">
+    <div
+      v-if="showDetails && appleMusicData?.attributes && !isArtistChart"
+      class="chart-item-metadata"
+    >
       <div class="album-name">Album: {{ appleMusicData.attributes.albumName }}</div>
       <div class="genres" v-if="appleMusicData.attributes.genreNames?.length">
         Genres: {{ appleMusicData.attributes.genreNames.join(', ') }}
