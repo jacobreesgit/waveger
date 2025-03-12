@@ -96,7 +96,6 @@ export const useFavouritesStore = defineStore('favourites', () => {
   const loadFavourites = async () => {
     // Skip if loading in progress
     if (loading.value) {
-      console.debug('Favourites - Loading already in progress, skipping')
       return
     }
 
