@@ -122,6 +122,10 @@ export const useChartsStore = defineStore('charts', () => {
     })
   }
 
+  const initialize = async () => {
+    return loadCurrentChart()
+  }
+
   // Reset store state
   const reset = () => {
     currentChart.value = null
@@ -140,13 +144,12 @@ export const useChartsStore = defineStore('charts', () => {
     error,
     hasMore,
     dataSource,
-
-    // IMPORTANT: Export all methods with original names
     fetchChartDetails,
     fetchMoreSongs,
     loadCurrentChart,
     parseDateFromURL,
     formatDateForURL,
+    initialize,
     reset,
   }
 })

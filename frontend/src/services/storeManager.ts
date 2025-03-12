@@ -144,7 +144,7 @@ export async function initializeStores(
             console.log('✅ Charts store initialization completed')
             pendingInitializations.delete('charts')
           })
-          .catch((e) => {
+          .catch((e: Error) => {
             console.error('❌ Charts store initialization failed:', e)
             pendingInitializations.delete('charts')
             throw e
@@ -171,7 +171,7 @@ export async function initializeStores(
             console.log('✅ Favourites store initialization completed')
             pendingInitializations.delete('favourites')
           })
-          .catch((e) => {
+          .catch((e: Error) => {
             console.error('❌ Favourites store initialization failed:', e)
             pendingInitializations.delete('favourites')
             throw e
@@ -198,7 +198,7 @@ export async function initializeStores(
             console.log('✅ Predictions store initialization completed')
             pendingInitializations.delete('predictions')
           })
-          .catch((e) => {
+          .catch((e: Error) => {
             console.error('❌ Predictions store initialization failed:', e)
             pendingInitializations.delete('predictions')
             throw e
@@ -227,7 +227,7 @@ export async function initializeStores(
             console.log('✅ Apple Music store initialization completed')
             pendingInitializations.delete('appleMusic')
           })
-          .catch((e) => {
+          .catch((e: Error) => {
             console.warn('⚠️ Apple Music initialization failed:', e)
             // Don't mark as failed in case of timeout - will retry later
             pendingInitializations.delete('appleMusic')
