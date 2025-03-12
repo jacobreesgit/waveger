@@ -7,6 +7,9 @@ import { getAppleMusicToken } from '@/services/api'
 // This prevents the global interceptors from affecting these requests
 const appleMusicAxios = axios.create()
 
+// Add a request cache to prevent duplicate requests
+const searchCache = new Map<string, any | null>()
+
 export const useAppleMusicStore = defineStore('appleMusic', () => {
   const token = ref<string | null>(null)
   const loading = ref(false)
@@ -78,6 +81,12 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
       }
     }
 
+    // Check cache first
+    const normalizedQuery = query.trim().toLowerCase()
+    if (searchCache.has(normalizedQuery)) {
+      return searchCache.get(normalizedQuery)
+    }
+
     try {
       // Use the dedicated appleMusicAxios instance instead of global axios
       // This prevents auth interceptors from adding the wrong token
@@ -97,11 +106,15 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
 
       // Handle case where Apple Music API returns results but no songs data
       if (!response.data.results.songs?.data?.length) {
+        // Log only once per query
         console.log(`No Apple Music match found for: ${query}`)
+        searchCache.set(normalizedQuery, null)
         return null
       }
 
-      return response.data.results.songs.data[0]
+      const result = response.data.results.songs.data[0]
+      searchCache.set(normalizedQuery, result)
+      return result
     } catch (e) {
       if (e instanceof AxiosError) {
         console.error('Apple Music API error:', e.response?.data)
@@ -113,6 +126,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
         console.error('Unknown error:', e)
         error.value = 'An unknown error occurred'
       }
+      searchCache.set(normalizedQuery, null)
       return null
     }
   }
@@ -125,6 +139,8 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     initialized.value = false
     initializing.value = false
     initializationPromise = null
+    // Clear the search cache when resetting the store
+    searchCache.clear()
   }
 
   return {
