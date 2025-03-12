@@ -152,6 +152,7 @@ onMounted(() => {
   align-items: center;
   padding: 0.5rem 1rem;
   background-color: #f8f9fa;
+  position: relative;
   &__logo {
     margin-right: 1rem;
     &__logo-link {
@@ -172,15 +173,14 @@ onMounted(() => {
       color: white !important;
     }
   }
-  @media (max-width: 639px) {
+  @media (max-width: 960px) {
     &__nav-menu {
       order: 0;
-      flex-grow: 0;
     }
     &__logo {
       order: 1;
-      flex-grow: 1;
-      margin: 0;
+      position: absolute;
+      left: 72px;
     }
     &__nav-right {
       order: 2;
