@@ -10,6 +10,9 @@ const appleMusicAxios = axios.create()
 // Add a request cache to prevent duplicate requests
 const searchCache = new Map<string, any | null>()
 
+// Add a set to track logged artists to prevent duplicate logs
+const loggedArtists = new Set<string>()
+
 export const useAppleMusicStore = defineStore('appleMusic', () => {
   const token = ref<string | null>(null)
   const loading = ref(false)
@@ -19,7 +22,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
   const initialized = ref(false)
   const initializing = ref(false)
 
-  // NEW: Add a promise to track initialization
+  // Add a promise to track initialization
   let initializationPromise: Promise<void> | null = null
 
   const fetchToken = async () => {
@@ -65,6 +68,14 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
   }
 
   const searchSong = async (query: string) => {
+    // Clean the query by removing "undefined" if present
+    const cleanQuery = query.replace(/\s+undefined$/, '').trim()
+
+    // Skip empty queries
+    if (!cleanQuery) {
+      return null
+    }
+
     // Make sure we have a token first - wait for initialization to complete
     if (!token.value) {
       try {
@@ -82,7 +93,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     }
 
     // Check cache first
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = cleanQuery.toLowerCase()
     if (searchCache.has(normalizedQuery)) {
       return searchCache.get(normalizedQuery)
     }
@@ -94,7 +105,7 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
         `https://api.music.apple.com/v1/catalog/us/search`,
         {
           params: {
-            term: query,
+            term: cleanQuery,
             types: 'songs',
             limit: 1,
           },
@@ -106,8 +117,11 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
 
       // Handle case where Apple Music API returns results but no songs data
       if (!response.data.results.songs?.data?.length) {
-        // Log only once per query
-        console.log(`No Apple Music match found for: ${query}`)
+        // Only log if we haven't logged this artist before
+        if (!loggedArtists.has(cleanQuery)) {
+          console.log(`No Apple Music match found for: ${cleanQuery}`)
+          loggedArtists.add(cleanQuery)
+        }
         searchCache.set(normalizedQuery, null)
         return null
       }
@@ -139,8 +153,10 @@ export const useAppleMusicStore = defineStore('appleMusic', () => {
     initialized.value = false
     initializing.value = false
     initializationPromise = null
-    // Clear the search cache when resetting the store
+
+    // Clear the caches when resetting the store
     searchCache.clear()
+    loggedArtists.clear()
   }
 
   return {
