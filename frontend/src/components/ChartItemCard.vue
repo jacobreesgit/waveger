@@ -55,8 +55,8 @@ const isArtistChart = computed(() => {
 
 <template>
   <div class="chart-item-card" @click="handleClick">
-    <div class="chart-item-image-container">
-      <div class="chart-item-rank">#{{ song.position }}</div>
+    <div class="chart-item-card__image-container">
+      <div class="chart-item-card__image-container__rank">#{{ song.position }}</div>
       <img
         :src="
           appleMusicData?.attributes?.artwork?.url
@@ -64,7 +64,7 @@ const isArtistChart = computed(() => {
             : song.image
         "
         :alt="song.name"
-        class="chart-item-image"
+        class="chart-item-card__image-container__image"
       />
       <FavouriteButton
         :song="song"
@@ -131,35 +131,32 @@ const isArtistChart = computed(() => {
   overflow: hidden;
   cursor: pointer;
   transition: transform 0.2s;
-}
-
-.chart-item-image-container {
-  position: relative;
-  width: 100%;
-  padding-bottom: 100%; /* 1:1 Aspect Ratio */
-  overflow: hidden;
-}
-
-.chart-item-image {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.chart-item-rank {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.6);
-  color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
-  padding: 5px 10px;
-  border-radius: 4px;
-  z-index: 2;
+  &__image-container {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%; /* 1:1 Aspect Ratio */
+    overflow: hidden;
+    &__rank {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      padding: 5px 10px;
+      border-radius: 4px;
+      z-index: 2;
+    }
+    &__image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
 }
 
 .chart-item-favourite-btn {

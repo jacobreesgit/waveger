@@ -207,9 +207,12 @@ watch(
       :selected-chart-id="store.selectedChartId"
       :song-data="songData"
       :fetch-more-songs="fetchMoreSongs"
+      class="chart-view__chart-card-holder"
     >
       <template #retry-button>
-        <button @click="retryLoadingChart" class="retry-button">Retry</button>
+        <button @click="retryLoadingChart" class="chart-view__chart-card-holder__retry-button">
+          Retry
+        </button>
       </template>
     </ChartCardHolder>
   </div>
@@ -250,19 +253,19 @@ watch(
       gap: 8px;
     }
   }
-}
-
-.retry-button {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.retry-button:hover {
-  background: #0069d9;
+  &__chart-card-holder {
+    &__retry-button {
+      padding: 8px 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      &:hover {
+        background: #0069d9;
+      }
+    }
+  }
 }
 </style>

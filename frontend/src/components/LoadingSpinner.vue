@@ -69,6 +69,7 @@ const spinnerSize = () => {
     align-items: center;
     width: 100%;
     min-height: 100px;
+    height: 100%;
   }
   &__loading-label {
     font-size: 0.85rem;
