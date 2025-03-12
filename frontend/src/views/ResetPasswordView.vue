@@ -3,7 +3,10 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validatePassword, passwordsMatch } from '@/utils/validation'
-import PasswordInput from '@/components/PasswordInput.vue'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const route = useRoute()
 const router = useRouter()
@@ -96,92 +99,115 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="reset-password-container">
-    <div class="reset-password-form">
+  <div class="reset-password-view">
+    <div class="card">
       <h2>Reset Password</h2>
 
       <!-- Loading state -->
-      <div v-if="isVerifying" class="verifying-token">
-        <div class="loading-spinner"></div>
+      <div v-if="isVerifying" class="text-center">
+        <ProgressSpinner style="width: 3rem; height: 3rem" class="mb-3" />
         <p>Verifying your reset link...</p>
       </div>
 
       <!-- Success state -->
-      <div v-else-if="isSuccess" class="success-message">
-        <div class="success-icon">✓</div>
-        <h3>Password Reset Successful</h3>
-        <p>Your password has been reset successfully. You can now log in with your new password.</p>
-        <div class="actions">
-          <router-link to="/login" class="login-button">Go to Login</router-link>
+      <div v-else-if="isSuccess" class="text-center">
+        <Message severity="success" :closable="false">
+          <template #detail>
+            Your password has been reset successfully. You can now log in with your new password.
+          </template>
+        </Message>
+        <div class="mt-4">
+          <router-link to="/login">
+            <Button label="Go to Login" />
+          </router-link>
         </div>
       </div>
 
       <!-- Invalid token state -->
-      <div v-else-if="!isTokenValid" class="invalid-token">
-        <div class="error-icon">!</div>
-        <h3>Invalid Reset Link</h3>
-        <p>{{ errors.general }}</p>
-        <div class="actions">
-          <router-link to="/forgot-password" class="request-new-link"
-            >Request New Reset Link</router-link
-          >
+      <div v-else-if="!isTokenValid" class="text-center">
+        <Message severity="error" :closable="false">
+          <template #detail>
+            {{ errors.general }}
+          </template>
+        </Message>
+        <div class="mt-4">
+          <router-link to="/forgot-password">
+            <Button label="Request New Reset Link" />
+          </router-link>
         </div>
       </div>
 
       <!-- Reset form -->
       <form v-else @submit.prevent="handleSubmit">
-        <div v-if="username && email" class="user-info">
-          <p>
-            Resetting password for: <strong>{{ username }}</strong> ({{ email }})
-          </p>
+        <div v-if="username && email" class="user-info mb-4">
+          <Message severity="info" :closable="false">
+            <template #detail>
+              Resetting password for: <strong>{{ username }}</strong> ({{ email }})
+            </template>
+          </Message>
         </div>
 
-        <div v-if="errors.general" class="error-message">
+        <Message v-if="errors.general" severity="error" :closable="false" class="mb-4">
           {{ errors.general }}
-        </div>
+        </Message>
 
-        <div class="form-group">
+        <div class="form-field">
           <label for="password">New Password</label>
-          <PasswordInput
+          <Password
             id="password"
             v-model="password"
             :disabled="isSubmitting"
-            :error="errors.password"
-            @update:model-value="errors.password = ''"
+            toggleMask
+            :feedback="true"
+            inputClass="w-full"
+            class="w-full"
+            @input="errors.password = ''"
           />
+          <small v-if="errors.password" class="error-text">
+            {{ errors.password }}
+          </small>
         </div>
 
-        <div class="form-group">
+        <div class="form-field">
           <label for="confirmPassword">Confirm New Password</label>
-          <PasswordInput
+          <Password
             id="confirmPassword"
             v-model="confirmPassword"
             :disabled="isSubmitting"
-            :error="errors.confirmPassword"
-            @update:model-value="errors.confirmPassword = ''"
+            toggleMask
+            :feedback="false"
+            inputClass="w-full"
+            class="w-full"
+            @input="errors.confirmPassword = ''"
           />
+          <small v-if="errors.confirmPassword" class="error-text">
+            {{ errors.confirmPassword }}
+          </small>
         </div>
 
-        <button type="submit" :disabled="isSubmitting" class="submit-button">
-          {{ isSubmitting ? 'Resetting...' : 'Reset Password' }}
-        </button>
+        <Button
+          type="submit"
+          :label="isSubmitting ? 'Resetting...' : 'Reset Password'"
+          :disabled="isSubmitting"
+          class="w-full mt-3"
+        />
       </form>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.reset-password-container {
+.reset-password-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 80px);
-  padding: 20px;
 }
 
-.reset-password-form {
+.card {
   background: white;
-  padding: 30px;
+  padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -189,192 +215,46 @@ const handleSubmit = async () => {
 }
 
 h2 {
-  margin: 0 0 20px;
+  margin: 0 0 1.5rem;
   text-align: center;
-  color: #333;
 }
 
-.verifying-token {
-  text-align: center;
-  padding: 20px 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+.form-field {
+  margin-bottom: 1.5rem;
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 15px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
   }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.submit-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #dc3545;
-  margin-bottom: 20px;
-  padding: 12px;
-  background: #ffe6e6;
-  border-radius: 6px;
-  font-size: 14px;
 }
 
 .error-text {
   color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
+  display: block;
+  margin-top: 0.25rem;
 }
 
-.success-message,
-.invalid-token {
-  text-align: center;
-  padding: 20px 0;
-}
-
-.success-icon,
-.error-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  font-size: 24px;
-  margin: 0 auto 20px;
-}
-
-.success-icon {
-  background: #28a745;
-  color: white;
-}
-
-.error-icon {
-  background: #dc3545;
-  color: white;
-}
-
-.success-message h3 {
-  color: #28a745;
-  margin-bottom: 10px;
-}
-
-.invalid-token h3 {
-  color: #dc3545;
-  margin-bottom: 10px;
-}
-
-.success-message p,
-.invalid-token p {
-  color: #666;
-  margin-bottom: 20px;
-}
-
-.actions {
-  margin-top: 20px;
-}
-
-.login-button,
-.request-new-link {
-  display: inline-block;
-  padding: 10px 20px;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.login-button {
-  background: #007bff;
-}
-
-.login-button:hover {
-  background: #0056b3;
-}
-
-.request-new-link {
-  background: #6c757d;
-}
-
-.request-new-link:hover {
-  background: #5a6268;
-}
-
-.user-info {
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: 6px;
-  margin-bottom: 20px;
+.text-center {
   text-align: center;
 }
 
-.user-info p {
-  margin: 0;
-  color: #495057;
+.w-full {
+  width: 100%;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem;
 }
 </style>

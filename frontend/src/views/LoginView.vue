@@ -4,7 +4,11 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validateLoginForm } from '@/utils/validation'
 import axios from 'axios'
-import PasswordInput from '@/components/PasswordInput.vue'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
+import Message from 'primevue/message'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -31,7 +35,6 @@ const clearErrors = () => {
 
 // Pre-fetch user data when username field loses focus
 const handleUsernameBlur = async () => {
-  console.log('Blur Username')
   // Only attempt to prefetch if username is valid
   if (username.value.length < 3) return
 
@@ -39,7 +42,6 @@ const handleUsernameBlur = async () => {
     isPreFetching.value = true
 
     // Create a request to a new endpoint we'll add to the backend
-    // This would need to be implemented on the backend
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL || 'https://wavegerpython.onrender.com/api'}/auth/user-info`,
       {
@@ -50,11 +52,9 @@ const handleUsernameBlur = async () => {
     // Store the pre-fetched data
     if (response.data && response.data.success) {
       preLoadedUserData.value = response.data.user
-      console.log('User data pre-fetched successfully')
     }
   } catch (error) {
     // Silently fail - no need to show errors for prefetching
-    console.log('User pre-fetch failed, will continue with normal login flow')
     preLoadedUserData.value = null
   } finally {
     isPreFetching.value = false
@@ -88,7 +88,7 @@ const handleLogin = async () => {
     }
 
     // Proceed with login
-    const loginResult = await authStore.login({
+    await authStore.login({
       username: username.value,
       password: password.value,
       remember_me: rememberMe.value,
@@ -112,65 +112,72 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="login-container">
-    <div class="login-form">
+  <div class="login-view">
+    <div class="card">
       <h2>Login</h2>
 
       <!-- General Error Message -->
-      <div v-if="formErrors.general" class="error-message">
+      <Message v-if="formErrors.general" severity="error" :closable="false">
         {{ formErrors.general }}
-      </div>
+      </Message>
 
       <form @submit.prevent="handleLogin">
         <!-- Username Field -->
-        <div class="form-group">
+        <div class="form-field">
           <label for="username">Username</label>
-          <input
+          <InputText
             id="username"
             v-model="username"
             autocomplete="username"
-            type="text"
             required
             :disabled="isSubmitting"
             @input="formErrors.username = ''"
             @blur="handleUsernameBlur"
+            class="w-full"
           />
-          <p v-if="formErrors.username" class="error-text">
+          <small v-if="formErrors.username" class="error-text">
             {{ formErrors.username }}
-          </p>
+          </small>
         </div>
 
         <!-- Password Field -->
-        <div class="form-group">
+        <div class="form-field">
           <label for="password">Password</label>
-          <PasswordInput
+          <Password
             id="password"
             v-model="password"
             :disabled="isSubmitting"
-            :error="formErrors.password"
-            @update:model-value="formErrors.password = ''"
+            toggleMask
+            :feedback="false"
+            inputClass="w-full"
+            class="w-full"
+            autocomplete="current-password"
+            @input="formErrors.password = ''"
           />
-          <div class="forgot-password">
-            <router-link to="/forgot-password">Forgot password?</router-link>
+          <small v-if="formErrors.password" class="error-text">
+            {{ formErrors.password }}
+          </small>
+          <div class="mt-2 text-right">
+            <router-link to="/forgot-password" class="text-sm">Forgot password?</router-link>
           </div>
         </div>
 
         <!-- Remember Me Checkbox -->
-        <div class="form-group remember-me">
-          <label class="checkbox-container">
-            <input type="checkbox" v-model="rememberMe" :disabled="isSubmitting" />
-            <span class="checkmark"></span>
-            Remember me
-          </label>
+        <div class="form-field flex align-items-center">
+          <Checkbox id="rememberMe" v-model="rememberMe" :binary="true" :disabled="isSubmitting" />
+          <label for="rememberMe" class="ml-2">Remember me</label>
         </div>
 
         <!-- Submit Button -->
-        <button type="submit" :disabled="isSubmitting">
-          {{ isSubmitting ? 'Logging in...' : 'Login' }}
-        </button>
+        <Button
+          type="submit"
+          :label="isSubmitting ? 'Logging in...' : 'Login'"
+          :disabled="isSubmitting"
+          class="w-full mt-3"
+        />
       </form>
 
-      <div class="register-link">
+      <div class="mt-4 text-center">
         Don't have an account?
         <router-link to="/register">Register</router-link>
       </div>
@@ -179,17 +186,17 @@ const handleLogin = async () => {
 </template>
 
 <style lang="scss" scoped>
-.login-container {
+.login-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  padding: 20px;
 }
 
-.login-form {
+.card {
   background: white;
-  padding: 30px;
+  padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -197,108 +204,62 @@ const handleLogin = async () => {
 }
 
 h2 {
-  margin: 0 0 20px;
+  margin: 0 0 1.5rem;
   text-align: center;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
+.form-field {
+  margin-bottom: 1.5rem;
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-}
-
-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.remember-me {
-  display: flex;
-  align-items: center;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.checkbox-container input {
-  width: auto;
-  margin-right: 8px;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #dc3545;
-  margin-bottom: 20px;
-  padding: 10px;
-  background: #ffe6e6;
-  border-radius: 4px;
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 }
 
 .error-text {
   color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
+  display: block;
+  margin-top: 0.25rem;
 }
 
-.register-link {
-  margin-top: 20px;
+.mt-2 {
+  margin-top: 0.5rem;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
   text-align: center;
 }
 
-.register-link a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.register-link a:hover {
-  text-decoration: underline;
-}
-
-.forgot-password {
-  text-align: right;
-  margin-top: 8px;
+.text-sm {
   font-size: 0.875rem;
 }
 
-.forgot-password a {
-  color: #6c757d;
-  text-decoration: none;
+.ml-2 {
+  margin-left: 0.5rem;
 }
 
-.forgot-password a:hover {
-  text-decoration: underline;
-  color: #007bff;
+.w-full {
+  width: 100%;
+}
+
+.flex {
+  display: flex;
+}
+
+.align-items-center {
+  align-items: center;
 }
 </style>

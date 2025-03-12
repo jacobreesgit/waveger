@@ -7,7 +7,11 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
 } from '@/utils/validation'
-import PasswordInput from '@/components/PasswordInput.vue'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
+import ProgressSpinner from 'primevue/progressspinner'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -159,102 +163,107 @@ watch(email, (newValue) => {
 </script>
 
 <template>
-  <div class="register-container">
-    <div class="register-form">
+  <div class="register-view">
+    <div class="card">
       <h2>Register</h2>
 
       <!-- General Error Message -->
-      <div v-if="formErrors.general" class="error-message">
+      <Message v-if="formErrors.general" severity="error" :closable="false">
         {{ formErrors.general }}
-      </div>
+      </Message>
 
       <form @submit.prevent="handleRegister" autocomplete="off">
         <!-- Username Field -->
-        <div class="form-group">
+        <div class="form-field">
           <label for="username">Username</label>
-          <input
+          <InputText
             id="username"
             v-model="username"
             type="text"
             required
             autocomplete="username"
             :disabled="isSubmitting"
-            class="form-input"
+            class="w-full"
             @input="formErrors.username = ''"
           />
-          <div class="input-hint">
-            <p v-if="formErrors.username" class="error-text">
+          <div class="hint-container">
+            <small v-if="formErrors.username" class="error-text">
               {{ formErrors.username }}
-            </p>
+            </small>
             <div v-else-if="username" class="availability-status">
-              <span v-if="checkingUsername" class="checking-indicator">
-                <span class="checking-spinner"></span> Checking availability...
+              <span v-if="checkingUsername" class="checking-status">
+                <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
               </span>
-              <span v-else-if="usernameAvailable === true" class="available-indicator">
-                ✓ Username is available
-              </span>
-              <span v-else-if="usernameAvailable === false" class="unavailable-indicator">
-                ✗ Username is already taken
-              </span>
+              <small v-else-if="usernameAvailable === true" class="success-text">
+                Username is available
+              </small>
+              <small v-else-if="usernameAvailable === false" class="error-text">
+                Username is already taken
+              </small>
             </div>
           </div>
         </div>
 
         <!-- Email Field -->
-        <div class="form-group">
+        <div class="form-field">
           <label for="email">Email</label>
-          <input
+          <InputText
             id="email"
             v-model="email"
             type="email"
             required
             autocomplete="email"
             :disabled="isSubmitting"
-            class="form-input"
+            class="w-full"
             @input="formErrors.email = ''"
           />
-          <div class="input-hint">
-            <p v-if="formErrors.email" class="error-text">
+          <div class="hint-container">
+            <small v-if="formErrors.email" class="error-text">
               {{ formErrors.email }}
-            </p>
+            </small>
             <div v-else-if="email" class="availability-status">
-              <span v-if="checkingEmail" class="checking-indicator">
-                <span class="checking-spinner"></span> Checking availability...
+              <span v-if="checkingEmail" class="checking-status">
+                <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
               </span>
-              <span v-else-if="emailAvailable === true" class="available-indicator">
-                ✓ Email is available
-              </span>
-              <span v-else-if="emailAvailable === false" class="unavailable-indicator">
-                ✗ Email is already registered
-              </span>
+              <small v-else-if="emailAvailable === true" class="success-text">
+                Email is available
+              </small>
+              <small v-else-if="emailAvailable === false" class="error-text">
+                Email is already registered
+              </small>
             </div>
           </div>
         </div>
 
         <!-- Password Field -->
-        <div class="form-group">
+        <div class="form-field">
           <label for="password">Password</label>
-          <PasswordInput
+          <Password
             id="password"
             v-model="password"
             :disabled="isSubmitting"
-            :error="formErrors.password"
-            @update:model-value="formErrors.password = ''"
+            toggleMask
+            :feedback="true"
+            inputClass="w-full"
+            class="w-full"
             autocomplete="new-password"
+            @input="formErrors.password = ''"
           />
+          <small v-if="formErrors.password" class="error-text">
+            {{ formErrors.password }}
+          </small>
         </div>
 
         <!-- Submit Button -->
-        <button
+        <Button
           type="submit"
+          :label="isSubmitting ? 'Registering...' : 'Register'"
           :disabled="isSubmitting || checkingUsername || checkingEmail"
-          class="submit-button"
-        >
-          {{ isSubmitting ? 'Registering...' : 'Register' }}
-        </button>
+          class="w-full mt-3"
+        />
       </form>
 
-      <div class="login-link">
+      <div class="mt-4 text-center">
         Already have an account?
         <router-link to="/login">Login</router-link>
       </div>
@@ -263,17 +272,17 @@ watch(email, (newValue) => {
 </template>
 
 <style lang="scss" scoped>
-.register-container {
+.register-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 80px);
-  padding: 20px;
 }
 
-.register-form {
+.card {
   background: white;
-  padding: 30px;
+  padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -281,138 +290,55 @@ watch(email, (newValue) => {
 }
 
 h2 {
-  margin: 0 0 20px;
+  margin: 0 0 1.5rem;
   text-align: center;
-  color: #333;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.form-field {
+  margin-bottom: 1.5rem;
+
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 }
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
+.hint-container {
+  min-height: 1.5rem;
+  margin-top: 0.25rem;
 }
 
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.submit-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #dc3545;
-  margin-bottom: 20px;
-  padding: 12px;
-  background: #ffe6e6;
-  border-radius: 6px;
-  font-size: 14px;
-}
-
-.login-link {
-  margin-top: 20px;
-  text-align: center;
-  color: #666;
-}
-
-.login-link a {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.login-link a:hover {
-  text-decoration: underline;
-}
-
-.input-hint {
-  min-height: 24px;
-  margin-top: 4px;
-}
-
-.availability-status {
+.checking-status {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
   font-size: 0.875rem;
-}
-
-.checking-indicator {
   color: #6c757d;
-  display: flex;
-  align-items: center;
-}
-
-.checking-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #6c757d;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 6px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.available-indicator {
-  color: #28a745;
-}
-
-.unavailable-indicator {
-  color: #dc3545;
 }
 
 .error-text {
   color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
+  display: block;
+}
+
+.success-text {
+  color: #28a745;
+  display: block;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.w-full {
+  width: 100%;
 }
 </style>

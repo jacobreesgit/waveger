@@ -2,6 +2,9 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { validateEmail } from '@/utils/validation'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import Message from 'primevue/message'
 
 const authStore = useAuthStore()
 
@@ -45,19 +48,21 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="forgot-password-container">
-    <div class="forgot-password-form">
+  <div class="forgot-password-view">
+    <div class="card">
       <h2>Forgot Password</h2>
 
-      <div v-if="requestSent" class="success-message">
-        <div class="success-icon">✓</div>
-        <h3>Reset Instructions Sent</h3>
-        <p>
-          If an account exists with that email, we've sent password reset instructions. Please check
-          your inbox (and spam folder) for further instructions.
-        </p>
-        <div class="actions">
-          <router-link to="/login" class="back-to-login">Back to Login</router-link>
+      <div v-if="requestSent" class="success-container">
+        <Message severity="success" :closable="false">
+          <template #detail>
+            If an account exists with that email, we've sent password reset instructions. Please
+            check your inbox (and spam folder) for further instructions.
+          </template>
+        </Message>
+        <div class="text-center mt-4">
+          <router-link to="/login">
+            <Button label="Back to Login" />
+          </router-link>
         </div>
       </div>
 
@@ -66,31 +71,34 @@ const handleSubmit = async () => {
           Enter your email address below and we'll send you instructions to reset your password.
         </p>
 
-        <div v-if="generalError" class="error-message">
+        <Message v-if="generalError" severity="error" :closable="false">
           {{ generalError }}
-        </div>
+        </Message>
 
         <form @submit.prevent="handleSubmit">
-          <div class="form-group">
+          <div class="form-field">
             <label for="email">Email</label>
-            <input
+            <InputText
               id="email"
               v-model="email"
               type="email"
               required
               :disabled="isSubmitting"
               @input="emailError = ''"
-              class="form-input"
+              class="w-full"
             />
-            <p v-if="emailError" class="error-text">{{ emailError }}</p>
+            <small v-if="emailError" class="error-text">{{ emailError }}</small>
           </div>
 
-          <button type="submit" :disabled="isSubmitting" class="submit-button">
-            {{ isSubmitting ? 'Sending...' : 'Send Reset Instructions' }}
-          </button>
+          <Button
+            type="submit"
+            :label="isSubmitting ? 'Sending...' : 'Send Reset Instructions'"
+            :disabled="isSubmitting"
+            class="w-full mt-3"
+          />
         </form>
 
-        <div class="login-link">
+        <div class="mt-4 text-center">
           Remember your password? <router-link to="/login">Back to Login</router-link>
         </div>
       </template>
@@ -99,17 +107,17 @@ const handleSubmit = async () => {
 </template>
 
 <style lang="scss" scoped>
-.forgot-password-container {
+.forgot-password-view {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: calc(100vh - 80px);
-  padding: 20px;
 }
 
-.forgot-password-form {
+.card {
   background: white;
-  padding: 30px;
+  padding: 2rem;
   border-radius: 12px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
@@ -117,146 +125,48 @@ const handleSubmit = async () => {
 }
 
 h2 {
-  margin: 0 0 20px;
+  margin: 0 0 1.5rem;
   text-align: center;
-  color: #333;
 }
 
 .instruction {
-  margin-bottom: 20px;
-  color: #666;
+  margin-bottom: 1.5rem;
   text-align: center;
+  color: #6c757d;
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
+.form-field {
+  margin-bottom: 1.5rem;
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 12px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: #0056b3;
-}
-
-.submit-button:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #dc3545;
-  margin-bottom: 20px;
-  padding: 12px;
-  background: #ffe6e6;
-  border-radius: 6px;
-  font-size: 14px;
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+  }
 }
 
 .error-text {
   color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
+  display: block;
+  margin-top: 0.25rem;
 }
 
-.login-link {
-  margin-top: 20px;
+.success-container {
   text-align: center;
-  color: #666;
 }
 
-.login-link a {
-  color: #007bff;
-  text-decoration: none;
-  font-weight: 500;
+.mt-3 {
+  margin-top: 1rem;
 }
 
-.login-link a:hover {
-  text-decoration: underline;
+.mt-4 {
+  margin-top: 1.5rem;
 }
 
-.success-message {
+.text-center {
   text-align: center;
-  padding: 20px 0;
 }
 
-.success-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  font-size: 24px;
-  margin: 0 auto 20px;
-}
-
-.success-message h3 {
-  color: #28a745;
-  margin-bottom: 10px;
-}
-
-.success-message p {
-  color: #666;
-  margin-bottom: 20px;
-}
-
-.actions {
-  margin-top: 20px;
-}
-
-.back-to-login {
-  display: inline-block;
-  padding: 10px 20px;
-  background: #007bff;
-  color: white;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: background-color 0.2s;
-}
-
-.back-to-login:hover {
-  background: #0056b3;
+.w-full {
+  width: 100%;
 }
 </style>

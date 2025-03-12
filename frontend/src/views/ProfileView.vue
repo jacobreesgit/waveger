@@ -9,9 +9,20 @@ import {
   checkEmailAvailability,
   validatePassword,
 } from '@/utils/validation'
-import PasswordInput from '@/components/PasswordInput.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import type { Prediction } from '@/types/predictions'
+
+// PrimeVue Components
+import Button from 'primevue/button'
+import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
+import ProgressSpinner from 'primevue/progressspinner'
+import Message from 'primevue/message'
+import TabView from 'primevue/tabview'
+import TabPanel from 'primevue/tabpanel'
+import Dropdown from 'primevue/dropdown'
+import Card from 'primevue/card'
+import Badge from 'primevue/badge'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -21,7 +32,7 @@ const predictionStore = usePredictionsStore()
 const isLoading = ref(true)
 const error = ref('')
 const successMessage = ref('')
-const activeTab = ref('profile') // 'profile', 'favourites', or 'predictions'
+const activeTabIndex = ref(0) // 0 for profile, 1 for favourites, 2 for predictions
 
 // Edit mode states
 const editingUsername = ref(false)
@@ -93,19 +104,15 @@ onMounted(async () => {
 })
 
 // Watch for tab changes to trigger data loading if needed
-watch(activeTab, async (newTab) => {
+watch(activeTabIndex, async (newTabIndex) => {
   if (
-    newTab === 'favourites' &&
+    newTabIndex === 1 &&
     authStore.user &&
     !favouritesStore.favourites.length &&
     !favouritesStore.loading
   ) {
     await favouritesStore.loadFavourites()
-  } else if (
-    newTab === 'predictions' &&
-    authStore.user &&
-    !predictionStore.userPredictions.length
-  ) {
+  } else if (newTabIndex === 2 && authStore.user && !predictionStore.userPredictions.length) {
     isPredictionsLoading.value = true
     try {
       await predictionStore.fetchUserPredictions()
@@ -597,636 +604,624 @@ const resetPredictionFilters = () => {
 </script>
 
 <template>
-  <div class="profile-container">
+  <div class="profile-view">
     <div v-if="isLoading" class="loading">
-      <div class="loading-spinner"></div>
+      <ProgressSpinner />
       <p>Loading profile...</p>
     </div>
 
-    <div v-else-if="error" class="error-message">
-      {{ error }}
-      <button @click="router.push('/')">Go to Home</button>
+    <div v-else-if="error" class="error-container">
+      <Message severity="error" :closable="false">{{ error }}</Message>
+      <Button label="Go to Home" @click="router.push('/')" class="mt-3" />
     </div>
 
-    <div v-else-if="authStore.user" class="profile-form">
+    <div v-else-if="authStore.user" class="profile-content">
       <h2>Your Account</h2>
 
       <!-- Success message -->
-      <div v-if="successMessage" class="success-message">
-        <p>{{ successMessage }}</p>
-      </div>
+      <Message v-if="successMessage" severity="success" :closable="false" class="mb-4">
+        {{ successMessage }}
+      </Message>
 
       <!-- General error message -->
-      <div v-if="formErrors.general" class="error-message">
-        <p>{{ formErrors.general }}</p>
-      </div>
+      <Message v-if="formErrors.general" severity="error" :closable="false" class="mb-4">
+        {{ formErrors.general }}
+      </Message>
 
       <!-- Tab Navigation -->
-      <div class="tab-navigation">
-        <button
-          @click="activeTab = 'profile'"
-          :class="['tab-button', { active: activeTab === 'profile' }]"
-        >
-          Profile
-        </button>
-        <button
-          @click="activeTab = 'favourites'"
-          :class="['tab-button', { active: activeTab === 'favourites' }]"
-        >
-          Favourites
-        </button>
-        <button
-          @click="activeTab = 'predictions'"
-          :class="['tab-button', { active: activeTab === 'predictions' }]"
-        >
-          Predictions
-        </button>
-      </div>
+      <TabView v-model:activeIndex="activeTabIndex">
+        <TabPanel header="Profile">
+          <div class="profile-section">
+            <h3>Account Details</h3>
 
-      <!-- PROFILE TAB -->
-      <div v-if="activeTab === 'profile'" class="tab-content">
-        <div class="profile-section">
-          <h3>Account Details</h3>
-
-          <!-- Username section -->
-          <div class="profile-detail" v-if="!editingUsername">
-            <label>Username</label>
-            <div class="detail-value-with-action">
-              <span>{{ authStore.user.username }}</span>
-              <button @click="toggleEditUsername" class="edit-button">Edit</button>
-            </div>
-          </div>
-          <div class="edit-form" v-else>
-            <h4>Change Username</h4>
-            <div class="form-group">
-              <label for="newUsername">New Username</label>
-              <input
-                id="newUsername"
-                v-model="newUsername"
-                type="text"
-                :disabled="submittingUsername"
-                @input="onUsernameInput"
-                class="form-input"
-              />
-              <div class="input-hint">
-                <p v-if="formErrors.username" class="error-text">
-                  {{ formErrors.username }}
-                </p>
-                <div
-                  v-else-if="newUsername && newUsername !== authStore.user.username"
-                  class="availability-status"
-                >
-                  <span v-if="checkingUsername" class="checking-indicator">
-                    <span class="checking-spinner"></span> Checking availability...
-                  </span>
-                  <span v-else-if="usernameAvailable === true" class="available-indicator">
-                    ✓ Username is available
-                  </span>
-                  <span v-else-if="usernameAvailable === false" class="unavailable-indicator">
-                    ✗ Username is already taken
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button
-                @click="toggleEditUsername"
-                class="cancel-button"
-                :disabled="submittingUsername"
-              >
-                Cancel
-              </button>
-              <button
-                @click="updateUsername"
-                class="save-button"
-                :disabled="
-                  submittingUsername ||
-                  checkingUsername ||
-                  usernameAvailable === false ||
-                  !newUsername
-                "
-              >
-                {{ submittingUsername ? 'Saving...' : 'Save' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Email section -->
-          <div class="profile-detail" v-if="!editingEmail">
-            <label>Email</label>
-            <div class="detail-value-with-action">
-              <span>{{ authStore.user.email }}</span>
-              <button @click="toggleEditEmail" class="edit-button">Edit</button>
-            </div>
-          </div>
-          <div class="edit-form" v-else>
-            <h4>Change Email</h4>
-            <div class="form-group">
-              <label for="newEmail">New Email</label>
-              <input
-                id="newEmail"
-                v-model="newEmail"
-                type="email"
-                :disabled="submittingEmail"
-                @input="onEmailInput"
-                class="form-input"
-              />
-              <div class="input-hint">
-                <p v-if="formErrors.email" class="error-text">
-                  {{ formErrors.email }}
-                </p>
-                <div
-                  v-else-if="newEmail && newEmail !== authStore.user.email"
-                  class="availability-status"
-                >
-                  <span v-if="checkingEmail" class="checking-indicator">
-                    <span class="checking-spinner"></span> Checking availability...
-                  </span>
-                  <span v-else-if="emailAvailable === true" class="available-indicator">
-                    ✓ Email is available
-                  </span>
-                  <span v-else-if="emailAvailable === false" class="unavailable-indicator">
-                    ✗ Email is already registered
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button @click="toggleEditEmail" class="cancel-button" :disabled="submittingEmail">
-                Cancel
-              </button>
-              <button
-                @click="updateEmail"
-                class="save-button"
-                :disabled="
-                  submittingEmail || checkingEmail || emailAvailable === false || !newEmail
-                "
-              >
-                {{ submittingEmail ? 'Saving...' : 'Save' }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Password change section -->
-          <div class="profile-detail" v-if="!editingPassword">
-            <label>Password</label>
-            <div class="detail-value-with-action">
-              <span>•••••••••</span>
-              <button @click="toggleEditPassword" class="edit-button">Change</button>
-            </div>
-          </div>
-          <div class="edit-form" v-else>
-            <h4>Change Password</h4>
-            <div class="form-group">
-              <label for="currentPassword">Current Password</label>
-              <PasswordInput
-                id="currentPassword"
-                v-model="currentPassword"
-                :disabled="submittingPassword"
-                :error="formErrors.currentPassword"
-              />
-            </div>
-            <div class="form-group">
-              <label for="newPassword">New Password</label>
-              <PasswordInput
-                id="newPassword"
-                v-model="newPassword"
-                :disabled="submittingPassword"
-                :error="formErrors.newPassword"
-              />
-            </div>
-            <div class="form-group">
-              <label for="confirmPassword">Confirm New Password</label>
-              <PasswordInput
-                id="confirmPassword"
-                v-model="confirmPassword"
-                :disabled="submittingPassword"
-                :error="formErrors.confirmPassword"
-              />
-            </div>
-            <div class="form-actions">
-              <button
-                @click="toggleEditPassword"
-                class="cancel-button"
-                :disabled="submittingPassword"
-              >
-                Cancel
-              </button>
-              <button
-                @click="updatePassword"
-                class="save-button"
-                :disabled="
-                  submittingPassword || !currentPassword || !newPassword || !confirmPassword
-                "
-              >
-                {{ submittingPassword ? 'Saving...' : 'Save' }}
-              </button>
-            </div>
-          </div>
-
-          <div class="profile-detail">
-            <label>Account Created</label>
-            <span>{{ formatDate(authStore.user.created_at) }}</span>
-          </div>
-          <div class="profile-detail">
-            <label>Last Login</label>
-            <span>{{ formatDate(authStore.user.last_login) }}</span>
-          </div>
-        </div>
-
-        <div class="profile-section">
-          <h3>Prediction Stats</h3>
-          <div class="prediction-stats-grid">
-            <div class="stat-card">
-              <div class="stat-value">{{ authStore.user.predictions_made || 0 }}</div>
-              <div class="stat-label">Total Predictions</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ authStore.user.correct_predictions || 0 }}</div>
-              <div class="stat-label">Correct Predictions</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ predictionAccuracy }}</div>
-              <div class="stat-label">Overall Accuracy</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-value">{{ authStore.user.total_points || 0 }}</div>
-              <div class="stat-label">Total Points</div>
-            </div>
-          </div>
-
-          <div class="prediction-type-stats">
-            <h4>Success Rate by Prediction Type</h4>
-
-            <div class="prediction-type-grid">
-              <div class="prediction-type-card">
-                <div class="type-name">New Entries</div>
-                <div class="type-stats">
-                  <div>
-                    <span class="stats-label">Total:</span>
-                    <span class="stats-value">{{ predictionStatsByType.entry.total }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Correct:</span>
-                    <span class="stats-value">{{ predictionStatsByType.entry.correct }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Pending:</span>
-                    <span class="stats-value">{{ predictionStatsByType.entry.pending }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Success Rate:</span>
-                    <span class="stats-value success-rate">{{
-                      predictionStatsByType.entry.rate
-                    }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="prediction-type-card">
-                <div class="type-name">Position Changes</div>
-                <div class="type-stats">
-                  <div>
-                    <span class="stats-label">Total:</span>
-                    <span class="stats-value">{{
-                      predictionStatsByType.position_change.total
-                    }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Correct:</span>
-                    <span class="stats-value">{{
-                      predictionStatsByType.position_change.correct
-                    }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Pending:</span>
-                    <span class="stats-value">{{
-                      predictionStatsByType.position_change.pending
-                    }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Success Rate:</span>
-                    <span class="stats-value success-rate">{{
-                      predictionStatsByType.position_change.rate
-                    }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="prediction-type-card">
-                <div class="type-name">Chart Exits</div>
-                <div class="type-stats">
-                  <div>
-                    <span class="stats-label">Total:</span>
-                    <span class="stats-value">{{ predictionStatsByType.exit.total }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Correct:</span>
-                    <span class="stats-value">{{ predictionStatsByType.exit.correct }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Pending:</span>
-                    <span class="stats-value">{{ predictionStatsByType.exit.pending }}</span>
-                  </div>
-                  <div>
-                    <span class="stats-label">Success Rate:</span>
-                    <span class="stats-value success-rate">{{
-                      predictionStatsByType.exit.rate
-                    }}</span>
-                  </div>
-                </div>
+            <!-- Username section -->
+            <div class="profile-detail" v-if="!editingUsername">
+              <div class="detail-label">Username</div>
+              <div class="detail-value">
+                <span>{{ authStore.user.username }}</span>
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  @click="toggleEditUsername"
+                  aria-label="Edit username"
+                />
               </div>
             </div>
 
-            <div class="prediction-actions">
-              <button @click="goToPredictionsView" class="view-all-predictions-btn">
-                View All Predictions
-              </button>
+            <!-- Username edit form -->
+            <div class="edit-form" v-if="editingUsername">
+              <h4>Change Username</h4>
+              <div class="form-field mb-3">
+                <label for="newUsername">New Username</label>
+                <InputText
+                  id="newUsername"
+                  v-model="newUsername"
+                  :disabled="submittingUsername"
+                  @input="onUsernameInput"
+                  class="w-full"
+                />
+                <div class="mt-2">
+                  <small v-if="formErrors.username" class="error-text">
+                    {{ formErrors.username }}
+                  </small>
+                  <div
+                    v-else-if="newUsername && newUsername !== authStore.user.username"
+                    class="availability-status"
+                  >
+                    <span v-if="checkingUsername" class="checking-status">
+                      <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                    </span>
+                    <small v-else-if="usernameAvailable === true" class="success-text">
+                      Username is available
+                    </small>
+                    <small v-else-if="usernameAvailable === false" class="error-text">
+                      Username is already taken
+                    </small>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <Button
+                  label="Cancel"
+                  severity="secondary"
+                  @click="toggleEditUsername"
+                  :disabled="submittingUsername"
+                  class="mr-2"
+                />
+                <Button
+                  label="Save"
+                  @click="updateUsername"
+                  :disabled="
+                    submittingUsername ||
+                    checkingUsername ||
+                    usernameAvailable === false ||
+                    !newUsername
+                  "
+                  :loading="submittingUsername"
+                />
+              </div>
+            </div>
+
+            <!-- Email section -->
+            <div class="profile-detail" v-if="!editingEmail">
+              <div class="detail-label">Email</div>
+              <div class="detail-value">
+                <span>{{ authStore.user.email }}</span>
+                <Button icon="pi pi-pencil" text @click="toggleEditEmail" aria-label="Edit email" />
+              </div>
+            </div>
+
+            <!-- Email edit form -->
+            <div class="edit-form" v-if="editingEmail">
+              <h4>Change Email</h4>
+              <div class="form-field mb-3">
+                <label for="newEmail">New Email</label>
+                <InputText
+                  id="newEmail"
+                  v-model="newEmail"
+                  type="email"
+                  :disabled="submittingEmail"
+                  @input="onEmailInput"
+                  class="w-full"
+                />
+                <div class="mt-2">
+                  <small v-if="formErrors.email" class="error-text">
+                    {{ formErrors.email }}
+                  </small>
+                  <div
+                    v-else-if="newEmail && newEmail !== authStore.user.email"
+                    class="availability-status"
+                  >
+                    <span v-if="checkingEmail" class="checking-status">
+                      <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                    </span>
+                    <small v-else-if="emailAvailable === true" class="success-text">
+                      Email is available
+                    </small>
+                    <small v-else-if="emailAvailable === false" class="error-text">
+                      Email is already registered
+                    </small>
+                  </div>
+                </div>
+              </div>
+              <div class="form-actions">
+                <Button
+                  label="Cancel"
+                  severity="secondary"
+                  @click="toggleEditEmail"
+                  :disabled="submittingEmail"
+                  class="mr-2"
+                />
+                <Button
+                  label="Save"
+                  @click="updateEmail"
+                  :disabled="
+                    submittingEmail || checkingEmail || emailAvailable === false || !newEmail
+                  "
+                  :loading="submittingEmail"
+                />
+              </div>
+            </div>
+
+            <!-- Password section -->
+            <div class="profile-detail" v-if="!editingPassword">
+              <div class="detail-label">Password</div>
+              <div class="detail-value">
+                <span>•••••••••</span>
+                <Button
+                  icon="pi pi-pencil"
+                  text
+                  @click="toggleEditPassword"
+                  aria-label="Change password"
+                />
+              </div>
+            </div>
+
+            <!-- Password edit form -->
+            <div class="edit-form" v-if="editingPassword">
+              <h4>Change Password</h4>
+              <div class="form-field mb-3">
+                <label for="currentPassword">Current Password</label>
+                <Password
+                  id="currentPassword"
+                  v-model="currentPassword"
+                  :disabled="submittingPassword"
+                  toggleMask
+                  :feedback="false"
+                  inputClass="w-full"
+                  class="w-full"
+                  @input="formErrors.currentPassword = ''"
+                />
+                <small v-if="formErrors.currentPassword" class="error-text">
+                  {{ formErrors.currentPassword }}
+                </small>
+              </div>
+              <div class="form-field mb-3">
+                <label for="newPassword">New Password</label>
+                <Password
+                  id="newPassword"
+                  v-model="newPassword"
+                  :disabled="submittingPassword"
+                  toggleMask
+                  :feedback="true"
+                  inputClass="w-full"
+                  class="w-full"
+                  @input="formErrors.newPassword = ''"
+                />
+                <small v-if="formErrors.newPassword" class="error-text">
+                  {{ formErrors.newPassword }}
+                </small>
+              </div>
+              <div class="form-field mb-3">
+                <label for="confirmPassword">Confirm New Password</label>
+                <Password
+                  id="confirmPassword"
+                  v-model="confirmPassword"
+                  :disabled="submittingPassword"
+                  toggleMask
+                  :feedback="false"
+                  inputClass="w-full"
+                  class="w-full"
+                  @input="formErrors.confirmPassword = ''"
+                />
+                <small v-if="formErrors.confirmPassword" class="error-text">
+                  {{ formErrors.confirmPassword }}
+                </small>
+              </div>
+              <div class="form-actions">
+                <Button
+                  label="Cancel"
+                  severity="secondary"
+                  @click="toggleEditPassword"
+                  :disabled="submittingPassword"
+                  class="mr-2"
+                />
+                <Button
+                  label="Save"
+                  @click="updatePassword"
+                  :disabled="
+                    submittingPassword || !currentPassword || !newPassword || !confirmPassword
+                  "
+                  :loading="submittingPassword"
+                />
+              </div>
+            </div>
+
+            <div class="profile-detail">
+              <div class="detail-label">Account Created</div>
+              <div class="detail-value">{{ formatDate(authStore.user.created_at) }}</div>
+            </div>
+            <div class="profile-detail">
+              <div class="detail-label">Last Login</div>
+              <div class="detail-value">{{ formatDate(authStore.user.last_login) }}</div>
             </div>
           </div>
-        </div>
 
-        <div class="profile-section">
-          <h3>Points</h3>
-          <div class="profile-detail">
-            <label>Total Points</label>
-            <span>{{ authStore.user.total_points || 0 }}</span>
-          </div>
-          <div class="profile-detail">
-            <label>Weekly Points</label>
-            <span>{{ authStore.user.weekly_points || 0 }}</span>
-          </div>
-        </div>
-
-        <div class="profile-actions">
-          <button @click="handleLogout" class="logout-button">Logout</button>
-        </div>
-      </div>
-
-      <!-- FAVOURITES TAB -->
-      <div v-if="activeTab === 'favourites'" class="tab-content">
-        <div class="favourites-header">
-          <div class="favourites-stats">
-            <div class="stat-item">
-              <span class="stat-value">{{ favouritesStore.favouritesCount }}</span>
-              <span class="stat-label">Songs</span>
+          <div class="profile-section">
+            <h3>Prediction Stats</h3>
+            <div class="stats-grid">
+              <Card class="stat-card">
+                <template #content>
+                  <div class="stat-value">{{ authStore.user.predictions_made || 0 }}</div>
+                  <div class="stat-label">Total Predictions</div>
+                </template>
+              </Card>
+              <Card class="stat-card">
+                <template #content>
+                  <div class="stat-value">{{ authStore.user.correct_predictions || 0 }}</div>
+                  <div class="stat-label">Correct Predictions</div>
+                </template>
+              </Card>
+              <Card class="stat-card">
+                <template #content>
+                  <div class="stat-value">{{ predictionAccuracy }}</div>
+                  <div class="stat-label">Overall Accuracy</div>
+                </template>
+              </Card>
+              <Card class="stat-card">
+                <template #content>
+                  <div class="stat-value">{{ authStore.user.total_points || 0 }}</div>
+                  <div class="stat-label">Total Points</div>
+                </template>
+              </Card>
             </div>
-            <div class="stat-item">
-              <span class="stat-value">{{ favouritesStore.chartAppearancesCount }}</span>
-              <span class="stat-label">Chart Appearances</span>
+
+            <h4 class="mt-4">Success Rate by Prediction Type</h4>
+            <div class="stats-grid">
+              <Card class="stat-card">
+                <template #title>New Entries</template>
+                <template #content>
+                  <div class="type-stats">
+                    <div>
+                      <span class="stats-label">Total:</span>
+                      <span class="stats-value">{{ predictionStatsByType.entry.total }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Correct:</span>
+                      <span class="stats-value">{{ predictionStatsByType.entry.correct }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Pending:</span>
+                      <span class="stats-value">{{ predictionStatsByType.entry.pending }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Success Rate:</span>
+                      <span class="stats-value success-rate">{{
+                        predictionStatsByType.entry.rate
+                      }}</span>
+                    </div>
+                  </div>
+                </template>
+              </Card>
+
+              <Card class="stat-card">
+                <template #title>Position Changes</template>
+                <template #content>
+                  <div class="type-stats">
+                    <div>
+                      <span class="stats-label">Total:</span>
+                      <span class="stats-value">{{
+                        predictionStatsByType.position_change.total
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Correct:</span>
+                      <span class="stats-value">{{
+                        predictionStatsByType.position_change.correct
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Pending:</span>
+                      <span class="stats-value">{{
+                        predictionStatsByType.position_change.pending
+                      }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Success Rate:</span>
+                      <span class="stats-value success-rate">{{
+                        predictionStatsByType.position_change.rate
+                      }}</span>
+                    </div>
+                  </div>
+                </template>
+              </Card>
+
+              <Card class="stat-card">
+                <template #title>Chart Exits</template>
+                <template #content>
+                  <div class="type-stats">
+                    <div>
+                      <span class="stats-label">Total:</span>
+                      <span class="stats-value">{{ predictionStatsByType.exit.total }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Correct:</span>
+                      <span class="stats-value">{{ predictionStatsByType.exit.correct }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Pending:</span>
+                      <span class="stats-value">{{ predictionStatsByType.exit.pending }}</span>
+                    </div>
+                    <div>
+                      <span class="stats-label">Success Rate:</span>
+                      <span class="stats-value success-rate">{{
+                        predictionStatsByType.exit.rate
+                      }}</span>
+                    </div>
+                  </div>
+                </template>
+              </Card>
+            </div>
+
+            <div class="text-center mt-4">
+              <Button label="View All Predictions" @click="goToPredictionsView" />
             </div>
           </div>
-        </div>
 
-        <div class="favourites-controls">
-          <div class="search-bar">
-            <input
-              type="text"
-              v-model="searchQuery"
-              placeholder="Search favourites..."
-              class="search-input"
+          <div class="profile-actions">
+            <Button
+              label="Logout"
+              severity="danger"
+              @click="handleLogout"
+              icon="pi pi-sign-out"
+              class="w-full"
+            />
+          </div>
+        </TabPanel>
+
+        <TabPanel header="Favourites">
+          <div class="favourites-header">
+            <div class="favourites-stats">
+              <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
+              <Badge :value="favouritesStore.chartAppearancesCount" severity="info">
+                Chart Appearances
+              </Badge>
+            </div>
+          </div>
+
+          <div class="favourites-controls">
+            <span class="p-input-icon-left w-full mr-3">
+              <i class="pi pi-search" />
+              <InputText v-model="searchQuery" placeholder="Search favourites..." class="w-full" />
+            </span>
+
+            <Dropdown
+              v-model="selectedSort"
+              :options="sortOptions"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Sort by"
             />
           </div>
 
-          <div class="sort-control">
-            <label for="sort-select">Sort by:</label>
-            <select id="sort-select" v-model="selectedSort" class="sort-select">
-              <option v-for="option in sortOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Using ChartCardHolder for favourites -->
-        <ChartCardHolder
-          :loading="favouritesStore.loading"
-          :error="favouritesStore.error"
-          :items="filteredFavourites"
-          :isForFavourites="true"
-          emptyMessage="No favourites match your search"
-        >
-          <template #empty-action>
-            <button @click="searchQuery = ''" class="clear-search-button">Clear Search</button>
-          </template>
-        </ChartCardHolder>
-      </div>
-
-      <!-- PREDICTIONS TAB -->
-      <div v-if="activeTab === 'predictions'" class="tab-content">
-        <div class="predictions-header">
-          <h3>Your Prediction History</h3>
-
-          <div class="prediction-filters">
-            <div class="filter-group">
-              <label for="result-filter">Result:</label>
-              <select id="result-filter" v-model="predictionFilter" class="filter-select">
-                <option value="all">All Results</option>
-                <option value="correct">Correct</option>
-                <option value="incorrect">Incorrect</option>
-                <option value="pending">Pending</option>
-              </select>
-            </div>
-
-            <div class="filter-group">
-              <label for="type-filter">Type:</label>
-              <select id="type-filter" v-model="predictionTypeFilter" class="filter-select">
-                <option value="all">All Types</option>
-                <option value="entry">New Entry</option>
-                <option value="position_change">Position Change</option>
-                <option value="exit">Chart Exit</option>
-              </select>
-            </div>
-
-            <div class="filter-group">
-              <label for="chart-filter">Chart:</label>
-              <select id="chart-filter" v-model="chartTypeFilter" class="filter-select">
-                <option value="all">All Charts</option>
-                <option value="hot-100">Hot 100</option>
-                <option value="billboard-200">Billboard 200</option>
-              </select>
-            </div>
-
-            <button @click="resetPredictionFilters" class="reset-filters-btn">Reset Filters</button>
-          </div>
-        </div>
-
-        <!-- Loading state -->
-        <div v-if="isPredictionsLoading" class="predictions-loading">
-          <div class="loading-spinner"></div>
-          <p>Loading your predictions...</p>
-        </div>
-
-        <!-- No predictions state -->
-        <div v-else-if="predictionStore.userPredictions.length === 0" class="no-predictions">
-          <p>You haven't made any predictions yet.</p>
-          <button @click="goToPredictionsView" class="make-prediction-btn">
-            Make a Prediction
-          </button>
-        </div>
-
-        <!-- No filtered predictions state -->
-        <div v-else-if="filteredPredictions.length === 0" class="no-predictions">
-          <p>No predictions match your filter criteria.</p>
-          <button @click="resetPredictionFilters" class="reset-filters-btn">Reset Filters</button>
-        </div>
-
-        <!-- Predictions list -->
-        <div v-else class="predictions-list">
-          <div
-            v-for="prediction in filteredPredictions"
-            :key="prediction.id"
-            class="prediction-card"
-            :class="getPredictionStatus(prediction)"
+          <!-- Using ChartCardHolder for favourites -->
+          <ChartCardHolder
+            :loading="favouritesStore.loading"
+            :error="favouritesStore.error"
+            :items="filteredFavourites"
+            :isForFavourites="true"
+            emptyMessage="No favourites match your search"
           >
-            <div class="prediction-status-indicator"></div>
+            <template #empty-action>
+              <Button label="Clear Search" @click="searchQuery = ''" class="mt-3" />
+            </template>
+          </ChartCardHolder>
+        </TabPanel>
 
-            <div class="prediction-header">
-              <div class="prediction-type-badge">
-                {{ prediction.prediction_type.replace('_', ' ') }}
+        <TabPanel header="Predictions">
+          <div class="predictions-header">
+            <h3>Your Prediction History</h3>
+
+            <div class="prediction-filters">
+              <div class="filter-group">
+                <label for="result-filter">Result:</label>
+                <Dropdown
+                  id="result-filter"
+                  v-model="predictionFilter"
+                  :options="[
+                    { label: 'All Results', value: 'all' },
+                    { label: 'Correct', value: 'correct' },
+                    { label: 'Incorrect', value: 'incorrect' },
+                    { label: 'Pending', value: 'pending' },
+                  ]"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                />
               </div>
-              <div class="prediction-chart-badge">{{ prediction.chart_type }}</div>
-              <div class="prediction-date">
-                {{ new Date(prediction.prediction_date).toLocaleDateString() }}
+
+              <div class="filter-group">
+                <label for="type-filter">Type:</label>
+                <Dropdown
+                  id="type-filter"
+                  v-model="predictionTypeFilter"
+                  :options="[
+                    { label: 'All Types', value: 'all' },
+                    { label: 'New Entry', value: 'entry' },
+                    { label: 'Position Change', value: 'position_change' },
+                    { label: 'Chart Exit', value: 'exit' },
+                  ]"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                />
               </div>
-            </div>
 
-            <div class="prediction-content">
-              <h4 class="prediction-song-title">{{ prediction.target_name }}</h4>
-              <div class="prediction-artist">{{ prediction.artist }}</div>
-
-              <div class="prediction-details">
-                <div class="prediction-value">{{ getPositionText(prediction) }}</div>
-
-                <!-- Result section if available -->
-                <div
-                  v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
-                  class="prediction-result"
-                >
-                  <div
-                    class="result-badge"
-                    :class="prediction.is_correct ? 'correct' : 'incorrect'"
-                  >
-                    {{ prediction.is_correct ? 'Correct!' : 'Incorrect' }}
-                  </div>
-
-                  <div v-if="prediction.points" class="points-earned">
-                    <span class="points-label">Points:</span>
-                    <span class="points-value">{{ prediction.points }}</span>
-                  </div>
-
-                  <div class="actual-result">
-                    <span class="actual-label">Result:</span>
-                    <span class="actual-value">{{ getActualResultText(prediction) }}</span>
-                  </div>
-                </div>
-
-                <!-- Pending state -->
-                <div v-else class="prediction-pending">
-                  <div class="pending-badge">Pending</div>
-                  <p class="pending-message">
-                    This prediction is awaiting chart release to be processed.
-                  </p>
-                </div>
+              <div class="filter-group">
+                <label for="chart-filter">Chart:</label>
+                <Dropdown
+                  id="chart-filter"
+                  v-model="chartTypeFilter"
+                  :options="[
+                    { label: 'All Charts', value: 'all' },
+                    { label: 'Hot 100', value: 'hot-100' },
+                    { label: 'Billboard 200', value: 'billboard-200' },
+                  ]"
+                  optionLabel="label"
+                  optionValue="value"
+                  class="w-full"
+                />
               </div>
+
+              <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-2" />
             </div>
           </div>
-        </div>
 
-        <!-- View more button -->
-        <div class="view-more-predictions">
-          <button @click="goToPredictionsView" class="view-all-predictions-btn">
-            View All Predictions
-          </button>
-        </div>
-      </div>
+          <!-- Loading state -->
+          <div v-if="isPredictionsLoading" class="loading-container">
+            <ProgressSpinner />
+            <p>Loading your predictions...</p>
+          </div>
+
+          <!-- No predictions state -->
+          <div v-else-if="predictionStore.userPredictions.length === 0" class="empty-container">
+            <p>You haven't made any predictions yet.</p>
+            <Button label="Make a Prediction" @click="goToPredictionsView" class="mt-3" />
+          </div>
+
+          <!-- No filtered predictions state -->
+          <div v-else-if="filteredPredictions.length === 0" class="empty-container">
+            <p>No predictions match your filter criteria.</p>
+            <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-3" />
+          </div>
+
+          <!-- Predictions list -->
+          <div v-else class="predictions-list">
+            <Card
+              v-for="prediction in filteredPredictions"
+              :key="prediction.id"
+              :class="['prediction-card', getPredictionStatus(prediction)]"
+            >
+              <template #header>
+                <div class="prediction-header">
+                  <Badge
+                    :value="prediction.prediction_type.replace('_', ' ')"
+                    :severity="
+                      prediction.prediction_type === 'entry'
+                        ? 'success'
+                        : prediction.prediction_type === 'position_change'
+                          ? 'info'
+                          : 'warning'
+                    "
+                  />
+                  <Badge :value="prediction.chart_type" severity="secondary" />
+                  <div class="prediction-date">
+                    {{ new Date(prediction.prediction_date).toLocaleDateString() }}
+                  </div>
+                </div>
+              </template>
+
+              <template #title>
+                <div class="prediction-title">
+                  {{ prediction.target_name }}
+                  <div class="prediction-artist">{{ prediction.artist }}</div>
+                </div>
+              </template>
+
+              <template #content>
+                <div class="prediction-details">
+                  <div class="prediction-value">{{ getPositionText(prediction) }}</div>
+
+                  <!-- Result section if available -->
+                  <div
+                    v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
+                    class="prediction-result"
+                  >
+                    <Badge
+                      :value="prediction.is_correct ? 'Correct!' : 'Incorrect'"
+                      :severity="prediction.is_correct ? 'success' : 'danger'"
+                    />
+
+                    <div v-if="prediction.points" class="points-earned mt-2">
+                      <span class="points-label">Points:</span>
+                      <span class="points-value">{{ prediction.points }}</span>
+                    </div>
+
+                    <div class="actual-result mt-2">
+                      <span class="actual-label">Result:</span>
+                      <span class="actual-value">{{ getActualResultText(prediction) }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Pending state -->
+                  <div v-else class="prediction-pending">
+                    <Badge value="Pending" severity="info" />
+                    <p class="pending-message mt-2">
+                      This prediction is awaiting chart release to be processed.
+                    </p>
+                  </div>
+                </div>
+              </template>
+            </Card>
+          </div>
+
+          <!-- View more button -->
+          <div class="text-center mt-4">
+            <Button label="View All Predictions" @click="goToPredictionsView" />
+          </div>
+        </TabPanel>
+      </TabView>
     </div>
 
     <div v-else class="unauthenticated">
-      <p>You must be logged in to view your profile.</p>
-      <div class="auth-links">
-        <router-link to="/login" class="login-link">Login</router-link>
-        <router-link to="/register" class="register-link">Register</router-link>
+      <Message severity="info" :closable="false">
+        <template #detail> You must be logged in to view your profile. </template>
+      </Message>
+      <div class="text-center mt-4">
+        <Button label="Login" @click="router.push('/login')" class="mr-2" />
+        <Button label="Register" @click="router.push('/register')" severity="secondary" />
       </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.profile-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: calc(100vh - 80px);
+.profile-view {
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 20px;
 }
 
 .loading,
-.error-message {
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  justify-content: center;
+  text-align: center;
+  min-height: 200px;
+}
+
+.error-container,
+.empty-container {
   text-align: center;
 }
 
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.profile-form {
+.profile-content {
   background: white;
-  padding: 30px;
   border-radius: 12px;
+  padding: 24px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 800px;
-}
-
-/* Tab Navigation */
-.tab-navigation {
-  display: flex;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.tab-button {
-  padding: 12px 24px;
-  background: none;
-  border: none;
-  border-bottom: 3px solid transparent;
-  font-size: 16px;
-  font-weight: 500;
-  color: #6c757d;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-button:hover {
-  color: #495057;
-}
-
-.tab-button.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
-}
-
-.tab-content {
-  padding: 8px 0;
 }
 
 .profile-section {
@@ -1235,56 +1230,32 @@ const resetPredictionFilters = () => {
   border-bottom: 1px solid #eee;
 }
 
-.profile-section h3 {
-  margin: 0 0 16px;
-  color: #333;
-  font-size: 1.1rem;
-}
-
-.profile-section h4 {
-  margin: 24px 0 16px;
-  color: #495057;
-  font-size: 1rem;
+h2,
+h3,
+h4 {
+  margin-top: 0;
+  margin-bottom: 16px;
 }
 
 .profile-detail {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   margin-bottom: 12px;
   padding: 8px 0;
   border-bottom: 1px solid #f4f4f4;
 }
 
-.profile-detail label {
-  color: #666;
+.detail-label {
   font-weight: 500;
+  color: #666;
 }
 
-.profile-detail span {
-  color: #333;
-  font-weight: 600;
-}
-
-.detail-value-with-action {
+.detail-value {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.edit-button {
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  color: #495057;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.edit-button:hover {
-  background: #e9ecef;
-  border-color: #ced4da;
+  gap: 8px;
+  font-weight: 500;
 }
 
 .edit-form {
@@ -1294,216 +1265,45 @@ const resetPredictionFilters = () => {
   margin-bottom: 16px;
 }
 
-.edit-form h4 {
-  margin: 0 0 16px;
-  color: #495057;
-  font-size: 1rem;
-}
-
-.form-group {
+.form-field {
   margin-bottom: 16px;
-}
 
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #495057;
-  font-weight: 500;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-.form-input:disabled {
-  background-color: #e9ecef;
-  cursor: not-allowed;
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
 }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
 }
 
-.cancel-button {
-  padding: 8px 16px;
-  background-color: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cancel-button:hover:not(:disabled) {
-  background-color: #e9ecef;
-}
-
-.save-button {
-  padding: 8px 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.save-button:hover:not(:disabled) {
-  background-color: #0069d9;
-}
-
-.save-button:disabled,
-.cancel-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-.input-hint {
-  min-height: 20px;
-  margin-top: 4px;
+.checking-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 0.875rem;
-}
-
-.error-text {
-  color: #dc3545;
-  margin: 0;
-}
-
-.success-message {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-}
-
-.error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 16px;
-}
-
-.availability-status {
-  display: flex;
-  align-items: center;
-}
-
-.checking-indicator {
   color: #6c757d;
-  display: flex;
-  align-items: center;
 }
 
-.checking-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #6c757d;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 6px;
-}
-
-.available-indicator {
-  color: #28a745;
-}
-
-.unavailable-indicator {
-  color: #dc3545;
-}
-
-.profile-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 24px;
-}
-
-.logout-button {
-  width: 100%;
-  padding: 12px;
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.logout-button:hover {
-  background: #c82333;
-}
-
-.unauthenticated {
-  text-align: center;
-  background: white;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-.auth-links {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 20px;
-}
-
-.login-link,
-.register-link {
-  text-decoration: none;
-  color: #007bff;
-  font-weight: 500;
-  padding: 8px 16px;
-  border: 1px solid #007bff;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.login-link:hover,
-.register-link:hover {
-  background-color: #f0f8ff;
-}
-
-/* FAVOURITES STYLES */
-.favourites-header {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.favourites-stats {
-  display: flex;
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 16px;
+  margin-top: 16px;
 }
 
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 12px 16px;
+.stat-card {
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .stat-value {
@@ -1513,260 +1313,71 @@ const resetPredictionFilters = () => {
 }
 
 .stat-label {
-  font-size: 0.875rem;
   color: #6c757d;
-}
-
-.favourites-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  gap: 16px;
-}
-
-.search-bar {
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-}
-
-.sort-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sort-select {
-  padding: 10px 16px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  background-color: white;
-}
-
-.loading-state,
-.error-state,
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  text-align: center;
-  color: #6c757d;
-}
-
-.browse-button,
-.retry-button,
-.clear-search-button {
-  margin-top: 16px;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.browse-button:hover,
-.retry-button:hover,
-.clear-search-button:hover {
-  background-color: #0069d9;
-}
-
-.favourites-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
-}
-
-/* New styles for prediction statistics */
-.prediction-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.stat-card {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.prediction-type-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.prediction-type-card {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  transition: transform 0.2s;
-}
-
-.prediction-type-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.type-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 12px;
-  text-align: center;
+  margin-top: 4px;
 }
 
 .type-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.profile-actions {
+  margin-top: 24px;
+}
+
+.favourites-header {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.favourites-stats {
+  display: flex;
   gap: 12px;
 }
 
-.stats-label {
-  color: #6c757d;
-  margin-right: 5px;
+.favourites-controls {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.stats-value {
-  font-weight: 600;
-  color: #333;
-}
-
-.success-rate {
-  color: #28a745;
-}
-
-.prediction-actions {
-  margin-top: 24px;
-  text-align: center;
-}
-
-.view-all-predictions-btn,
-.make-prediction-btn {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.view-all-predictions-btn:hover,
-.make-prediction-btn:hover {
-  background: #0069d9;
-}
-
-/* Predictions tab styles */
 .predictions-header {
-  margin-bottom: 24px;
-}
-
-.predictions-header h3 {
-  margin: 0 0 16px;
-  color: #333;
-  font-size: 1.2rem;
+  margin-bottom: 20px;
 }
 
 .prediction-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
   margin-top: 16px;
   background: #f8f9fa;
-  padding: 12px;
+  padding: 16px;
   border-radius: 8px;
 }
 
 .filter-group {
   display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-group label {
-  font-weight: 500;
-  color: #495057;
-}
-
-.filter-select {
-  padding: 8px 12px;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #495057;
-}
-
-.reset-filters-btn {
-  padding: 8px 12px;
-  background: #e9ecef;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  color: #495057;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reset-filters-btn:hover {
-  background: #dee2e6;
-}
-
-.predictions-loading {
-  display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 40px;
-  color: #6c757d;
-}
+  flex: 1;
+  min-width: 200px;
 
-.no-predictions {
-  text-align: center;
-  padding: 40px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #6c757d;
+  label {
+    margin-bottom: 8px;
+  }
 }
 
 .predictions-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
-  margin-bottom: 24px;
 }
 
 .prediction-card {
-  position: relative;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   transition: transform 0.2s;
-  display: flex;
 }
 
 .prediction-card:hover {
@@ -1774,118 +1385,53 @@ const resetPredictionFilters = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.prediction-card.pending .prediction-status-indicator {
-  background-color: #ffc107;
+.prediction-card.pending {
+  border-left: 4px solid #ffc107;
 }
 
-.prediction-card.correct .prediction-status-indicator {
-  background-color: #28a745;
+.prediction-card.correct {
+  border-left: 4px solid #28a745;
 }
 
-.prediction-card.incorrect .prediction-status-indicator {
-  background-color: #dc3545;
-}
-
-.prediction-status-indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 6px;
-}
-
-.prediction-content {
-  flex: 1;
-  padding: 16px 16px 16px 22px; /* Extra left padding for the status indicator */
+.prediction-card.incorrect {
+  border-left: 4px solid #dc3545;
 }
 
 .prediction-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  padding-top: 4px;
+  gap: 8px;
+  padding: 8px;
 }
 
-.prediction-type-badge {
-  background: #e9ecef;
-  color: #495057;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+.prediction-title {
   font-weight: 500;
-  text-transform: capitalize;
-}
-
-.prediction-chart-badge {
-  background: #f8f9fa;
-  color: #6c757d;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-}
-
-.prediction-date {
-  color: #6c757d;
-  font-size: 0.75rem;
-}
-
-.prediction-song-title {
-  margin: 0 0 4px 0;
-  font-size: 1.1rem;
-  color: #333;
 }
 
 .prediction-artist {
-  color: #6c757d;
-  margin-bottom: 12px;
   font-size: 0.9rem;
-}
-
-.prediction-details {
-  margin-top: 12px;
+  color: #6c757d;
+  margin-top: 4px;
 }
 
 .prediction-value {
+  display: inline-block;
+  padding: 4px 8px;
   background: #f0f7ff;
   color: #007bff;
-  display: inline-block;
-  padding: 4px 8px;
   border-radius: 4px;
   font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.prediction-result {
+.prediction-result,
+.prediction-pending {
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e9ecef;
-}
-
-.result-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.8rem;
-  margin-bottom: 8px;
-}
-
-.result-badge.correct {
-  background: #d4edda;
-  color: #155724;
-}
-
-.result-badge.incorrect {
-  background: #f8d7da;
-  color: #721c24;
 }
 
 .points-earned,
 .actual-result {
   font-size: 0.9rem;
-  margin: 4px 0;
 }
 
 .points-label,
@@ -1901,95 +1447,92 @@ const resetPredictionFilters = () => {
 
 .actual-value {
   font-weight: 600;
-  color: #333;
 }
 
-.prediction-pending {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e9ecef;
+.unauthenticated {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 500px;
+  margin: 0 auto;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.pending-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.8rem;
-  margin-bottom: 8px;
-  background: #fff3cd;
-  color: #856404;
+/* Utility classes */
+.w-full {
+  width: 100%;
 }
 
-.pending-message {
-  color: #6c757d;
-  font-size: 0.8rem;
-  margin: 0;
+.mt-2 {
+  margin-top: 0.5rem;
 }
 
-.view-more-predictions {
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1.5rem;
+}
+
+.mb-3 {
+  margin-bottom: 1rem;
+}
+
+.mb-4 {
+  margin-bottom: 1.5rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
+}
+
+.mr-3 {
+  margin-right: 1rem;
+}
+
+.text-center {
   text-align: center;
-  margin-top: 24px;
 }
 
-/* Responsive adjustments */
-@media (max-width: 639px) {
-  .prediction-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.error-text {
+  color: #dc3545;
+  display: block;
+}
 
-  .prediction-type-grid {
-    grid-template-columns: 1fr;
+.success-text {
+  color: #28a745;
+  display: block;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .prediction-filters {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .filter-group {
-    flex-direction: column;
-    align-items: flex-start;
+  .predictions-list {
+    grid-template-columns: 1fr;
   }
+}
 
-  .filter-select {
-    width: 100%;
-  }
-
-  .prediction-card {
-    flex-direction: column;
-  }
-
-  .prediction-status-indicator {
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: auto;
-    height: 6px;
-    width: auto;
-  }
-
-  .prediction-content {
-    padding-top: 22px; /* Extra top padding for the status indicator */
-    padding-left: 16px;
-  }
-
-  .favourites-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+@media (max-width: 576px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 
   .favourites-controls {
     flex-direction: column;
+    gap: 12px;
   }
 
-  .sort-control {
-    width: 100%;
-  }
-
-  .sort-select {
-    flex: 1;
+  .favourites-controls .p-input-icon-left {
+    margin-right: 0;
+    margin-bottom: 12px;
   }
 }
 </style>
