@@ -12,20 +12,36 @@ const api = axios.create({
   baseURL: 'https://wavegerpython.onrender.com/api',
 })
 
-export const getChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
+export const getChartDetails = async (params: {
+  id?: string
+  week?: string
+  range?: string
+}): Promise<ApiResponse> => {
   try {
-    console.log('API Call - Fetching chart details with params:', params)
-    const response = await api.get<ApiResponse>('/chart', { params })
-    console.log('Chart API Response:', response.data)
+    console.log('Fetching chart details with params:', params)
+
+    const response = await api.get<ApiResponse>('/chart', {
+      params,
+      // Add timeout for better UX
+      timeout: 20000,
+    })
+
     return response.data
   } catch (error) {
-    console.error('API Error:', error)
+    console.error('Chart API error:', error)
+
+    // Improved error handling
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 500) {
-        throw new Error(`Server error: Unable to fetch chart data. Range: ${params.range}`)
+        throw new Error('Server error: Unable to fetch chart data. Please try again later.')
+      } else if (error.code === 'ECONNABORTED') {
+        throw new Error('Request timed out. Please check your connection and try again.')
+      } else if (!navigator.onLine) {
+        throw new Error('You are offline. Please check your internet connection.')
       }
-      throw new Error(`API Error: ${error.message}`)
+      throw new Error(`Chart data error: ${error.message}`)
     }
+
     throw error
   }
 }

@@ -40,17 +40,11 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
-// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
-const formatDateForURL = (date: string): string => {
-  const [year, month, day] = date.split('-')
-  return `${day}-${month}-${year}`
-}
-
 // Update route and ALWAYS load chart data
 const updateRoute = async () => {
   // Normalize chart ID for consistency (remove trailing slash if needed)
   const chartId = selectedChartId.value.replace(/\/$/, '')
-  console.log(`Chart changed to: ${chartId} - FORCING data reload`)
+  console.log(`Chart changed to: ${chartId}`)
 
   // Update the store's selected chart ID
   store.selectedChartId = selectedChartId.value
@@ -79,6 +73,12 @@ const updateRoute = async () => {
       id: chartId,
     },
   })
+}
+
+// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
+const formatDateForURL = (date: string): string => {
+  const [year, month, day] = date.split('-')
+  return `${day}-${month}-${year}`
 }
 
 // Watch for changes to the local selectedChartId and update route when it changes

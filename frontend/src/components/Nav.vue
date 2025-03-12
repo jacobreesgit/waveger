@@ -85,6 +85,9 @@ const menuItems = computed<MenuItem[]>(() => {
       // Skip routes that should be hidden when authenticated
       if (route.meta.hideWhenAuth && authStore.user) return false
 
+      // Skip home route as logo already links to it
+      if (route.path === '/') return false
+
       return true
     })
     .map((route) => {

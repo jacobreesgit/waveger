@@ -1,144 +1,32 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, nextTick, computed } from 'vue'
+import { onMounted, ref, watch, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useAuthStore } from '@/stores/auth'
 import { useTimezoneStore } from '@/stores/timezone'
-import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
-import type { AppleMusicData } from '@/types/appleMusic'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
-import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
-const props = defineProps<{
-  initialDate?: string
-}>()
-
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const favouritesStore = useFavouritesStore()
 const authStore = useAuthStore()
 const timezoneStore = useTimezoneStore()
-const songData = ref<Map<string, AppleMusicData>>(new Map())
-const appleDataLoading = ref(new Set<string>())
+
+// Simplified state management
+const songData = ref(new Map())
 const isLoadingMore = ref(false)
-const isInitialLoad = ref(true)
-const isPreparingPage = ref(true)
 
 // Use a computed prop to determine if we should show the loading indicator
-const isLoading = computed(() => {
-  return store.loading && !isLoadingMore.value
-})
+const isLoading = computed(() => store.loading && !isLoadingMore.value)
 
-// Load or fetch Apple Music data for current songs
-const loadAppleMusicData = async () => {
-  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
-    console.log('No songs available to fetch Apple Music data')
-    return
-  }
-
-  // Check if we already have Apple Music data for the current songs
-  const haveAllData = store.currentChart.songs.every((song) =>
-    songData.value.has(`${song.position}`),
-  )
-
-  // If we determined we shouldn't reload data AND we already have all the Apple Music data
-  if (store.currentChart && !isInitialLoad.value && !store.loading && haveAllData) {
-    console.log('Using existing Apple Music data, no need to reload')
-    return
-  }
-
-  console.log('Loading Apple Music data for current songs')
-
-  // Ensure we have an Apple Music token - WAIT for completion
-  try {
-    console.log('Ensuring Apple Music token is ready')
-    await appleMusicStore.fetchToken()
-    console.log('Apple Music token is ready, proceeding with searches')
-  } catch (error) {
-    console.error('Failed to get Apple Music token:', error)
-    return // Exit early if we can't get a token
-  }
-
-  // Process each song
-  for (const song of store.currentChart.songs) {
-    const songPosition = `${song.position}`
-    // Only fetch data if we don't already have it
-    if (!songData.value.has(songPosition) && !appleDataLoading.value.has(songPosition)) {
-      await fetchAppleMusicData(song)
-      // Add a small delay between requests to avoid rate limiting
-      await new Promise((resolve) => setTimeout(resolve, 100))
-    }
-  }
-}
-
-// Fetch Apple Music data for a specific song
-const fetchAppleMusicData = async (song: any) => {
-  // Skip if token isn't ready
-  if (!appleMusicStore.token) {
-    console.warn(`Skipping Apple Music search for song #${song.position} - token not ready`)
-    return
-  }
-
-  appleDataLoading.value.add(`${song.position}`)
-  const query = `${song.name} ${song.artist}`
-  console.log(`Searching Apple Music for: #${song.position} - ${query}`)
-
-  try {
-    const data = await appleMusicStore.searchSong(query)
-    if (data) {
-      console.log(`Apple Music data for #${song.position} - ${song.name}:`, {
-        data,
-      })
-      songData.value.set(`${song.position}`, data)
-    } else {
-      console.log(`No Apple Music match found for #${song.position} - ${song.name}`)
-    }
-  } catch (error) {
-    console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
-  } finally {
-    appleDataLoading.value.delete(`${song.position}`)
-  }
-}
-
-const parseDateFromURL = (urlDate: string): string => {
-  console.log('Parsing date from URL:', urlDate)
-  try {
-    const [day, month, year] = urlDate.split('-')
-    return `${year}-${month}-${day}`
-  } catch (e) {
-    console.error('Date parsing error:', e)
-    return new Date().toISOString().split('T')[0]
-  }
-}
-
-// Function to parse the chart week string into a standardized date
-const parseChartDate = (chartWeek: string): string => {
-  try {
-    // Extract the date part from format like "Week of February 22, 2025"
-    const dateMatch = chartWeek.match(/Week of ([A-Za-z]+ \d+, \d+)/)
-    if (!dateMatch || !dateMatch[1]) {
-      console.error('Failed to parse chart week format:', chartWeek)
-      return chartWeek // Return original if parsing fails
-    }
-
-    // Parse the extracted date into a Date object
-    const date = new Date(dateMatch[1])
-
-    // Return in YYYY-MM-DD format
-    return date.toISOString().split('T')[0]
-  } catch (e) {
-    console.error('Error parsing chart date:', e)
-    return chartWeek // Return original if parsing fails
-  }
-}
-
-// Add a function to format chart week string with the current timezone
-const formatChartWeek = computed(() => {
+// Format chart week with the current timezone
+const formattedChartWeek = computed(() => {
   if (!store.currentChart) return ''
 
   const chartWeek = store.currentChart.week
@@ -152,49 +40,41 @@ const formatChartWeek = computed(() => {
   return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
 })
 
-const shouldReloadData = (chartId: string, date: string): boolean => {
-  // If no chart data is loaded yet, we need to load
-  if (!store.currentChart) {
-    console.log('No current chart data, need to load')
-    return true
+// Load Apple Music data for current songs
+const loadAppleMusicData = async () => {
+  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
+    return
   }
 
-  // Normalize chart IDs by removing trailing slashes for consistent comparison
-  const normalizedCurrentChartId = store.selectedChartId.replace(/\/$/, '')
-  const normalizedRequestedChartId = chartId.replace(/\/$/, '')
-
-  // If the chart IDs are different, we need to reload
-  if (normalizedCurrentChartId !== normalizedRequestedChartId) {
-    console.log(
-      `Chart ID changed from ${normalizedCurrentChartId} to ${normalizedRequestedChartId}, need to reload`,
-    )
-    return true
-  }
-
-  // Skip title check if IDs match - fixes unnecessary reloads
-
-  // Rest of date comparison logic remains the same
-  const currentChartDate = parseChartDate(store.currentChart.week)
-
+  // Ensure we have an Apple Music token
   try {
-    const currentDate = new Date(currentChartDate)
-    const requestedDate = new Date(date)
-    const diffTime = Math.abs(requestedDate.getTime() - currentDate.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-    if (diffDays > 3) {
-      console.log(
-        `Date changed from ${store.currentChart.week} to ${date} (${diffDays} days difference), need to reload`,
-      )
-      return true
+    if (!appleMusicStore.token) {
+      await appleMusicStore.fetchToken()
     }
   } catch (e) {
-    console.error('Error comparing dates:', e)
-    return true
+    console.warn('Apple Music token error:', e)
+    return
   }
 
-  console.log('No need to reload data, using existing data')
-  return false
+  // Process songs that don't have data yet
+  for (const song of store.currentChart.songs) {
+    const songPosition = `${song.position}`
+
+    // Only fetch data if we don't already have it
+    if (!songData.value.has(songPosition)) {
+      try {
+        const query = `${song.name} ${song.artist}`
+        const data = await appleMusicStore.searchSong(query)
+        if (data) {
+          songData.value.set(songPosition, data)
+        }
+        // Small delay to avoid rate limits
+        await new Promise((r) => setTimeout(r, 50))
+      } catch (error) {
+        console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
+      }
+    }
+  }
 }
 
 // Method to fetch more songs
@@ -204,6 +84,8 @@ const fetchMoreSongs = async () => {
   isLoadingMore.value = true
   try {
     await store.fetchMoreSongs()
+    // Load Apple Music data for the new songs
+    await loadAppleMusicData()
   } catch (error) {
     console.error('Error loading more songs:', error)
   } finally {
@@ -211,152 +93,65 @@ const fetchMoreSongs = async () => {
   }
 }
 
-// Helper function to format date for URL
-const formatDateForURL = (date: string): string => {
-  const [year, month, day] = date.split('-')
-  return `${day}-${month}-${year}`
-}
-
 // Retry loading chart data
 const retryLoadingChart = async () => {
-  await store.fetchChartDetails({ id: 'hot-100', range: '1-10' })
+  await store.loadCurrentChart()
+  await loadAppleMusicData()
 }
 
 // onMounted hook for ChartView.vue
 onMounted(async () => {
-  isPreparingPage.value = true
-
   try {
-    // Check what's already initialized
-    const storeStatus = checkStoreInitialization()
+    // Get chart ID and date from URL or defaults
+    const chartId = (route.query.id as string) || 'hot-100'
+    const dateParam = route.query.date as string
 
-    // Start Apple Music token initialization early in parallel
-    // This ensures the token fetch begins while we're doing other work
-    let appleMusicPromise: Promise<void> | undefined
-    if (!storeStatus.appleMusic) {
-      console.log('Starting Apple Music token initialization early')
-      appleMusicPromise = appleMusicStore.fetchToken().catch((e) => {
-        console.warn('Early Apple Music token initialization failed:', e)
-        // We'll retry later if needed
-      })
+    // Format date if provided
+    let formattedDate: string | undefined
+    if (dateParam) {
+      formattedDate = store.parseDateFromURL(dateParam)
     }
 
-    // Initialize only what we need for this view that hasn't been initialized
-    await initializeStores({
-      // Core stores should already be initialized in App.vue
-      auth: false, // Skip - should be initialized in App.vue
-      timezone: false, // Skip - should be initialized in App.vue
-
-      // View-specific stores
-      charts: !storeStatus.charts, // Charts are required for this view
-      appleMusic: false, // We're handling this separately with our early initialization
-      favourites: authStore.user != null && !storeStatus.favourites, // Only if user is logged in
-      predictions: false, // Not needed for chart view
+    // Load chart data
+    await store.fetchChartDetails({
+      id: chartId,
+      week: formattedDate,
+      range: '1-10',
     })
 
-    // Determine the chart ID and date to display
-    let urlDate = route.query.date as string | undefined
-    let formattedDate: string
-    let chartId = (route.query.id as string) || 'hot-100'
-
-    // If no date in URL but we're on the charts route, check for stored last viewed date
-    if (!urlDate && route.name === 'charts') {
-      const storedDate = localStorage.getItem('lastViewedDate')
-      if (storedDate) {
-        console.log('Using last viewed date from storage:', storedDate)
-        urlDate = storedDate
-      }
-    }
-
-    // If no chart ID in URL, check for stored last viewed chart
-    if (!route.query.id && route.name === 'charts') {
-      const storedChart = localStorage.getItem('lastViewedChart')
-      if (storedChart) {
-        console.log('Using last viewed chart from storage:', storedChart)
-        chartId = storedChart
-      }
-    }
-
-    // Parse date - either from URL, storage, or current date
-    formattedDate = urlDate ? parseDateFromURL(urlDate) : new Date().toISOString().split('T')[0]
-
-    // Only fetch data if it's needed (chart changed or date changed)
-    if (shouldReloadData(chartId, formattedDate)) {
-      console.log(`Loading data for chart: ${chartId}, date: ${formattedDate}`)
-      await store.fetchChartDetails({
-        id: chartId,
-        week: formattedDate,
-        range: '1-10',
-      })
-
-      // Save the chart selection to localStorage
-      localStorage.setItem('lastViewedChart', chartId)
-
-      // Save the date if it was from URL
-      if (urlDate) {
-        localStorage.setItem('lastViewedDate', urlDate)
-      }
-    } else {
-      console.log('Using existing chart data from store')
-    }
-
-    // Ensure Apple Music initialization has completed before proceeding to load music data
-    // If we started it early, wait for that to complete; otherwise, initialize it now
-    if (appleMusicPromise) {
-      try {
-        console.log('Waiting for Apple Music token initialization to complete')
-        await appleMusicPromise
-      } catch (error) {
-        console.warn('Apple Music token initialization failed, will retry during data loading')
-      }
-    }
-
-    // Load Apple Music data after chart data is available
+    // Load Apple Music data in parallel
     await loadAppleMusicData()
 
-    // If we don't have a date in the URL, update the URL with today's date
-    if (!urlDate) {
-      const today = new Date().toISOString().split('T')[0]
-      const formattedToday = formatDateForURL(today)
-
+    // Update URL if needed
+    if (!route.query.date || !route.query.id) {
       router.replace({
         path: '/charts',
         query: {
-          date: formattedToday,
+          date: dateParam || store.formatDateForURL(new Date().toISOString().split('T')[0]),
           id: chartId,
         },
       })
     }
   } catch (error) {
     console.error('Error setting up chart view:', error)
-  } finally {
-    isPreparingPage.value = false
-    isInitialLoad.value = false
   }
 })
 
-// Watch for chart changes to clear Apple Music data cache
+// Watch for chart changes to update Apple Music data
 watch(
   () => store.currentChart,
   async (newChart, oldChart) => {
     if (newChart) {
       // Only clear cache if it's a different chart than before
       if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
-        console.log('Chart changed, clearing Apple Music data cache')
         songData.value.clear()
-        appleDataLoading.value.clear()
-
-        // Load Apple Music data for the new chart
-        await nextTick()
         await loadAppleMusicData()
-      } else {
-        console.log('Same chart updated, preserving Apple Music data cache')
       }
     }
   },
 )
 
-// Optimize Apple Music data fetching - keep this as a backup
+// Watch for new songs to load Apple Music data
 watch(
   () => store.currentChart?.songs,
   async (newSongs) => {
@@ -367,83 +162,56 @@ watch(
   { deep: true },
 )
 
-// Watch for date query parameter changes
+// Watch for route parameter changes - using fetchChartDetails instead of loadChart
 watch(
-  () => route.query.date,
-  async (newDate) => {
-    if (newDate) {
-      const formattedDate = parseDateFromURL(newDate as string)
-      const chartId = (route.query.id as string) || 'hot-100'
-
-      if (shouldReloadData(chartId, formattedDate)) {
-        await store.fetchChartDetails({
-          id: chartId,
-          week: formattedDate,
-          range: '1-10',
-        })
+  () => [route.query.id, route.query.date],
+  async ([newChartId, newDate]) => {
+    if (newChartId || newDate) {
+      // Get formatted date if provided
+      let formattedDate: string | undefined
+      if (newDate) {
+        formattedDate = store.parseDateFromURL(newDate as string)
       }
+
+      // USE fetchChartDetails INSTEAD OF loadChart
+      await store.fetchChartDetails({
+        id: (newChartId as string) || 'hot-100',
+        week: formattedDate,
+        range: '1-10',
+      })
     }
   },
-)
-
-// Watch for chart ID changes via query params
-watch(
-  () => route.query.id,
-  async (newChartId) => {
-    if (newChartId) {
-      const chartId = newChartId as string
-      const urlDate = route.query.date as string | undefined
-      const formattedDate = urlDate
-        ? parseDateFromURL(urlDate)
-        : new Date().toISOString().split('T')[0]
-
-      if (shouldReloadData(chartId, formattedDate)) {
-        await store.fetchChartDetails({
-          id: chartId,
-          week: formattedDate,
-          range: '1-10',
-        })
-      }
-    }
-  },
+  { immediate: false },
 )
 </script>
 
 <template>
   <div class="chart-view">
-    <!-- Loading State While Preparing Page -->
-    <div v-if="isPreparingPage" class="chart-preparing">
-      <div class="loading-spinner"></div>
-      <p>Loading chart data...</p>
+    <div class="chart-view__chart-controls">
+      <ChartSelector />
+      <ChartDatePicker />
     </div>
 
-    <template v-else>
-      <div class="chart-view__chart-controls">
-        <ChartSelector />
-        <ChartDatePicker />
-      </div>
+    <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
+      <h1>{{ store.currentChart.title }}</h1>
+      <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
+      <p class="chart-view__chart-header__chart-week">{{ formattedChartWeek }}</p>
+    </div>
 
-      <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
-        <h1>{{ store.currentChart.title }}</h1>
-        <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
-        <p class="chart-view__chart-header__chart-week">{{ formatChartWeek }}</p>
-      </div>
-
-      <ChartCardHolder
-        :current-chart="store.currentChart"
-        :loading="isLoading"
-        :error="store.error"
-        :has-more="store.hasMore"
-        :is-loading-more="isLoadingMore"
-        :selected-chart-id="store.selectedChartId"
-        :song-data="songData"
-        :fetch-more-songs="fetchMoreSongs"
-      >
-        <template #retry-button>
-          <button @click="retryLoadingChart" class="retry-button">Retry</button>
-        </template>
-      </ChartCardHolder>
-    </template>
+    <ChartCardHolder
+      :current-chart="store.currentChart"
+      :loading="isLoading"
+      :error="store.error"
+      :has-more="store.hasMore"
+      :is-loading-more="isLoadingMore"
+      :selected-chart-id="store.selectedChartId"
+      :song-data="songData"
+      :fetch-more-songs="fetchMoreSongs"
+    >
+      <template #retry-button>
+        <button @click="retryLoadingChart" class="retry-button">Retry</button>
+      </template>
+    </ChartCardHolder>
   </div>
 </template>
 
@@ -483,35 +251,17 @@ watch(
   }
 }
 
-.chart-preparing {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
+.retry-button {
+  padding: 8px 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
 
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 16px;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
-
-  p {
-    color: #666;
-    font-size: 1.1rem;
-  }
+.retry-button:hover {
+  background: #0069d9;
 }
 </style>
