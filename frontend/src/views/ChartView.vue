@@ -10,6 +10,14 @@ import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 
+// Add a simple prop to control whether to wait for all data
+const props = defineProps({
+  waitForAllData: {
+    type: Boolean,
+    default: true,
+  },
+})
+
 const route = useRoute()
 const router = useRouter()
 const store = useChartsStore()
@@ -18,14 +26,27 @@ const favouritesStore = useFavouritesStore()
 const authStore = useAuthStore()
 const timezoneStore = useTimezoneStore()
 
-// Simplified state management
+// State
 const songData = ref(new Map())
 const isLoadingMore = ref(false)
+const isLoadingAppleMusic = ref(false)
+const isLoadingFavourites = ref(false)
 
-// Use a computed prop to determine if we should show the loading indicator
-const isLoading = computed(() => store.loading && !isLoadingMore.value)
+// Determine if we should show loading indicator
+const isLoading = computed(() => {
+  // Basic loading state
+  const baseLoading = store.loading && !isLoadingMore.value
 
-// Format chart week with the current timezone
+  // If we need to wait for all data, include Apple Music and favourites loading states
+  if (props.waitForAllData) {
+    return baseLoading || isLoadingAppleMusic.value || isLoadingFavourites.value
+  }
+
+  // Otherwise just use basic loading state
+  return baseLoading
+})
+
+// Format chart week with timezone
 const formattedChartWeek = computed(() => {
   if (!store.currentChart) return ''
 
@@ -46,6 +67,8 @@ const loadAppleMusicData = async () => {
     return
   }
 
+  isLoadingAppleMusic.value = true
+
   // Ensure we have an Apple Music token
   try {
     if (!appleMusicStore.token) {
@@ -53,6 +76,7 @@ const loadAppleMusicData = async () => {
     }
   } catch (e) {
     console.warn('Apple Music token error:', e)
+    isLoadingAppleMusic.value = false
     return
   }
 
@@ -75,6 +99,19 @@ const loadAppleMusicData = async () => {
       }
     }
   }
+
+  isLoadingAppleMusic.value = false
+}
+
+// Load favourites if user is logged in
+const loadFavouritesData = async () => {
+  if (!authStore.user) {
+    return
+  }
+
+  isLoadingFavourites.value = true
+  await favouritesStore.loadFavourites()
+  isLoadingFavourites.value = false
 }
 
 // Method to fetch more songs
@@ -99,7 +136,7 @@ const retryLoadingChart = async () => {
   await loadAppleMusicData()
 }
 
-// onMounted hook for ChartView.vue
+// OnMounted hook
 onMounted(async () => {
   try {
     // Get chart ID and date from URL or defaults
@@ -119,8 +156,19 @@ onMounted(async () => {
       range: '1-10',
     })
 
-    // Load Apple Music data in parallel
-    await loadAppleMusicData()
+    // Load Apple Music data
+    isLoadingAppleMusic.value = true
+    loadAppleMusicData().finally(() => {
+      isLoadingAppleMusic.value = false
+    })
+
+    // Load favourites data if user is logged in
+    if (authStore.user) {
+      isLoadingFavourites.value = true
+      loadFavouritesData().finally(() => {
+        isLoadingFavourites.value = false
+      })
+    }
 
     // Update URL if needed
     if (!route.query.date || !route.query.id) {
@@ -145,24 +193,24 @@ watch(
       // Only clear cache if it's a different chart than before
       if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
         songData.value.clear()
-        await loadAppleMusicData()
+
+        isLoadingAppleMusic.value = true
+        loadAppleMusicData().finally(() => {
+          isLoadingAppleMusic.value = false
+        })
+
+        if (authStore.user) {
+          isLoadingFavourites.value = true
+          loadFavouritesData().finally(() => {
+            isLoadingFavourites.value = false
+          })
+        }
       }
     }
   },
 )
 
-// Watch for new songs to load Apple Music data
-watch(
-  () => store.currentChart?.songs,
-  async (newSongs) => {
-    if (newSongs) {
-      await loadAppleMusicData()
-    }
-  },
-  { deep: true },
-)
-
-// Watch for route parameter changes - using fetchChartDetails instead of loadChart
+// Watch for route parameter changes
 watch(
   () => [route.query.id, route.query.date],
   async ([newChartId, newDate]) => {
