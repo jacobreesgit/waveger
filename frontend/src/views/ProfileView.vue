@@ -1198,6 +1198,7 @@ const resetPredictionFilters = () => {
 <style lang="scss" scoped>
 .profile-view {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
 }
@@ -1221,7 +1222,7 @@ const resetPredictionFilters = () => {
   background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .profile-section {

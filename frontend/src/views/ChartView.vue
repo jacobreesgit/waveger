@@ -220,6 +220,7 @@ watch(
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  width: 100%;
   &__chart-controls {
     display: flex;
     gap: 16px;

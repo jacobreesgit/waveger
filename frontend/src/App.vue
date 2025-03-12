@@ -47,7 +47,7 @@ onMounted(async () => {
         <Message severity="error" :closable="false">{{ initError }}</Message>
         <Button label="Retry" @click="reloadPage" />
       </div>
-      <RouterView v-else />
+      <RouterView class="app-container__main-content__content" v-else />
     </main>
   </div>
 </template>
@@ -62,15 +62,18 @@ onMounted(async () => {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-  }
-  &__app-loading,
-  &__app-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 2rem;
+
+    &__app-loading,
+    &__app-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding: 2rem;
+    }
+    &__content {
+    }
   }
   :deep(.p-message) {
     margin-bottom: 1rem;

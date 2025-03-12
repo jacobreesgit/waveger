@@ -338,6 +338,7 @@ watch(activeTab, async () => {
 <style lang="scss" scoped>
 .prediction-view {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
 }
@@ -355,7 +356,7 @@ h1 {
   padding: 40px;
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .loading-spinner {

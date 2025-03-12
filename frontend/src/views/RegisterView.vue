@@ -274,6 +274,7 @@ watch(email, (newValue) => {
 <style lang="scss" scoped>
 .register-view {
   max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
   padding: 20px;
   display: flex;
@@ -284,9 +285,13 @@ watch(email, (newValue) => {
   background: white;
   padding: 2rem;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   width: 100%;
+}
+
+form {
   max-width: 400px;
+  margin: 0 auto;
 }
 
 h2 {

@@ -99,111 +99,120 @@ const formatAccuracy = (value: number): string => {
 
 <template>
   <div class="leaderboard-view">
-    <h2>Predictions Leaderboard</h2>
+    <div class="leaderboard-content">
+      <h2>Predictions Leaderboard</h2>
 
-    <!-- Period toggle -->
-    <div class="period-toggle">
-      <button @click="period = 'all'" :class="{ active: period === 'all' }" class="toggle-button">
-        All Time
-      </button>
-      <button
-        @click="period = 'weekly'"
-        :class="[{ active: period === 'weekly' }, { disabled: !predictionStore.currentContest }]"
-        class="toggle-button"
-        :disabled="!predictionStore.currentContest"
-      >
-        Current Week
-      </button>
-    </div>
-
-    <!-- Loading state -->
-    <div v-if="isLoading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Loading leaderboard data...</p>
-    </div>
-
-    <!-- Error state -->
-    <div v-else-if="error" class="error-container">
-      <p class="error-message">{{ error }}</p>
-      <button @click="loadLeaderboard" class="retry-button">Retry</button>
-    </div>
-
-    <!-- Empty state -->
-    <div v-else-if="predictionStore.leaderboard.length === 0" class="empty-container">
-      <p>No prediction data available for this time period.</p>
-      <p v-if="period === 'weekly'">Check back after predictions have been processed.</p>
-    </div>
-
-    <!-- Leaderboard table -->
-    <div v-else class="leaderboard-table-container">
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>User</th>
-            <th>Points</th>
-            <th>Accuracy</th>
-            <th>Predictions</th>
-            <th>Correct</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="entry in paginatedLeaderboard"
-            :key="entry.user_id"
-            :class="{ 'current-user': isCurrentUser(entry.user_id) }"
-          >
-            <td class="rank-cell">{{ entry.rank }}</td>
-            <td class="username-cell">{{ entry.username }}</td>
-            <td class="points-cell">{{ entry.total_points }}</td>
-            <td class="accuracy-cell">{{ formatAccuracy(entry.accuracy) }}</td>
-            <td class="predictions-cell">{{ entry.predictions_made }}</td>
-            <td class="correct-cell">{{ entry.correct_predictions }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- Pagination controls -->
-      <div class="pagination-controls" v-if="predictionStore.leaderboard.length > entriesPerPage">
-        <button @click="goToPreviousPage" :disabled="currentPage === 1" class="pagination-button">
-          &laquo; Previous
+      <!-- Period toggle -->
+      <div class="period-toggle">
+        <button @click="period = 'all'" :class="{ active: period === 'all' }" class="toggle-button">
+          All Time
         </button>
-
-        <div class="page-indicators">
-          <button
-            v-for="page in totalPages"
-            :key="page"
-            @click="goToPage(page)"
-            :class="{ active: currentPage === page }"
-            class="page-button"
-          >
-            {{ page }}
-          </button>
-        </div>
-
         <button
-          @click="goToNextPage"
-          :disabled="currentPage === totalPages"
-          class="pagination-button"
+          @click="period = 'weekly'"
+          :class="[{ active: period === 'weekly' }, { disabled: !predictionStore.currentContest }]"
+          class="toggle-button"
+          :disabled="!predictionStore.currentContest"
         >
-          Next &raquo;
+          Current Week
         </button>
       </div>
-    </div>
 
-    <!-- Explanation for weekly leaderboard when no contest is active -->
-    <div v-if="period === 'weekly' && !predictionStore.currentContest" class="info-message">
-      <p>Weekly leaderboard is available only during active prediction contests.</p>
+      <!-- Loading state -->
+      <div v-if="isLoading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading leaderboard data...</p>
+      </div>
+
+      <!-- Error state -->
+      <div v-else-if="error" class="error-container">
+        <p class="error-message">{{ error }}</p>
+        <button @click="loadLeaderboard" class="retry-button">Retry</button>
+      </div>
+
+      <!-- Empty state -->
+      <div v-else-if="predictionStore.leaderboard.length === 0" class="empty-container">
+        <p>No prediction data available for this time period.</p>
+        <p v-if="period === 'weekly'">Check back after predictions have been processed.</p>
+      </div>
+
+      <!-- Leaderboard table -->
+      <div v-else class="leaderboard-table-container">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>User</th>
+              <th>Points</th>
+              <th>Accuracy</th>
+              <th>Predictions</th>
+              <th>Correct</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="entry in paginatedLeaderboard"
+              :key="entry.user_id"
+              :class="{ 'current-user': isCurrentUser(entry.user_id) }"
+            >
+              <td class="rank-cell">{{ entry.rank }}</td>
+              <td class="username-cell">{{ entry.username }}</td>
+              <td class="points-cell">{{ entry.total_points }}</td>
+              <td class="accuracy-cell">{{ formatAccuracy(entry.accuracy) }}</td>
+              <td class="predictions-cell">{{ entry.predictions_made }}</td>
+              <td class="correct-cell">{{ entry.correct_predictions }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination controls -->
+        <div class="pagination-controls" v-if="predictionStore.leaderboard.length > entriesPerPage">
+          <button @click="goToPreviousPage" :disabled="currentPage === 1" class="pagination-button">
+            &laquo; Previous
+          </button>
+
+          <div class="page-indicators">
+            <button
+              v-for="page in totalPages"
+              :key="page"
+              @click="goToPage(page)"
+              :class="{ active: currentPage === page }"
+              class="page-button"
+            >
+              {{ page }}
+            </button>
+          </div>
+
+          <button
+            @click="goToNextPage"
+            :disabled="currentPage === totalPages"
+            class="pagination-button"
+          >
+            Next &raquo;
+          </button>
+        </div>
+      </div>
+
+      <!-- Explanation for weekly leaderboard when no contest is active -->
+      <div v-if="period === 'weekly' && !predictionStore.currentContest" class="info-message">
+        <p>Weekly leaderboard is available only during active prediction contests.</p>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .leaderboard-view {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.leaderboard-content {
   background: white;
   border-radius: 12px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-bottom: 24px;
 }
 
