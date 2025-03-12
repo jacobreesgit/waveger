@@ -630,7 +630,7 @@ const resetPredictionFilters = () => {
 
       <!-- Tab Navigation -->
       <TabView v-model:activeIndex="activeTabIndex">
-        <TabPanel header="Profile">
+        <TabPanel header="Profile" value="Profile">
           <div class="profile-section">
             <h3>Account Details</h3>
 
@@ -989,7 +989,7 @@ const resetPredictionFilters = () => {
           </div>
         </TabPanel>
 
-        <TabPanel header="Favourites">
+        <TabPanel header="Favourites" value="Favourites">
           <div class="favourites-header">
             <div class="favourites-stats">
               <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
@@ -1028,7 +1028,7 @@ const resetPredictionFilters = () => {
           </ChartCardHolder>
         </TabPanel>
 
-        <TabPanel header="Predictions">
+        <TabPanel header="Predictions" value="Predictions">
           <div class="predictions-header">
             <h3>Your Prediction History</h3>
 
@@ -1185,7 +1185,7 @@ const resetPredictionFilters = () => {
 
     <div v-else class="unauthenticated">
       <Message severity="info" :closable="false">
-        <template #detail> You must be logged in to view your profile. </template>
+        You must be logged in to view your profile.
       </Message>
       <div class="text-center mt-4">
         <Button label="Login" @click="router.push('/login')" class="mr-2" />

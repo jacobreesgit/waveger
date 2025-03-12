@@ -54,10 +54,8 @@ const handleSubmit = async () => {
 
       <div v-if="requestSent" class="success-container">
         <Message severity="success" :closable="false">
-          <template #detail>
-            If an account exists with that email, we've sent password reset instructions. Please
-            check your inbox (and spam folder) for further instructions.
-          </template>
+          If an account exists with that email, we've sent password reset instructions. Please check
+          your inbox (and spam folder) for further instructions.
         </Message>
         <div class="text-center mt-4">
           <router-link to="/login">

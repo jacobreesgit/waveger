@@ -112,9 +112,7 @@ const handleSubmit = async () => {
       <!-- Success state -->
       <div v-else-if="isSuccess" class="text-center">
         <Message severity="success" :closable="false">
-          <template #detail>
-            Your password has been reset successfully. You can now log in with your new password.
-          </template>
+          Your password has been reset successfully. You can now log in with your new password.
         </Message>
         <div class="mt-4">
           <router-link to="/login">
@@ -126,9 +124,7 @@ const handleSubmit = async () => {
       <!-- Invalid token state -->
       <div v-else-if="!isTokenValid" class="text-center">
         <Message severity="error" :closable="false">
-          <template #detail>
-            {{ errors.general }}
-          </template>
+          {{ errors.general }}
         </Message>
         <div class="mt-4">
           <router-link to="/forgot-password">
@@ -141,9 +137,7 @@ const handleSubmit = async () => {
       <form v-else @submit.prevent="handleSubmit">
         <div v-if="username && email" class="user-info mb-4">
           <Message severity="info" :closable="false">
-            <template #detail>
-              Resetting password for: <strong>{{ username }}</strong> ({{ email }})
-            </template>
+            Resetting password for: <strong>{{ username }}</strong> ({{ email }})
           </Message>
         </div>
 
