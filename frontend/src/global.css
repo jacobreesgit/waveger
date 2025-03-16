@@ -38,3 +38,7 @@ body {
 .p-message {
   width: fit-content;
 }
+
+.p-tab {
+  font-size: 16px !important;
+}

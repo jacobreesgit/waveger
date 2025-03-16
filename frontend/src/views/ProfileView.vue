@@ -18,7 +18,10 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
-import TabView from 'primevue/tabview'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
 import TabPanel from 'primevue/tabpanel'
 import Select from 'primevue/select'
 import Card from 'primevue/card'
@@ -32,7 +35,7 @@ const predictionStore = usePredictionsStore()
 const isLoading = ref(true)
 const error = ref('')
 const successMessage = ref('')
-const activeTabIndex = ref(0) // 0 for profile, 1 for favourites, 2 for predictions
+const activeTab = ref('profile')
 
 // Edit mode states
 const editingUsername = ref(false)
@@ -104,15 +107,19 @@ onMounted(async () => {
 })
 
 // Watch for tab changes to trigger data loading if needed
-watch(activeTabIndex, async (newTabIndex) => {
+watch(activeTab, async (newTab) => {
   if (
-    newTabIndex === 1 &&
+    newTab === 'favourites' &&
     authStore.user &&
     !favouritesStore.favourites.length &&
     !favouritesStore.loading
   ) {
     await favouritesStore.loadFavourites()
-  } else if (newTabIndex === 2 && authStore.user && !predictionStore.userPredictions.length) {
+  } else if (
+    newTab === 'predictions' &&
+    authStore.user &&
+    !predictionStore.userPredictions.length
+  ) {
     isPredictionsLoading.value = true
     try {
       await predictionStore.fetchUserPredictions()
@@ -578,555 +585,571 @@ const resetPredictionFilters = () => {
     <div v-else-if="authStore.user" class="profile-content">
       <h2>Your Account</h2>
 
-      <!-- Tab Navigation -->
-      <TabView class="tab-navigation" v-model:activeIndex="activeTabIndex">
-        <TabPanel header="Profile" value="Profile" class="tab-navigation__profile">
-          <div class="profile-section">
-            <h3>Account Details</h3>
+      <!-- Tab Navigation - Fixed with proper value props -->
+      <Tabs v-model="activeTab" value="profile" class="tab-navigation">
+        <TabList>
+          <Tab value="profile">Profile</Tab>
+          <Tab value="favourites">Favourites</Tab>
+          <Tab value="predictions">Predictions</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel value="profile" class="tab-navigation__profile">
+            <div class="profile-section">
+              <h3>Account Details</h3>
 
-            <!-- Username section -->
-            <div class="profile-detail" v-if="!editingUsername">
-              <div class="detail-label">Username</div>
-              <div class="detail-value">
-                <span>{{ authStore.user.username }}</span>
-                <Button
-                  icon="pi pi-pencil"
-                  text
-                  @click="toggleEditUsername"
-                  aria-label="Edit username"
-                />
-              </div>
-            </div>
-
-            <!-- Username edit form -->
-            <div class="edit-form" v-if="editingUsername">
-              <h4>Change Username</h4>
-              <div class="form-field mb-3">
-                <label for="newUsername">New Username</label>
-                <InputText
-                  id="newUsername"
-                  v-model="newUsername"
-                  :disabled="submittingUsername"
-                  @input="onUsernameInput"
-                  class="w-full"
-                />
-                <div class="mt-2">
-                  <small v-if="formErrors.username" class="error-text">
-                    {{ formErrors.username }}
-                  </small>
-                  <div
-                    v-else-if="newUsername && newUsername !== authStore.user.username"
-                    class="availability-status"
-                  >
-                    <small v-if="checkingUsername" class="checking-status">
-                      Checking availability...
-                    </small>
-                    <small v-else-if="usernameAvailable === true" class="success-text">
-                      Username is available
-                    </small>
-                    <small v-else-if="usernameAvailable === false" class="error-text">
-                      Username is already taken
-                    </small>
-                  </div>
-                </div>
-              </div>
-              <div class="form-actions">
-                <Button
-                  label="Cancel"
-                  severity="secondary"
-                  @click="toggleEditUsername"
-                  :disabled="submittingUsername"
-                  class="mr-2"
-                />
-                <Button
-                  label="Save"
-                  @click="updateUsername"
-                  :disabled="
-                    submittingUsername ||
-                    checkingUsername ||
-                    usernameAvailable === false ||
-                    !newUsername
-                  "
-                  :loading="submittingUsername"
-                />
-              </div>
-            </div>
-
-            <!-- Email section -->
-            <div class="profile-detail" v-if="!editingEmail">
-              <div class="detail-label">Email</div>
-              <div class="detail-value">
-                <span>{{ authStore.user.email }}</span>
-                <Button icon="pi pi-pencil" text @click="toggleEditEmail" aria-label="Edit email" />
-              </div>
-            </div>
-
-            <!-- Email edit form -->
-            <div class="edit-form" v-if="editingEmail">
-              <h4>Change Email</h4>
-              <div class="form-field mb-3">
-                <label for="newEmail">New Email</label>
-                <InputText
-                  id="newEmail"
-                  v-model="newEmail"
-                  type="email"
-                  :disabled="submittingEmail"
-                  @input="onEmailInput"
-                  class="w-full"
-                />
-                <div class="mt-2">
-                  <small v-if="formErrors.email" class="error-text">
-                    {{ formErrors.email }}
-                  </small>
-                  <div
-                    v-else-if="newEmail && newEmail !== authStore.user.email"
-                    class="availability-status"
-                  >
-                    <small v-if="checkingEmail" class="checking-status">
-                      Checking availability...
-                    </small>
-                    <small v-else-if="emailAvailable === true" class="success-text">
-                      Email is available
-                    </small>
-                    <small v-else-if="emailAvailable === false" class="error-text">
-                      Email is already registered
-                    </small>
-                  </div>
-                </div>
-              </div>
-              <div class="form-actions">
-                <Button
-                  label="Cancel"
-                  severity="secondary"
-                  @click="toggleEditEmail"
-                  :disabled="submittingEmail"
-                  class="mr-2"
-                />
-                <Button
-                  label="Save"
-                  @click="updateEmail"
-                  :disabled="
-                    submittingEmail || checkingEmail || emailAvailable === false || !newEmail
-                  "
-                  :loading="submittingEmail"
-                />
-              </div>
-            </div>
-
-            <!-- Password section -->
-            <div class="profile-detail" v-if="!editingPassword">
-              <div class="detail-label">Password</div>
-              <div class="detail-value">
-                <span>•••••••••</span>
-                <Button
-                  icon="pi pi-pencil"
-                  text
-                  @click="toggleEditPassword"
-                  aria-label="Change password"
-                />
-              </div>
-            </div>
-
-            <!-- Password edit form -->
-            <div class="edit-form" v-if="editingPassword">
-              <h4>Change Password</h4>
-              <div class="form-field mb-3">
-                <label for="currentPassword">Current Password</label>
-                <Password
-                  id="currentPassword"
-                  v-model="currentPassword"
-                  :disabled="submittingPassword"
-                  toggleMask
-                  :feedback="false"
-                  inputClass="w-full"
-                  class="w-full"
-                  @input="formErrors.currentPassword = ''"
-                />
-                <small v-if="formErrors.currentPassword" class="error-text">
-                  {{ formErrors.currentPassword }}
-                </small>
-              </div>
-              <div class="form-field mb-3">
-                <label for="newPassword">New Password</label>
-                <Password
-                  id="newPassword"
-                  v-model="newPassword"
-                  :disabled="submittingPassword"
-                  toggleMask
-                  :feedback="true"
-                  inputClass="w-full"
-                  class="w-full"
-                  @input="formErrors.newPassword = ''"
-                />
-                <small v-if="formErrors.newPassword" class="error-text">
-                  {{ formErrors.newPassword }}
-                </small>
-              </div>
-              <div class="form-field mb-3">
-                <label for="confirmPassword">Confirm New Password</label>
-                <Password
-                  id="confirmPassword"
-                  v-model="confirmPassword"
-                  :disabled="submittingPassword"
-                  toggleMask
-                  :feedback="false"
-                  inputClass="w-full"
-                  class="w-full"
-                  @input="formErrors.confirmPassword = ''"
-                />
-                <small v-if="formErrors.confirmPassword" class="error-text">
-                  {{ formErrors.confirmPassword }}
-                </small>
-              </div>
-              <div class="form-actions">
-                <Button
-                  label="Cancel"
-                  severity="secondary"
-                  @click="toggleEditPassword"
-                  :disabled="submittingPassword"
-                  class="mr-2"
-                />
-                <Button
-                  label="Save"
-                  @click="updatePassword"
-                  :disabled="
-                    submittingPassword || !currentPassword || !newPassword || !confirmPassword
-                  "
-                  :loading="submittingPassword"
-                />
-              </div>
-            </div>
-
-            <div class="profile-detail">
-              <div class="detail-label">Account Created</div>
-              <div class="detail-value">{{ formatDate(authStore.user.created_at) }}</div>
-            </div>
-            <div class="profile-detail">
-              <div class="detail-label">Last Login</div>
-              <div class="detail-value">{{ formatDate(authStore.user.last_login) }}</div>
-            </div>
-          </div>
-
-          <div class="profile-section">
-            <h3>Prediction Stats</h3>
-            <div class="stats-grid">
-              <Card class="stat-card">
-                <template #content>
-                  <div class="stat-value">{{ authStore.user.predictions_made || 0 }}</div>
-                  <div class="stat-label">Total Predictions</div>
-                </template>
-              </Card>
-              <Card class="stat-card">
-                <template #content>
-                  <div class="stat-value">{{ authStore.user.correct_predictions || 0 }}</div>
-                  <div class="stat-label">Correct Predictions</div>
-                </template>
-              </Card>
-              <Card class="stat-card">
-                <template #content>
-                  <div class="stat-value">{{ predictionAccuracy }}</div>
-                  <div class="stat-label">Overall Accuracy</div>
-                </template>
-              </Card>
-              <Card class="stat-card">
-                <template #content>
-                  <div class="stat-value">{{ authStore.user.total_points || 0 }}</div>
-                  <div class="stat-label">Total Points</div>
-                </template>
-              </Card>
-            </div>
-
-            <h4 class="mt-4">Success Rate by Prediction Type</h4>
-            <div class="stats-grid">
-              <Card class="stat-card">
-                <template #title>New Entries</template>
-                <template #content>
-                  <div class="type-stats">
-                    <div>
-                      <span class="stats-label">Total:</span>
-                      <span class="stats-value">{{ predictionStatsByType.entry.total }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Correct:</span>
-                      <span class="stats-value">{{ predictionStatsByType.entry.correct }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Pending:</span>
-                      <span class="stats-value">{{ predictionStatsByType.entry.pending }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Success Rate:</span>
-                      <span class="stats-value success-rate">{{
-                        predictionStatsByType.entry.rate
-                      }}</span>
-                    </div>
-                  </div>
-                </template>
-              </Card>
-
-              <Card class="stat-card">
-                <template #title>Position Changes</template>
-                <template #content>
-                  <div class="type-stats">
-                    <div>
-                      <span class="stats-label">Total:</span>
-                      <span class="stats-value">{{
-                        predictionStatsByType.position_change.total
-                      }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Correct:</span>
-                      <span class="stats-value">{{
-                        predictionStatsByType.position_change.correct
-                      }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Pending:</span>
-                      <span class="stats-value">{{
-                        predictionStatsByType.position_change.pending
-                      }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Success Rate:</span>
-                      <span class="stats-value success-rate">{{
-                        predictionStatsByType.position_change.rate
-                      }}</span>
-                    </div>
-                  </div>
-                </template>
-              </Card>
-
-              <Card class="stat-card">
-                <template #title>Chart Exits</template>
-                <template #content>
-                  <div class="type-stats">
-                    <div>
-                      <span class="stats-label">Total:</span>
-                      <span class="stats-value">{{ predictionStatsByType.exit.total }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Correct:</span>
-                      <span class="stats-value">{{ predictionStatsByType.exit.correct }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Pending:</span>
-                      <span class="stats-value">{{ predictionStatsByType.exit.pending }}</span>
-                    </div>
-                    <div>
-                      <span class="stats-label">Success Rate:</span>
-                      <span class="stats-value success-rate">{{
-                        predictionStatsByType.exit.rate
-                      }}</span>
-                    </div>
-                  </div>
-                </template>
-              </Card>
-            </div>
-
-            <div class="text-center mt-4">
-              <Button label="View All Predictions" @click="goToPredictionsView" />
-            </div>
-          </div>
-
-          <div class="profile-actions">
-            <Button
-              label="Logout"
-              severity="danger"
-              @click="handleLogout"
-              icon="pi pi-sign-out"
-              class="w-full"
-            />
-          </div>
-        </TabPanel>
-
-        <TabPanel header="Favourites" value="Favourites" class="tab-navigation__favourites">
-          <div class="favourites-header">
-            <div class="favourites-stats">
-              <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
-              <Badge :value="favouritesStore.chartAppearancesCount" severity="info">
-                Chart Appearances
-              </Badge>
-            </div>
-          </div>
-
-          <div class="favourites-controls">
-            <span class="p-input-icon-left w-full mr-3">
-              <i class="pi pi-search" />
-              <InputText v-model="searchQuery" placeholder="Search favourites..." class="w-full" />
-            </span>
-
-            <Select
-              v-model="selectedSort"
-              :options="sortOptions"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Sort by"
-            />
-          </div>
-
-          <!-- Using ChartCardHolder for favourites -->
-          <ChartCardHolder
-            :loading="favouritesStore.loading"
-            :error="favouritesStore.error"
-            :items="filteredFavourites"
-            :isForFavourites="true"
-            emptyMessage="No favourites match your search"
-          >
-            <template #empty-action>
-              <Button label="Clear Search" @click="searchQuery = ''" class="mt-3" />
-            </template>
-          </ChartCardHolder>
-        </TabPanel>
-
-        <TabPanel header="Predictions" value="Predictions" class="tab-navigation__predictions">
-          <div class="predictions-header">
-            <h3>Your Prediction History</h3>
-
-            <div class="prediction-filters">
-              <div class="filter-group">
-                <label for="result-filter">Result:</label>
-                <Select
-                  id="result-filter"
-                  v-model="predictionFilter"
-                  :options="[
-                    { label: 'All Results', value: 'all' },
-                    { label: 'Correct', value: 'correct' },
-                    { label: 'Incorrect', value: 'incorrect' },
-                    { label: 'Pending', value: 'pending' },
-                  ]"
-                  optionLabel="label"
-                  optionValue="value"
-                  class="w-full"
-                />
-              </div>
-
-              <div class="filter-group">
-                <label for="type-filter">Type:</label>
-                <Select
-                  id="type-filter"
-                  v-model="predictionTypeFilter"
-                  :options="[
-                    { label: 'All Types', value: 'all' },
-                    { label: 'New Entry', value: 'entry' },
-                    { label: 'Position Change', value: 'position_change' },
-                    { label: 'Chart Exit', value: 'exit' },
-                  ]"
-                  optionLabel="label"
-                  optionValue="value"
-                  class="w-full"
-                />
-              </div>
-
-              <div class="filter-group">
-                <label for="chart-filter">Chart:</label>
-                <Select
-                  id="chart-filter"
-                  v-model="chartTypeFilter"
-                  :options="[
-                    { label: 'All Charts', value: 'all' },
-                    { label: 'Hot 100', value: 'hot-100' },
-                    { label: 'Billboard 200', value: 'billboard-200' },
-                  ]"
-                  optionLabel="label"
-                  optionValue="value"
-                  class="w-full"
-                />
-              </div>
-
-              <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-2" />
-            </div>
-          </div>
-
-          <LoadingSpinner
-            v-if="isPredictionsLoading"
-            size="medium"
-            label="Loading your predictions..."
-            centerInContainer
-          />
-
-          <!-- No predictions state -->
-          <div v-else-if="predictionStore.userPredictions.length === 0" class="empty-container">
-            <p>You haven't made any predictions yet.</p>
-            <Button label="Make a Prediction" @click="goToPredictionsView" class="mt-3" />
-          </div>
-
-          <!-- No filtered predictions state -->
-          <div v-else-if="filteredPredictions.length === 0" class="empty-container">
-            <p>No predictions match your filter criteria.</p>
-            <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-3" />
-          </div>
-
-          <!-- Predictions list -->
-          <div v-else class="predictions-list">
-            <Card
-              v-for="prediction in filteredPredictions"
-              :key="prediction.id"
-              :class="['prediction-card', getPredictionStatus(prediction)]"
-            >
-              <template #header>
-                <div class="prediction-header">
-                  <Badge
-                    :value="prediction.prediction_type.replace('_', ' ')"
-                    :severity="
-                      prediction.prediction_type === 'entry'
-                        ? 'success'
-                        : prediction.prediction_type === 'position_change'
-                          ? 'info'
-                          : 'warning'
-                    "
+              <!-- Username section -->
+              <div class="profile-detail" v-if="!editingUsername">
+                <div class="detail-label">Username</div>
+                <div class="detail-value">
+                  <span>{{ authStore.user.username }}</span>
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    @click="toggleEditUsername"
+                    aria-label="Edit username"
                   />
-                  <Badge :value="prediction.chart_type" severity="secondary" />
-                  <div class="prediction-date">
-                    {{ new Date(prediction.prediction_date).toLocaleDateString() }}
+                </div>
+              </div>
+
+              <!-- Username edit form -->
+              <div class="edit-form" v-if="editingUsername">
+                <h4>Change Username</h4>
+                <div class="form-field mb-3">
+                  <label for="newUsername">New Username</label>
+                  <InputText
+                    id="newUsername"
+                    v-model="newUsername"
+                    :disabled="submittingUsername"
+                    @input="onUsernameInput"
+                    class="w-full"
+                  />
+                  <div class="mt-2">
+                    <small v-if="formErrors.username" class="error-text">
+                      {{ formErrors.username }}
+                    </small>
+                    <div
+                      v-else-if="newUsername && newUsername !== authStore.user.username"
+                      class="availability-status"
+                    >
+                      <small v-if="checkingUsername" class="checking-status">
+                        Checking availability...
+                      </small>
+                      <small v-else-if="usernameAvailable === true" class="success-text">
+                        Username is available
+                      </small>
+                      <small v-else-if="usernameAvailable === false" class="error-text">
+                        Username is already taken
+                      </small>
+                    </div>
                   </div>
                 </div>
-              </template>
-
-              <template #title>
-                <div class="prediction-title">
-                  {{ prediction.target_name }}
-                  <div class="prediction-artist">{{ prediction.artist }}</div>
+                <div class="form-actions">
+                  <Button
+                    label="Cancel"
+                    severity="secondary"
+                    @click="toggleEditUsername"
+                    :disabled="submittingUsername"
+                    class="mr-2"
+                  />
+                  <Button
+                    label="Save"
+                    @click="updateUsername"
+                    :disabled="
+                      submittingUsername ||
+                      checkingUsername ||
+                      usernameAvailable === false ||
+                      !newUsername
+                    "
+                    :loading="submittingUsername"
+                  />
                 </div>
+              </div>
+
+              <!-- Email section -->
+              <div class="profile-detail" v-if="!editingEmail">
+                <div class="detail-label">Email</div>
+                <div class="detail-value">
+                  <span>{{ authStore.user.email }}</span>
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    @click="toggleEditEmail"
+                    aria-label="Edit email"
+                  />
+                </div>
+              </div>
+
+              <!-- Email edit form -->
+              <div class="edit-form" v-if="editingEmail">
+                <h4>Change Email</h4>
+                <div class="form-field mb-3">
+                  <label for="newEmail">New Email</label>
+                  <InputText
+                    id="newEmail"
+                    v-model="newEmail"
+                    type="email"
+                    :disabled="submittingEmail"
+                    @input="onEmailInput"
+                    class="w-full"
+                  />
+                  <div class="mt-2">
+                    <small v-if="formErrors.email" class="error-text">
+                      {{ formErrors.email }}
+                    </small>
+                    <div
+                      v-else-if="newEmail && newEmail !== authStore.user.email"
+                      class="availability-status"
+                    >
+                      <small v-if="checkingEmail" class="checking-status">
+                        Checking availability...
+                      </small>
+                      <small v-else-if="emailAvailable === true" class="success-text">
+                        Email is available
+                      </small>
+                      <small v-else-if="emailAvailable === false" class="error-text">
+                        Email is already registered
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <Button
+                    label="Cancel"
+                    severity="secondary"
+                    @click="toggleEditEmail"
+                    :disabled="submittingEmail"
+                    class="mr-2"
+                  />
+                  <Button
+                    label="Save"
+                    @click="updateEmail"
+                    :disabled="
+                      submittingEmail || checkingEmail || emailAvailable === false || !newEmail
+                    "
+                    :loading="submittingEmail"
+                  />
+                </div>
+              </div>
+
+              <!-- Password section -->
+              <div class="profile-detail" v-if="!editingPassword">
+                <div class="detail-label">Password</div>
+                <div class="detail-value">
+                  <span>•••••••••</span>
+                  <Button
+                    icon="pi pi-pencil"
+                    text
+                    @click="toggleEditPassword"
+                    aria-label="Change password"
+                  />
+                </div>
+              </div>
+
+              <!-- Password edit form -->
+              <div class="edit-form" v-if="editingPassword">
+                <h4>Change Password</h4>
+                <div class="form-field mb-3">
+                  <label for="currentPassword">Current Password</label>
+                  <Password
+                    id="currentPassword"
+                    v-model="currentPassword"
+                    :disabled="submittingPassword"
+                    toggleMask
+                    :feedback="false"
+                    inputClass="w-full"
+                    class="w-full"
+                    @input="formErrors.currentPassword = ''"
+                  />
+                  <small v-if="formErrors.currentPassword" class="error-text">
+                    {{ formErrors.currentPassword }}
+                  </small>
+                </div>
+                <div class="form-field mb-3">
+                  <label for="newPassword">New Password</label>
+                  <Password
+                    id="newPassword"
+                    v-model="newPassword"
+                    :disabled="submittingPassword"
+                    toggleMask
+                    :feedback="true"
+                    inputClass="w-full"
+                    class="w-full"
+                    @input="formErrors.newPassword = ''"
+                  />
+                  <small v-if="formErrors.newPassword" class="error-text">
+                    {{ formErrors.newPassword }}
+                  </small>
+                </div>
+                <div class="form-field mb-3">
+                  <label for="confirmPassword">Confirm New Password</label>
+                  <Password
+                    id="confirmPassword"
+                    v-model="confirmPassword"
+                    :disabled="submittingPassword"
+                    toggleMask
+                    :feedback="false"
+                    inputClass="w-full"
+                    class="w-full"
+                    @input="formErrors.confirmPassword = ''"
+                  />
+                  <small v-if="formErrors.confirmPassword" class="error-text">
+                    {{ formErrors.confirmPassword }}
+                  </small>
+                </div>
+                <div class="form-actions">
+                  <Button
+                    label="Cancel"
+                    severity="secondary"
+                    @click="toggleEditPassword"
+                    :disabled="submittingPassword"
+                    class="mr-2"
+                  />
+                  <Button
+                    label="Save"
+                    @click="updatePassword"
+                    :disabled="
+                      submittingPassword || !currentPassword || !newPassword || !confirmPassword
+                    "
+                    :loading="submittingPassword"
+                  />
+                </div>
+              </div>
+
+              <div class="profile-detail">
+                <div class="detail-label">Account Created</div>
+                <div class="detail-value">{{ formatDate(authStore.user.created_at) }}</div>
+              </div>
+              <div class="profile-detail">
+                <div class="detail-label">Last Login</div>
+                <div class="detail-value">{{ formatDate(authStore.user.last_login) }}</div>
+              </div>
+            </div>
+
+            <div class="profile-section">
+              <h3>Prediction Stats</h3>
+              <div class="stats-grid">
+                <Card class="stat-card">
+                  <template #content>
+                    <div class="stat-value">{{ authStore.user.predictions_made || 0 }}</div>
+                    <div class="stat-label">Total Predictions</div>
+                  </template>
+                </Card>
+                <Card class="stat-card">
+                  <template #content>
+                    <div class="stat-value">{{ authStore.user.correct_predictions || 0 }}</div>
+                    <div class="stat-label">Correct Predictions</div>
+                  </template>
+                </Card>
+                <Card class="stat-card">
+                  <template #content>
+                    <div class="stat-value">{{ predictionAccuracy }}</div>
+                    <div class="stat-label">Overall Accuracy</div>
+                  </template>
+                </Card>
+                <Card class="stat-card">
+                  <template #content>
+                    <div class="stat-value">{{ authStore.user.total_points || 0 }}</div>
+                    <div class="stat-label">Total Points</div>
+                  </template>
+                </Card>
+              </div>
+
+              <h4 class="mt-4">Success Rate by Prediction Type</h4>
+              <div class="stats-grid">
+                <Card class="stat-card">
+                  <template #title>New Entries</template>
+                  <template #content>
+                    <div class="type-stats">
+                      <div>
+                        <span class="stats-label">Total:</span>
+                        <span class="stats-value">{{ predictionStatsByType.entry.total }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Correct:</span>
+                        <span class="stats-value">{{ predictionStatsByType.entry.correct }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Pending:</span>
+                        <span class="stats-value">{{ predictionStatsByType.entry.pending }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Success Rate:</span>
+                        <span class="stats-value success-rate">{{
+                          predictionStatsByType.entry.rate
+                        }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </Card>
+
+                <Card class="stat-card">
+                  <template #title>Position Changes</template>
+                  <template #content>
+                    <div class="type-stats">
+                      <div>
+                        <span class="stats-label">Total:</span>
+                        <span class="stats-value">{{
+                          predictionStatsByType.position_change.total
+                        }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Correct:</span>
+                        <span class="stats-value">{{
+                          predictionStatsByType.position_change.correct
+                        }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Pending:</span>
+                        <span class="stats-value">{{
+                          predictionStatsByType.position_change.pending
+                        }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Success Rate:</span>
+                        <span class="stats-value success-rate">{{
+                          predictionStatsByType.position_change.rate
+                        }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </Card>
+
+                <Card class="stat-card">
+                  <template #title>Chart Exits</template>
+                  <template #content>
+                    <div class="type-stats">
+                      <div>
+                        <span class="stats-label">Total:</span>
+                        <span class="stats-value">{{ predictionStatsByType.exit.total }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Correct:</span>
+                        <span class="stats-value">{{ predictionStatsByType.exit.correct }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Pending:</span>
+                        <span class="stats-value">{{ predictionStatsByType.exit.pending }}</span>
+                      </div>
+                      <div>
+                        <span class="stats-label">Success Rate:</span>
+                        <span class="stats-value success-rate">{{
+                          predictionStatsByType.exit.rate
+                        }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </Card>
+              </div>
+
+              <div class="text-center mt-4">
+                <Button label="View All Predictions" @click="goToPredictionsView" />
+              </div>
+            </div>
+
+            <div class="profile-actions">
+              <Button
+                label="Logout"
+                severity="danger"
+                @click="handleLogout"
+                icon="pi pi-sign-out"
+                class="w-full"
+              />
+            </div>
+          </TabPanel>
+
+          <TabPanel value="favourites" class="tab-navigation__favourites">
+            <div class="favourites-header">
+              <div class="favourites-stats">
+                <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
+                <Badge :value="favouritesStore.chartAppearancesCount" severity="info">
+                  Chart Appearances
+                </Badge>
+              </div>
+            </div>
+
+            <div class="favourites-controls">
+              <span class="p-input-icon-left w-full mr-3">
+                <i class="pi pi-search" />
+                <InputText
+                  v-model="searchQuery"
+                  placeholder="Search favourites..."
+                  class="w-full"
+                />
+              </span>
+
+              <Select
+                v-model="selectedSort"
+                :options="sortOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Sort by"
+              />
+            </div>
+
+            <!-- Using ChartCardHolder for favourites -->
+            <ChartCardHolder
+              :loading="favouritesStore.loading"
+              :error="favouritesStore.error"
+              :items="filteredFavourites"
+              :isForFavourites="true"
+              emptyMessage="No favourites match your search"
+            >
+              <template #empty-action>
+                <Button label="Clear Search" @click="searchQuery = ''" class="mt-3" />
               </template>
+            </ChartCardHolder>
+          </TabPanel>
 
-              <template #content>
-                <div class="prediction-details">
-                  <div class="prediction-value">{{ getPositionText(prediction) }}</div>
+          <TabPanel value="predictions" class="tab-navigation__predictions">
+            <div class="predictions-header">
+              <h3>Your Prediction History</h3>
 
-                  <!-- Result section if available -->
-                  <div
-                    v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
-                    class="prediction-result"
-                  >
+              <div class="prediction-filters">
+                <div class="filter-group">
+                  <label for="result-filter">Result:</label>
+                  <Select
+                    id="result-filter"
+                    v-model="predictionFilter"
+                    :options="[
+                      { label: 'All Results', value: 'all' },
+                      { label: 'Correct', value: 'correct' },
+                      { label: 'Incorrect', value: 'incorrect' },
+                      { label: 'Pending', value: 'pending' },
+                    ]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                </div>
+
+                <div class="filter-group">
+                  <label for="type-filter">Type:</label>
+                  <Select
+                    id="type-filter"
+                    v-model="predictionTypeFilter"
+                    :options="[
+                      { label: 'All Types', value: 'all' },
+                      { label: 'New Entry', value: 'entry' },
+                      { label: 'Position Change', value: 'position_change' },
+                      { label: 'Chart Exit', value: 'exit' },
+                    ]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                </div>
+
+                <div class="filter-group">
+                  <label for="chart-filter">Chart:</label>
+                  <Select
+                    id="chart-filter"
+                    v-model="chartTypeFilter"
+                    :options="[
+                      { label: 'All Charts', value: 'all' },
+                      { label: 'Hot 100', value: 'hot-100' },
+                      { label: 'Billboard 200', value: 'billboard-200' },
+                    ]"
+                    optionLabel="label"
+                    optionValue="value"
+                    class="w-full"
+                  />
+                </div>
+
+                <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-2" />
+              </div>
+            </div>
+
+            <LoadingSpinner
+              v-if="isPredictionsLoading"
+              size="medium"
+              label="Loading your predictions..."
+              centerInContainer
+            />
+
+            <!-- No predictions state -->
+            <div v-else-if="predictionStore.userPredictions.length === 0" class="empty-container">
+              <p>You haven't made any predictions yet.</p>
+              <Button label="Make a Prediction" @click="goToPredictionsView" class="mt-3" />
+            </div>
+
+            <!-- No filtered predictions state -->
+            <div v-else-if="filteredPredictions.length === 0" class="empty-container">
+              <p>No predictions match your filter criteria.</p>
+              <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-3" />
+            </div>
+
+            <!-- Predictions list -->
+            <div v-else class="predictions-list">
+              <Card
+                v-for="prediction in filteredPredictions"
+                :key="prediction.id"
+                :class="['prediction-card', getPredictionStatus(prediction)]"
+              >
+                <template #header>
+                  <div class="prediction-header">
                     <Badge
-                      :value="prediction.is_correct ? 'Correct!' : 'Incorrect'"
-                      :severity="prediction.is_correct ? 'success' : 'danger'"
+                      :value="prediction.prediction_type.replace('_', ' ')"
+                      :severity="
+                        prediction.prediction_type === 'entry'
+                          ? 'success'
+                          : prediction.prediction_type === 'position_change'
+                            ? 'info'
+                            : 'warning'
+                      "
                     />
-
-                    <div v-if="prediction.points" class="points-earned mt-2">
-                      <span class="points-label">Points:</span>
-                      <span class="points-value">{{ prediction.points }}</span>
-                    </div>
-
-                    <div class="actual-result mt-2">
-                      <span class="actual-label">Result:</span>
-                      <span class="actual-value">{{ getActualResultText(prediction) }}</span>
+                    <Badge :value="prediction.chart_type" severity="secondary" />
+                    <div class="prediction-date">
+                      {{ new Date(prediction.prediction_date).toLocaleDateString() }}
                     </div>
                   </div>
+                </template>
 
-                  <!-- Pending state -->
-                  <div v-else class="prediction-pending">
-                    <Badge value="Pending" severity="info" />
-                    <p class="pending-message mt-2">
-                      This prediction is awaiting chart release to be processed.
-                    </p>
+                <template #title>
+                  <div class="prediction-title">
+                    {{ prediction.target_name }}
+                    <div class="prediction-artist">{{ prediction.artist }}</div>
                   </div>
-                </div>
-              </template>
-            </Card>
-          </div>
-        </TabPanel>
-      </TabView>
+                </template>
+
+                <template #content>
+                  <div class="prediction-details">
+                    <div class="prediction-value">{{ getPositionText(prediction) }}</div>
+
+                    <!-- Result section if available -->
+                    <div
+                      v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
+                      class="prediction-result"
+                    >
+                      <Badge
+                        :value="prediction.is_correct ? 'Correct!' : 'Incorrect'"
+                        :severity="prediction.is_correct ? 'success' : 'danger'"
+                      />
+
+                      <div v-if="prediction.points" class="points-earned mt-2">
+                        <span class="points-label">Points:</span>
+                        <span class="points-value">{{ prediction.points }}</span>
+                      </div>
+
+                      <div class="actual-result mt-2">
+                        <span class="actual-label">Result:</span>
+                        <span class="actual-value">{{ getActualResultText(prediction) }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Pending state -->
+                    <div v-else class="prediction-pending">
+                      <Badge value="Pending" severity="info" />
+                      <p class="pending-message mt-2">
+                        This prediction is awaiting chart release to be processed.
+                      </p>
+                    </div>
+                  </div>
+                </template>
+              </Card>
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </div>
 
     <div v-else class="unauthenticated">
@@ -1143,6 +1166,9 @@ const resetPredictionFilters = () => {
 
 <style lang="scss" scoped>
 .profile-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .loading,
