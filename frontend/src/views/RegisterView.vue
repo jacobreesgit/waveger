@@ -11,7 +11,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -192,7 +192,7 @@ watch(email, (newValue) => {
             </small>
             <div v-else-if="username" class="availability-status">
               <span v-if="checkingUsername" class="checking-status">
-                <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                <LoadingSpinner size="small" label="Checking availability..." inline />
               </span>
               <small v-else-if="usernameAvailable === true" class="success-text">
                 Username is available
@@ -223,7 +223,7 @@ watch(email, (newValue) => {
             </small>
             <div v-else-if="email" class="availability-status">
               <span v-if="checkingEmail" class="checking-status">
-                <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                <LoadingSpinner size="small" label="Checking availability..." inline />
               </span>
               <small v-else-if="emailAvailable === true" class="success-text">
                 Email is available

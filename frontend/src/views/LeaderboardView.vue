@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useAuthStore } from '@/stores/auth'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
@@ -118,10 +119,7 @@ const formatAccuracy = (value: number): string => {
       </div>
 
       <!-- Loading state -->
-      <div v-if="isLoading" class="loading-container">
-        <div class="loading-spinner"></div>
-        <p>Loading leaderboard data...</p>
-      </div>
+      <LoadingSpinner v-if="isLoading" label="Loading leaderboard data..." centerInContainer />
 
       <!-- Error state -->
       <div v-else-if="error" class="error-container">
@@ -265,16 +263,6 @@ h2 {
   min-height: 200px;
   text-align: center;
   color: #6c757d;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
 }
 
 @keyframes spin {

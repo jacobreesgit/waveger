@@ -10,13 +10,13 @@ import {
   validatePassword,
 } from '@/utils/validation'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { Prediction } from '@/types/predictions'
 
 // PrimeVue Components
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import Message from 'primevue/message'
 import TabView from 'primevue/tabview'
 import TabPanel from 'primevue/tabpanel'
@@ -606,8 +606,7 @@ const resetPredictionFilters = () => {
 <template>
   <div class="profile-view">
     <div v-if="isLoading" class="loading">
-      <ProgressSpinner />
-      <p>Loading profile...</p>
+      <LoadingSpinner size="large" label="Loading profile..." centerInContainer />
     </div>
 
     <div v-else-if="error" class="error-container">
@@ -669,7 +668,7 @@ const resetPredictionFilters = () => {
                     class="availability-status"
                   >
                     <span v-if="checkingUsername" class="checking-status">
-                      <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                      <LoadingSpinner size="small" label="Checking availability..." inline />
                     </span>
                     <small v-else-if="usernameAvailable === true" class="success-text">
                       Username is available
@@ -733,7 +732,7 @@ const resetPredictionFilters = () => {
                     class="availability-status"
                   >
                     <span v-if="checkingEmail" class="checking-status">
-                      <ProgressSpinner style="width: 1rem; height: 1rem" /> Checking availability...
+                      <LoadingSpinner size="small" label="Checking availability..." inline />
                     </span>
                     <small v-else-if="emailAvailable === true" class="success-text">
                       Email is available
@@ -1089,8 +1088,7 @@ const resetPredictionFilters = () => {
 
           <!-- Loading state -->
           <div v-if="isPredictionsLoading" class="loading-container">
-            <ProgressSpinner />
-            <p>Loading your predictions...</p>
+            <LoadingSpinner size="medium" label="Loading your predictions..." centerInContainer />
           </div>
 
           <!-- No predictions state -->

@@ -6,7 +6,7 @@ import { validatePassword, passwordsMatch } from '@/utils/validation'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -103,11 +103,7 @@ const handleSubmit = async () => {
     <div class="card">
       <h2>Reset Password</h2>
 
-      <!-- Loading state -->
-      <div v-if="isVerifying" class="text-center">
-        <ProgressSpinner style="width: 3rem; height: 3rem" class="mb-3" />
-        <p>Verifying your reset link...</p>
-      </div>
+      <LoadingSpinner v-if="isVerifying" label="Verifying your reset link..." centerInContainer />
 
       <!-- Success state -->
       <div v-else-if="isSuccess" class="text-center">

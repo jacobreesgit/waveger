@@ -8,6 +8,7 @@ import type { Prediction } from '@/types/predictions'
 import axios from 'axios'
 import { useTimezoneStore } from '@/stores/timezone'
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -174,11 +175,7 @@ watch(activeTab, async () => {
   <div class="prediction-view">
     <h1>Billboard Chart Predictions</h1>
 
-    <!-- Loading and error states -->
-    <div v-if="isLoading" class="loading-container">
-      <div class="loading-spinner"></div>
-      <p>Loading prediction data...</p>
-    </div>
+    <LoadingSpinner v-if="isLoading" label="Loading prediction data..." centerInContainer />
 
     <div v-else-if="error" class="error-container">
       <p>{{ error }}</p>
@@ -235,10 +232,12 @@ watch(activeTab, async () => {
         <div class="user-predictions-section">
           <h2 :class="{ isDeadlinePassed }">Your {{ activeTab.toUpperCase() }} Predictions</h2>
 
-          <div v-if="predictionStore.loading.predictions" class="predictions-loading">
-            <div class="loading-spinner-small"></div>
-            <span>Loading your predictions...</span>
-          </div>
+          <LoadingSpinner
+            v-if="predictionStore.loading.predictions"
+            label="Loading your predictions..."
+            size="small"
+            centerInContainer
+          />
 
           <div v-else-if="userPredictions.length === 0" class="no-predictions">
             <p>
@@ -357,26 +356,6 @@ h1 {
   background: white;
   border-radius: 12px;
   // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-.loading-spinner-small {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
 }
 
 @keyframes spin {

@@ -8,6 +8,7 @@ import { useFavouritesStore } from '@/stores/favourites'
 import { useRouter } from 'vue-router'
 import type { PredictionSubmission } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -516,6 +517,7 @@ const submitPrediction = async () => {
     console.error('Error submitting prediction:', error)
     formErrors.value.general =
       error instanceof Error ? error.message : 'Failed to submit prediction'
+    return null
   } finally {
     isSubmitting.value = false
   }
@@ -610,8 +612,7 @@ const isDeadlinePassed = computed(() => {
 
     <div v-else class="no-contest">
       <div v-if="predictionStore.loading.contest">
-        <div class="loading-spinner"></div>
-        <p>Loading contest information...</p>
+        <LoadingSpinner label="Loading contest information..." />
       </div>
       <div v-else>
         <p>There is no active prediction contest at this time.</p>
@@ -751,8 +752,7 @@ const isDeadlinePassed = computed(() => {
             <!-- Search Results -->
             <div v-if="searchResultsVisible" class="search-results">
               <div v-if="isSearching" class="search-loading">
-                <div class="search-spinner"></div>
-                <span>Searching...</span>
+                <LoadingSpinner size="small" label="Searching..." inline />
               </div>
 
               <div v-else-if="searchResults.length === 0" class="no-results">
@@ -811,13 +811,11 @@ const isDeadlinePassed = computed(() => {
 
             <div class="favourites-list">
               <div v-if="isSearching" class="search-loading">
-                <div class="search-spinner"></div>
-                <span>Filtering favorites...</span>
+                <LoadingSpinner size="small" label="Filtering favorites..." inline />
               </div>
 
               <div v-else-if="favouritesStore.loading" class="search-loading">
-                <div class="search-spinner"></div>
-                <span>Loading favorites...</span>
+                <LoadingSpinner size="small" label="Loading favorites..." inline />
               </div>
 
               <div v-else-if="filteredFavorites.length === 0" class="no-results">
@@ -1188,25 +1186,6 @@ h2 {
   color: #6c757d;
 }
 
-.search-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .no-results {
   padding: 16px;
   text-align: center;
@@ -1397,15 +1376,5 @@ h2 {
   font-size: 0.875rem;
   margin-bottom: 8px;
   border-left: 3px solid #0d6efd;
-}
-
-.loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
 }
 </style>
