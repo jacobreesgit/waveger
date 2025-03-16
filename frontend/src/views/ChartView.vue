@@ -248,21 +248,12 @@ watch(
       :fetch-more-songs="fetchMoreSongs"
       class="chart-view__chart-card-holder"
     >
-      <template #retry-button>
-        <button @click="retryLoadingChart" class="chart-view__chart-card-holder__retry-button">
-          Retry
-        </button>
-      </template>
     </ChartCardHolder>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .chart-view {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  width: 100%;
   &__chart-controls {
     display: flex;
     gap: 16px;
@@ -290,20 +281,6 @@ watch(
     &__chart-controls {
       flex-wrap: wrap;
       gap: 8px;
-    }
-  }
-  &__chart-card-holder {
-    &__retry-button {
-      padding: 8px 16px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-      &:hover {
-        background: #0069d9;
-      }
     }
   }
 }

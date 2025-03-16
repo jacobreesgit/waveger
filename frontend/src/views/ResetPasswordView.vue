@@ -103,7 +103,12 @@ const handleSubmit = async () => {
     <div class="card">
       <h2>Reset Password</h2>
 
-      <LoadingSpinner v-if="isVerifying" label="Verifying your reset link..." centerInContainer />
+      <LoadingSpinner
+        v-if="isVerifying"
+        label="Verifying your reset link..."
+        centerInContainer
+        size="medium"
+      />
 
       <!-- Success state -->
       <div v-else-if="isSuccess" class="text-center">
@@ -188,10 +193,6 @@ const handleSubmit = async () => {
 
 <style lang="scss" scoped>
 .reset-password-view {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
   display: flex;
   justify-content: center;
 }

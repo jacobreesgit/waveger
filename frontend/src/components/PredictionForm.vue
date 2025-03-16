@@ -612,7 +612,7 @@ const isDeadlinePassed = computed(() => {
 
     <div v-else class="no-contest">
       <div v-if="predictionStore.loading.contest">
-        <LoadingSpinner label="Loading contest information..." />
+        <LoadingSpinner label="Loading contest information..." size="medium" />
       </div>
       <div v-else>
         <p>There is no active prediction contest at this time.</p>
@@ -632,11 +632,6 @@ const isDeadlinePassed = computed(() => {
       <div v-if="showSuccess" class="success-message">
         <div class="success-icon">✓</div>
         <p>{{ successMessage }}</p>
-      </div>
-
-      <!-- Error Message -->
-      <div v-if="formErrors.general" class="error-message">
-        {{ formErrors.general }}
       </div>
 
       <!-- Chart Type Selection -->

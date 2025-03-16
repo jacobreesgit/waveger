@@ -106,10 +106,6 @@ const handleSubmit = async () => {
 
 <style lang="scss" scoped>
 .forgot-password-view {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
   display: flex;
   justify-content: center;
 }

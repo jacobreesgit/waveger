@@ -119,7 +119,12 @@ const formatAccuracy = (value: number): string => {
       </div>
 
       <!-- Loading state -->
-      <LoadingSpinner v-if="isLoading" label="Loading leaderboard data..." centerInContainer />
+      <LoadingSpinner
+        v-if="isLoading"
+        label="Loading leaderboard data..."
+        centerInContainer
+        size="medium"
+      />
 
       <!-- Error state -->
       <div v-else-if="error" class="error-container">
@@ -200,10 +205,6 @@ const formatAccuracy = (value: number): string => {
 
 <style lang="scss" scoped>
 .leaderboard-view {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
 }
 
 .leaderboard-content {

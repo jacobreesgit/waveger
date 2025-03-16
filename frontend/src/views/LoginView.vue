@@ -52,6 +52,7 @@ const handleUsernameBlur = async () => {
     // Store the pre-fetched data
     if (response.data && response.data.success) {
       preLoadedUserData.value = response.data.user
+      console.log('Pre-loaded user data found:', preLoadedUserData.value)
     }
   } catch (error) {
     // Silently fail - no need to show errors for prefetching
@@ -187,12 +188,6 @@ const handleLogin = async () => {
 
 <style lang="scss" scoped>
 .login-view {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
 }
 
 .card {

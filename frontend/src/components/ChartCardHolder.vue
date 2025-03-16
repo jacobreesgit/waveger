@@ -54,19 +54,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <LoadingSpinner v-if="loading" centerInContainer label="Loading chart data..." />
-
-  <!-- Show error message if there's an error -->
-  <div v-else-if="error" class="error">
-    <p>{{ error }}</p>
-    <slot name="retry-button"></slot>
-  </div>
-
-  <!-- Show empty state for favourites if needed -->
-  <div v-else-if="isForFavourites && (!items || items.length === 0)" class="empty">
-    <p>{{ emptyMessage || 'No items found' }}</p>
-    <slot name="empty-action"></slot>
-  </div>
+  <LoadingSpinner v-if="loading" centerInContainer label="Loading chart data..." size="medium" />
 
   <!-- Normal chart view -->
   <div v-else-if="currentChart" class="chart-container">
@@ -84,7 +72,7 @@ onUnmounted(() => {
 
       <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
         <div v-if="isLoadingMore" class="loading-more">
-          <LoadingSpinner label="Loading more songs..." inline />
+          <LoadingSpinner label="Loading more songs..." inline size="small" />
         </div>
         <div v-else class="load-more-text">Scroll for more songs</div>
       </div>
@@ -131,12 +119,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.error,
-.empty {
-  text-align: center;
-  padding: 24px;
-}
-
 .songs {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

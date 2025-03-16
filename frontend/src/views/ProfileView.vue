@@ -606,7 +606,7 @@ const resetPredictionFilters = () => {
 <template>
   <div class="profile-view">
     <div v-if="isLoading" class="loading">
-      <LoadingSpinner size="large" label="Loading profile..." centerInContainer />
+      <LoadingSpinner size="medium" label="Loading profile..." centerInContainer />
     </div>
 
     <div v-else-if="error" class="error-container">
@@ -1195,10 +1195,6 @@ const resetPredictionFilters = () => {
 
 <style lang="scss" scoped>
 .profile-view {
-  max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 20px;
 }
 
 .loading,
