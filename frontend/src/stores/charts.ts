@@ -72,13 +72,13 @@ export const useChartsStore = defineStore('charts', () => {
   }
 
   // Simplified method for fetching more songs
-  const fetchMoreSongs = async () => {
+  const fetchMoreSongs = async (itemsPerPage = 8) => {
     if (!currentChart.value || loading.value || !hasMore.value) {
       return
     }
 
-    const start = currentPage.value * 10 + 1
-    const end = start + 9
+    const start = currentPage.value * itemsPerPage + 1
+    const end = start + (itemsPerPage - 1)
 
     if (start > 100) {
       hasMore.value = false
@@ -109,7 +109,7 @@ export const useChartsStore = defineStore('charts', () => {
   }
 
   // Method to load current chart (for retry functionality)
-  const loadCurrentChart = async () => {
+  const loadCurrentChart = async (itemsPerRequest = 8) => {
     const lastViewedDate = localStorage.getItem('lastViewedDate')
     const formattedDate = lastViewedDate
       ? parseDateFromURL(lastViewedDate)
@@ -118,7 +118,7 @@ export const useChartsStore = defineStore('charts', () => {
     return fetchChartDetails({
       id: selectedChartId.value,
       week: formattedDate,
-      range: '1-10',
+      range: `1-${itemsPerRequest}`,
     })
   }
 

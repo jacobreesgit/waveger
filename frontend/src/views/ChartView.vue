@@ -6,6 +6,7 @@ import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useAuthStore } from '@/stores/auth'
 import { useTimezoneStore } from '@/stores/timezone'
+import { useBreakpoints } from '@/utils/mediaQueries'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
@@ -21,6 +22,21 @@ const timezoneStore = useTimezoneStore()
 // Simplified state management
 const songData = ref(new Map())
 const isLoadingMore = ref(false)
+
+// Use the existing mediaQueries utility to detect responsive breakpoints
+const { xs, sm, md, lg, xl } = useBreakpoints()
+
+// Calculate grid columns based on breakpoints
+const gridColumns = computed(() => {
+  if (xs.value) return 1 // Mobile: 1 column
+  if (sm.value) return 2 // Small tablet: 2 columns
+  if (md.value) return 3 // Tablet: 3 columns
+  return 4 // Desktop and large desktop: 4 columns
+})
+
+// Always fetch 2 rows worth of data
+const rowsToFetch = 2
+const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
 
 // Use a computed prop to determine if we should show the loading indicator
 const isLoading = computed(() => store.loading && !isLoadingMore.value)
@@ -83,7 +99,7 @@ const fetchMoreSongs = async () => {
 
   isLoadingMore.value = true
   try {
-    await store.fetchMoreSongs()
+    await store.fetchMoreSongs(itemsPerPage.value) // Fetch items based on current grid size
     // Load Apple Music data for the new songs
     await loadAppleMusicData()
   } catch (error) {
@@ -95,7 +111,17 @@ const fetchMoreSongs = async () => {
 
 // Retry loading chart data
 const retryLoadingChart = async () => {
-  await store.loadCurrentChart()
+  const lastViewedDate = localStorage.getItem('lastViewedDate')
+  const formattedDate = lastViewedDate
+    ? store.parseDateFromURL(lastViewedDate)
+    : new Date().toISOString().split('T')[0]
+
+  await store.fetchChartDetails({
+    id: store.selectedChartId,
+    week: formattedDate,
+    range: `1-${itemsPerPage.value}`,
+  })
+
   await loadAppleMusicData()
 }
 
@@ -112,11 +138,11 @@ onMounted(async () => {
       formattedDate = store.parseDateFromURL(dateParam)
     }
 
-    // Load chart data
+    // Load chart data - fetch based on responsive grid size
     await store.fetchChartDetails({
       id: chartId,
       week: formattedDate,
-      range: '1-10',
+      range: `1-${itemsPerPage.value}`,
     })
 
     // Load Apple Music data in parallel
@@ -134,6 +160,19 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error setting up chart view:', error)
+  }
+})
+
+// Watch for grid columns changes due to responsive breakpoints
+watch(gridColumns, (newColumns, oldColumns) => {
+  console.log(`Grid layout changed: now showing ${newColumns} columns (was ${oldColumns})`)
+  console.log(`Will fetch ${itemsPerPage.value} items per page`)
+})
+
+// Watch for item count changes (this can happen when rowsToFetch is changed)
+watch(itemsPerPage, (newCount, oldCount) => {
+  if (newCount !== oldCount) {
+    console.log(`Items per page changed from ${oldCount} to ${newCount}`)
   }
 })
 
@@ -173,11 +212,11 @@ watch(
         formattedDate = store.parseDateFromURL(newDate as string)
       }
 
-      // USE fetchChartDetails INSTEAD OF loadChart
+      // USE fetchChartDetails INSTEAD OF loadChart - fetch based on responsive grid size
       await store.fetchChartDetails({
         id: (newChartId as string) || 'hot-100',
         week: formattedDate,
-        range: '1-10',
+        range: `1-${itemsPerPage.value}`,
       })
     }
   },
