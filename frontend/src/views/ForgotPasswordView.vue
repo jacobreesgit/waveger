@@ -84,7 +84,9 @@ const handleSubmit = async () => {
             @input="emailError = ''"
             class="w-full"
           />
-          <small v-if="emailError" class="error-text">{{ emailError }}</small>
+          <Message v-if="emailError" severity="error" :closable="false" class="p-0">{{
+            emailError
+          }}</Message>
         </div>
 
         <Button
@@ -131,12 +133,6 @@ h2 {
     display: block;
     margin-bottom: 0.5rem;
   }
-}
-
-.error-text {
-  color: #dc3545;
-  display: block;
-  margin-top: 0.25rem;
 }
 
 .success-container {

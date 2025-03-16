@@ -136,9 +136,9 @@ const handleLogin = async () => {
             @blur="handleUsernameBlur"
             class="w-full"
           />
-          <small v-if="formErrors.username" class="error-text">
+          <Message v-if="formErrors.username" severity="error" :closable="false" class="p-0">
             {{ formErrors.username }}
-          </small>
+          </Message>
         </div>
 
         <!-- Password Field -->
@@ -155,9 +155,9 @@ const handleLogin = async () => {
             autocomplete="current-password"
             @input="formErrors.password = ''"
           />
-          <small v-if="formErrors.password" class="error-text">
+          <Message v-if="formErrors.password" severity="error" :closable="false" class="p-0">
             {{ formErrors.password }}
-          </small>
+          </Message>
           <div class="mt-2 text-right">
             <router-link to="/forgot-password" class="text-sm">Forgot password?</router-link>
           </div>
@@ -217,12 +217,6 @@ h2 {
     display: block;
     margin-bottom: 0.5rem;
   }
-}
-
-.error-text {
-  color: #dc3545;
-  display: block;
-  margin-top: 0.25rem;
 }
 
 .mt-2 {

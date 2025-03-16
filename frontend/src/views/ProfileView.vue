@@ -624,9 +624,14 @@ const resetPredictionFilters = () => {
                     class="w-full"
                   />
                   <div class="mt-2">
-                    <small v-if="formErrors.username" class="error-text">
+                    <Message
+                      v-if="formErrors.username"
+                      severity="error"
+                      :closable="false"
+                      class="p-0"
+                    >
                       {{ formErrors.username }}
-                    </small>
+                    </Message>
                     <div
                       v-else-if="newUsername && newUsername !== authStore.user.username"
                       class="availability-status"
@@ -693,9 +698,9 @@ const resetPredictionFilters = () => {
                     class="w-full"
                   />
                   <div class="mt-2">
-                    <small v-if="formErrors.email" class="error-text">
+                    <Message v-if="formErrors.email" severity="error" :closable="false" class="p-0">
                       {{ formErrors.email }}
-                    </small>
+                    </Message>
                     <div
                       v-else-if="newEmail && newEmail !== authStore.user.email"
                       class="availability-status"
@@ -760,9 +765,14 @@ const resetPredictionFilters = () => {
                     class="w-full"
                     @input="formErrors.currentPassword = ''"
                   />
-                  <small v-if="formErrors.currentPassword" class="error-text">
+                  <Message
+                    v-if="formErrors.currentPassword"
+                    severity="error"
+                    :closable="false"
+                    class="p-0"
+                  >
                     {{ formErrors.currentPassword }}
-                  </small>
+                  </Message>
                 </div>
                 <div class="form-field mb-3">
                   <label for="newPassword">New Password</label>
@@ -776,9 +786,14 @@ const resetPredictionFilters = () => {
                     class="w-full"
                     @input="formErrors.newPassword = ''"
                   />
-                  <small v-if="formErrors.newPassword" class="error-text">
+                  <Message
+                    v-if="formErrors.newPassword"
+                    severity="error"
+                    :closable="false"
+                    class="p-0"
+                  >
                     {{ formErrors.newPassword }}
-                  </small>
+                  </Message>
                 </div>
                 <div class="form-field mb-3">
                   <label for="confirmPassword">Confirm New Password</label>
@@ -792,9 +807,14 @@ const resetPredictionFilters = () => {
                     class="w-full"
                     @input="formErrors.confirmPassword = ''"
                   />
-                  <small v-if="formErrors.confirmPassword" class="error-text">
+                  <Message
+                    v-if="formErrors.confirmPassword"
+                    severity="error"
+                    :closable="false"
+                    class="p-0"
+                  >
                     {{ formErrors.confirmPassword }}
-                  </small>
+                  </Message>
                 </div>
                 <div class="form-actions">
                   <Button
@@ -1380,11 +1400,6 @@ h4 {
 
 .text-center {
   text-align: center;
-}
-
-.error-text {
-  color: #dc3545;
-  display: block;
 }
 
 .success-text {

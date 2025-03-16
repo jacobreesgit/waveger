@@ -187,9 +187,9 @@ watch(email, (newValue) => {
             @input="formErrors.username = ''"
           />
           <div class="hint-container">
-            <small v-if="formErrors.username" class="error-text">
+            <Message v-if="formErrors.username" severity="error" :closable="false" class="p-0">
               {{ formErrors.username }}
-            </small>
+            </Message>
             <div v-else-if="username" class="availability-status">
               <small v-if="checkingUsername" class="checking-status">
                 Checking availability...
@@ -218,9 +218,9 @@ watch(email, (newValue) => {
             @input="formErrors.email = ''"
           />
           <div class="hint-container">
-            <small v-if="formErrors.email" class="error-text">
+            <Message v-if="formErrors.email" severity="error" :closable="false" class="p-0">
               {{ formErrors.email }}
-            </small>
+            </Message>
             <div v-else-if="email" class="availability-status">
               <small v-if="checkingEmail" class="checking-status"> Checking availability... </small>
               <small v-else-if="emailAvailable === true" class="success-text">
@@ -247,9 +247,9 @@ watch(email, (newValue) => {
             autocomplete="new-password"
             @input="formErrors.password = ''"
           />
-          <small v-if="formErrors.password" class="error-text">
+          <Message v-if="formErrors.password" severity="error" :closable="false" class="p-0">
             {{ formErrors.password }}
-          </small>
+          </Message>
         </div>
 
         <!-- Submit Button -->
@@ -313,11 +313,6 @@ h2 {
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #6c757d;
-}
-
-.error-text {
-  color: #dc3545;
-  display: block;
 }
 
 .success-text {

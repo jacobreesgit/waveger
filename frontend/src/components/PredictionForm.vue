@@ -9,6 +9,7 @@ import { useRouter } from 'vue-router'
 import type { PredictionSubmission } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import Message from 'primevue/message'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -850,8 +851,12 @@ const isDeadlinePassed = computed(() => {
           </div>
         </div>
 
-        <div v-if="formErrors.songName" class="error-text">{{ formErrors.songName }}</div>
-        <div v-if="formErrors.artist" class="error-text">{{ formErrors.artist }}</div>
+        <Message v-if="formErrors.songName" severity="error" :closable="false">{{
+          formErrors.songName
+        }}</Message>
+        <Message v-if="formErrors.artist" severity="error" :closable="false">{{
+          formErrors.artist
+        }}</Message>
       </div>
 
       <!-- Position Input (for Entry predictions) -->
@@ -868,7 +873,9 @@ const isDeadlinePassed = computed(() => {
           class="form-input"
           @input="formErrors.position = ''"
         />
-        <p v-if="formErrors.position" class="error-text">{{ formErrors.position }}</p>
+        <Message v-if="formErrors.position" severity="error" :closable="false">{{
+          formErrors.position
+        }}</Message>
         <p class="input-hint">Lower numbers are higher on the chart (1 is the top position)</p>
       </div>
 
@@ -890,9 +897,9 @@ const isDeadlinePassed = computed(() => {
           class="form-input"
           @input="formErrors.predictionChange = ''"
         />
-        <p v-if="formErrors.predictionChange" class="error-text">
-          {{ formErrors.predictionChange }}
-        </p>
+        <Message v-if="formErrors.predictionChange" severity="error" :closable="false">{{
+          formErrors.predictionChange
+        }}</Message>
         <p class="input-hint">
           Positive numbers mean the song moves up the chart (improves position). Negative numbers
           mean the song moves down the chart.
@@ -1039,13 +1046,6 @@ h2 {
   margin-top: 6px;
   font-size: 0.85rem;
   color: #6c757d;
-}
-
-.error-text {
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 6px;
-  margin-bottom: 0;
 }
 
 .form-actions {
