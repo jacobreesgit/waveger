@@ -62,7 +62,6 @@ onMounted(async () => {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
-
     &__app-loading,
     &__app-error {
       display: flex;
@@ -73,6 +72,8 @@ onMounted(async () => {
       padding: 2rem;
     }
     &__content {
+      display: flex;
+      flex-direction: column;
     }
   }
   :deep(.p-message) {

@@ -65,9 +65,7 @@ watchEffect(async () => {
     :aria-label="isFavourited ? 'Remove from favourites' : 'Add to favourites'"
   >
     <template #icon>
-      <i v-if="isLoading" class="pi pi-spin pi-spinner" />
       <i
-        v-else
         :class="['pi', isFavourited ? 'pi-heart-fill' : 'pi-heart']"
         :style="{ color: '#ff4757' }"
       />

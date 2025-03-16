@@ -54,10 +54,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Show loading indicator when loading -->
-  <div v-if="loading" class="loading">
-    <LoadingSpinner label="Loading chart data..." centerInContainer />
-  </div>
+  <LoadingSpinner v-if="loading" centerInContainer label="Loading chart data..." />
 
   <!-- Show error message if there's an error -->
   <div v-else-if="error" class="error">
@@ -87,7 +84,7 @@ onUnmounted(() => {
 
       <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
         <div v-if="isLoadingMore" class="loading-more">
-          <LoadingSpinner label="Loading more songs..." size="small" inline />
+          <LoadingSpinner label="Loading more songs..." inline />
         </div>
         <div v-else class="load-more-text">Scroll for more songs</div>
       </div>
@@ -134,29 +131,6 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.loading,
-.loading-more {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 40px;
-}
-
-.loading-text {
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 .error,
 .empty {
   text-align: center;

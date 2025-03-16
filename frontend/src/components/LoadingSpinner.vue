@@ -72,7 +72,7 @@ const spinnerSize = () => {
     height: 100%;
   }
   &__loading-label {
-    font-size: 0.85rem;
+    font-size: 1rem;
     color: grey;
   }
 }
