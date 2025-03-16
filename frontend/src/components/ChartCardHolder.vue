@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, computed } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import ChartItemCard from '@/components/ChartItemCard.vue'
+import SkeletonCard from '@/components/SkeletonCard.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { ChartData, Song } from '@/types/api'
 import type { AppleMusicData } from '@/types/appleMusic'
@@ -22,9 +23,16 @@ const props = defineProps<{
   items?: Array<FavouriteSong | Song>
   isForFavourites?: boolean
   emptyMessage?: string
+
+  // Skeleton loading control props
+  showSkeletons?: boolean
+  skeletonCount?: number
 }>()
 
 const loadMoreTrigger = ref<HTMLElement | null>(null)
+
+// Number of skeleton cards to show during loading
+const skeletonCount = computed(() => props.skeletonCount || 8)
 
 // Setup VueUse intersection observer for infinite scrolling
 const { stop: stopObserver } = useIntersectionObserver(
@@ -47,6 +55,20 @@ const { stop: stopObserver } = useIntersectionObserver(
   },
 )
 
+// Check if AppleMusic data is available for a song
+const isAppleMusicDataLoaded = (position: string): boolean => {
+  return props.songData ? !!props.songData.get(position) : false
+}
+
+// Get the highest position number that has Apple Music data loaded
+const getHighestLoadedPosition = (): number => {
+  if (!props.songData || props.songData.size === 0) return 0
+
+  // Convert all keys to numbers and find the highest one
+  const positions = Array.from(props.songData.keys()).map((pos) => parseInt(pos))
+  return Math.max(...positions, 0)
+}
+
 // Clean up the observer when component is unmounted
 onUnmounted(() => {
   stopObserver()
@@ -54,22 +76,59 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <LoadingSpinner v-if="loading" centerInContainer label="Loading chart data..." size="medium" />
+  <!-- Show only spinner for initial chart data loading -->
+  <LoadingSpinner
+    v-if="loading && !currentChart"
+    centerInContainer
+    label="Loading chart data..."
+    size="medium"
+  />
 
   <!-- Normal chart view -->
   <div v-else-if="currentChart" class="chart-container">
     <div class="songs">
-      <ChartItemCard
-        v-for="song in currentChart.songs"
-        :key="song.position"
-        :song="song"
-        :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
-        :chart-title="currentChart.title"
-        :apple-music-data="songData?.get(`${song.position}`)"
-        :show-details="true"
-        @click="() => {}"
-      />
+      <!-- When we have chart data but still loading Apple Music data, we can show real cards for loaded data -->
+      <template v-if="currentChart.songs">
+        <template v-for="song in currentChart.songs" :key="song.position">
+          <!-- Ensure cards load in sequential order by position -->
+          <!-- Find the highest position number that has data loaded -->
+          <template v-if="showSkeletons">
+            <!-- Show real card for songs with position <= highest loaded position -->
+            <ChartItemCard
+              v-if="
+                isAppleMusicDataLoaded(`${song.position}`) ||
+                getHighestLoadedPosition() >= song.position
+              "
+              :song="song"
+              :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
+              :chart-title="currentChart.title"
+              :apple-music-data="songData?.get(`${song.position}`)"
+              :show-details="true"
+              @click="() => {}"
+            />
+            <!-- Show skeleton for higher positions that haven't loaded yet -->
+            <SkeletonCard v-else />
+          </template>
 
+          <!-- If not in skeleton mode, just show all cards -->
+          <ChartItemCard
+            v-else
+            :song="song"
+            :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
+            :chart-title="currentChart.title"
+            :apple-music-data="songData?.get(`${song.position}`)"
+            :show-details="true"
+            @click="() => {}"
+          />
+        </template>
+      </template>
+
+      <!-- Show skeleton placeholders when loading and no cards yet -->
+      <template v-else-if="loading && showSkeletons">
+        <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" />
+      </template>
+
+      <!-- Load more trigger -->
       <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
         <LoadingSpinner
           v-if="isLoadingMore"
@@ -120,6 +179,23 @@ onUnmounted(() => {
       </slot>
     </div>
   </div>
+
+  <!-- Show skeleton placeholders when initially loading with no data -->
+  <div v-else-if="loading && showSkeletons" class="chart-container">
+    <div class="songs">
+      <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" />
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div v-else-if="error" class="error-container">
+    <p class="error-message">{{ error }}</p>
+  </div>
+
+  <!-- Empty state -->
+  <div v-else-if="!currentChart && !items && !loading" class="empty-container">
+    <p>{{ emptyMessage || 'No data available' }}</p>
+  </div>
 </template>
 
 <style lang="scss" scoped>
@@ -167,5 +243,17 @@ onUnmounted(() => {
   text-align: center;
   padding: 20px;
   font-style: italic;
+}
+
+.error-container,
+.empty-container {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.chart-container.chart-view__chart-card-holder,
+.songs {
+  width: 100%;
 }
 </style>

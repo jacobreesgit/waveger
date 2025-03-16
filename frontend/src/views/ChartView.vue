@@ -20,6 +20,7 @@ const timezoneStore = useTimezoneStore()
 // Simplified state management
 const songData = ref(new Map())
 const isLoadingMore = ref(false)
+const isLoadingAppleMusic = ref(false)
 
 // Use the existing mediaQueries utility to detect responsive breakpoints
 const { xs, sm, md, lg, xl } = useBreakpoints()
@@ -38,6 +39,20 @@ const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
 
 // Use a computed prop to determine if we should show the loading indicator
 const isLoading = computed(() => store.loading && !isLoadingMore.value)
+
+// Track if we're waiting for Apple Music data
+const isWaitingForAppleMusic = computed(() => {
+  // If we have chart data but not all songs have Apple Music data
+  if (store.currentChart?.songs && store.currentChart.songs.length > 0) {
+    // Check if all songs have Apple Music data
+    const allSongsHaveData = store.currentChart.songs.every((song) =>
+      songData.value.has(`${song.position}`),
+    )
+
+    return !allSongsHaveData && isLoadingAppleMusic.value
+  }
+  return false
+})
 
 // Format chart week with the current timezone
 const formattedChartWeek = computed(() => {
@@ -60,34 +75,41 @@ const loadAppleMusicData = async () => {
     return
   }
 
-  // Ensure we have an Apple Music token
+  isLoadingAppleMusic.value = true
+
   try {
+    // Ensure we have an Apple Music token
     if (!appleMusicStore.token) {
       await appleMusicStore.fetchToken()
     }
-  } catch (e) {
-    console.warn('Apple Music token error:', e)
-    return
-  }
 
-  // Process songs that don't have data yet
-  for (const song of store.currentChart.songs) {
-    const songPosition = `${song.position}`
+    // Sort songs by position to ensure sequential loading
+    const sortedSongs = [...store.currentChart.songs].sort((a, b) => a.position - b.position)
 
-    // Only fetch data if we don't already have it
-    if (!songData.value.has(songPosition)) {
-      try {
-        const query = `${song.name} ${song.artist}`
-        const data = await appleMusicStore.searchSong(query)
-        if (data) {
-          songData.value.set(songPosition, data)
+    // Process songs in sequential order by position
+    for (const song of sortedSongs) {
+      const songPosition = `${song.position}`
+
+      // Only fetch data if we don't already have it
+      if (!songData.value.has(songPosition)) {
+        try {
+          const query = `${song.name} ${song.artist}`
+          const data = await appleMusicStore.searchSong(query)
+          if (data) {
+            songData.value.set(songPosition, data)
+          }
+
+          // Add small delay between requests to avoid rate limits
+          await new Promise((r) => setTimeout(r, 50))
+        } catch (error) {
+          console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
         }
-        // Small delay to avoid rate limits
-        await new Promise((r) => setTimeout(r, 50))
-      } catch (error) {
-        console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
       }
     }
+  } catch (error) {
+    console.error('Error loading Apple Music data:', error)
+  } finally {
+    isLoadingAppleMusic.value = false
   }
 }
 
@@ -244,6 +266,8 @@ watch(
       :selected-chart-id="store.selectedChartId"
       :song-data="songData"
       :fetch-more-songs="fetchMoreSongs"
+      :show-skeletons="isWaitingForAppleMusic"
+      :skeleton-count="itemsPerPage"
       class="chart-view__chart-card-holder"
     >
     </ChartCardHolder>
