@@ -194,12 +194,22 @@ watch(email, (newValue) => {
               <small v-if="checkingUsername" class="checking-status">
                 Checking availability...
               </small>
-              <small v-else-if="usernameAvailable === true" class="success-text">
+              <Message
+                v-else-if="usernameAvailable === true"
+                severity="success"
+                :closable="false"
+                class="p-0"
+              >
                 Username is available
-              </small>
-              <small v-else-if="usernameAvailable === false" class="error-text">
+              </Message>
+              <Message
+                v-else-if="usernameAvailable === false"
+                severity="error"
+                :closable="false"
+                class="p-0"
+              >
                 Username is already taken
-              </small>
+              </Message>
             </div>
           </div>
         </div>
@@ -223,12 +233,22 @@ watch(email, (newValue) => {
             </Message>
             <div v-else-if="email" class="availability-status">
               <small v-if="checkingEmail" class="checking-status"> Checking availability... </small>
-              <small v-else-if="emailAvailable === true" class="success-text">
+              <Message
+                v-else-if="emailAvailable === true"
+                severity="success"
+                :closable="false"
+                class="p-0"
+              >
                 Email is available
-              </small>
-              <small v-else-if="emailAvailable === false" class="error-text">
+              </Message>
+              <Message
+                v-else-if="emailAvailable === false"
+                severity="error"
+                :closable="false"
+                class="p-0"
+              >
                 Email is already registered
-              </small>
+              </Message>
             </div>
           </div>
         </div>
@@ -247,9 +267,9 @@ watch(email, (newValue) => {
             autocomplete="new-password"
             @input="formErrors.password = ''"
           />
-          <Message v-if="formErrors.password" severity="error" :closable="false" class="p-0">
+          <small v-if="formErrors.password" class="error-text">
             {{ formErrors.password }}
-          </Message>
+          </small>
         </div>
 
         <!-- Submit Button -->
@@ -313,11 +333,6 @@ h2 {
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #6c757d;
-}
-
-.success-text {
-  color: #28a745;
-  display: block;
 }
 
 .mt-3 {

@@ -639,12 +639,22 @@ const resetPredictionFilters = () => {
                       <small v-if="checkingUsername" class="checking-status">
                         Checking availability...
                       </small>
-                      <small v-else-if="usernameAvailable === true" class="success-text">
+                      <Message
+                        v-else-if="usernameAvailable === true"
+                        severity="success"
+                        :closable="false"
+                        class="p-0"
+                      >
                         Username is available
-                      </small>
-                      <small v-else-if="usernameAvailable === false" class="error-text">
+                      </Message>
+                      <Message
+                        v-else-if="usernameAvailable === false"
+                        severity="error"
+                        :closable="false"
+                        class="p-0"
+                      >
                         Username is already taken
-                      </small>
+                      </Message>
                     </div>
                   </div>
                 </div>
@@ -708,12 +718,22 @@ const resetPredictionFilters = () => {
                       <small v-if="checkingEmail" class="checking-status">
                         Checking availability...
                       </small>
-                      <small v-else-if="emailAvailable === true" class="success-text">
+                      <Message
+                        v-else-if="emailAvailable === true"
+                        severity="success"
+                        :closable="false"
+                        class="p-0"
+                      >
                         Email is available
-                      </small>
-                      <small v-else-if="emailAvailable === false" class="error-text">
+                      </Message>
+                      <Message
+                        v-else-if="emailAvailable === false"
+                        severity="error"
+                        :closable="false"
+                        class="p-0"
+                      >
                         Email is already registered
-                      </small>
+                      </Message>
                     </div>
                   </div>
                 </div>
@@ -1400,11 +1420,6 @@ h4 {
 
 .text-center {
   text-align: center;
-}
-
-.success-text {
-  color: #28a745;
-  display: block;
 }
 
 /* Responsive styles */

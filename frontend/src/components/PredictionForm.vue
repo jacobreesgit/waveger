@@ -631,11 +631,9 @@ const isDeadlinePassed = computed(() => {
 
     <!-- Prediction Form -->
     <form v-else-if="hasActiveContest" @submit.prevent="submitPrediction" class="form-container">
-      <!-- Success Message -->
-      <div v-if="showSuccess" class="success-message">
-        <div class="success-icon">✓</div>
-        <p>{{ successMessage }}</p>
-      </div>
+      <Message v-if="showSuccess" severity="success" :closable="false">
+        {{ successMessage }}
+      </Message>
 
       <!-- Chart Type Selection -->
       <div class="form-group">
@@ -1087,29 +1085,6 @@ h2 {
 .reset-button:disabled {
   opacity: 0.65;
   cursor: not-allowed;
-}
-
-.success-message {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: #d4edda;
-  color: #155724;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-}
-
-.success-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: #28a745;
-  color: white;
-  border-radius: 50%;
-  font-weight: bold;
 }
 
 /* Enhanced search functionality styles */

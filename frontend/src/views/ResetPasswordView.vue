@@ -158,9 +158,9 @@ const handleSubmit = async () => {
             class="w-full"
             @input="errors.password = ''"
           />
-          <small v-if="errors.password" class="error-text">
+          <Message v-if="errors.password" severity="error" :closable="false" class="p-0">
             {{ errors.password }}
-          </small>
+          </Message>
         </div>
 
         <div class="form-field">
@@ -175,9 +175,9 @@ const handleSubmit = async () => {
             class="w-full"
             @input="errors.confirmPassword = ''"
           />
-          <small v-if="errors.confirmPassword" class="error-text">
+          <Message v-if="errors.confirmPassword" severity="error" :closable="false" class="p-0">
             {{ errors.confirmPassword }}
-          </small>
+          </Message>
         </div>
 
         <Button
@@ -222,12 +222,6 @@ h2 {
     display: block;
     margin-bottom: 0.5rem;
   }
-}
-
-.error-text {
-  color: #dc3545;
-  display: block;
-  margin-top: 0.25rem;
 }
 
 .text-center {
