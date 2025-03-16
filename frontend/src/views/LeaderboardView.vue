@@ -118,7 +118,6 @@ const formatAccuracy = (value: number): string => {
         </button>
       </div>
 
-      <!-- Loading state -->
       <LoadingSpinner
         v-if="isLoading"
         label="Loading leaderboard data..."
@@ -126,13 +125,6 @@ const formatAccuracy = (value: number): string => {
         size="medium"
       />
 
-      <!-- Error state -->
-      <div v-else-if="error" class="error-container">
-        <p class="error-message">{{ error }}</p>
-        <button @click="loadLeaderboard" class="retry-button">Retry</button>
-      </div>
-
-      <!-- Empty state -->
       <div v-else-if="predictionStore.leaderboard.length === 0" class="empty-container">
         <p>No prediction data available for this time period.</p>
         <p v-if="period === 'weekly'">Check back after predictions have been processed.</p>
@@ -205,14 +197,17 @@ const formatAccuracy = (value: number): string => {
 
 <style lang="scss" scoped>
 .leaderboard-view {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .leaderboard-content {
   background: white;
   border-radius: 12px;
-  padding: 24px;
-  // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
+  flex-direction: column;
+  display: flex;
+  align-items: center;
 }
 
 h2 {
@@ -261,7 +256,6 @@ h2 {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 200px;
   text-align: center;
   color: #6c757d;
 }

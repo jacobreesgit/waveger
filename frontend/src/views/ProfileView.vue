@@ -519,38 +519,6 @@ const filteredFavourites = computed(() => {
   return result
 })
 
-// Updated navigateToChart function in ProfileView.vue
-const navigateToChart = (chartId: string, added_at: string) => {
-  // Extract date from added_at string if available
-  let dateParam = ''
-  try {
-    const date = new Date(added_at)
-    const day = date.getDate().toString().padStart(2, '0')
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const year = date.getFullYear()
-    dateParam = `${day}-${month}-${year}`
-  } catch (e) {
-    console.error('Error parsing date:', e)
-    // If date parsing fails, don't use a date param
-  }
-
-  // Navigate using query parameters
-  if (dateParam) {
-    router.push({
-      path: '/charts',
-      query: {
-        date: dateParam,
-        id: chartId,
-      },
-    })
-  } else {
-    router.push({
-      path: '/charts',
-      query: { id: chartId },
-    })
-  }
-}
-
 // Get prediction status for display
 const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
   if (prediction.is_correct === undefined || prediction.is_correct === null) {
@@ -605,31 +573,14 @@ const resetPredictionFilters = () => {
 
 <template>
   <div class="profile-view">
-    <div v-if="isLoading" class="loading">
-      <LoadingSpinner size="medium" label="Loading profile..." centerInContainer />
-    </div>
-
-    <div v-else-if="error" class="error-container">
-      <Message severity="error" :closable="false">{{ error }}</Message>
-      <Button label="Go to Home" @click="router.push('/')" class="mt-3" />
-    </div>
+    <LoadingSpinner v-if="isLoading" size="medium" label="Loading profile..." centerInContainer />
 
     <div v-else-if="authStore.user" class="profile-content">
       <h2>Your Account</h2>
 
-      <!-- Success message -->
-      <Message v-if="successMessage" severity="success" :closable="false" class="mb-4">
-        {{ successMessage }}
-      </Message>
-
-      <!-- General error message -->
-      <Message v-if="formErrors.general" severity="error" :closable="false" class="mb-4">
-        {{ formErrors.general }}
-      </Message>
-
       <!-- Tab Navigation -->
-      <TabView v-model:activeIndex="activeTabIndex">
-        <TabPanel header="Profile" value="Profile">
+      <TabView class="tab-navigation" v-model:activeIndex="activeTabIndex">
+        <TabPanel header="Profile" value="Profile" class="tab-navigation__profile">
           <div class="profile-section">
             <h3>Account Details</h3>
 
@@ -667,9 +618,9 @@ const resetPredictionFilters = () => {
                     v-else-if="newUsername && newUsername !== authStore.user.username"
                     class="availability-status"
                   >
-                    <span v-if="checkingUsername" class="checking-status">
-                      <LoadingSpinner size="small" label="Checking availability..." inline />
-                    </span>
+                    <small v-if="checkingUsername" class="checking-status">
+                      Checking availability...
+                    </small>
                     <small v-else-if="usernameAvailable === true" class="success-text">
                       Username is available
                     </small>
@@ -731,9 +682,9 @@ const resetPredictionFilters = () => {
                     v-else-if="newEmail && newEmail !== authStore.user.email"
                     class="availability-status"
                   >
-                    <span v-if="checkingEmail" class="checking-status">
-                      <LoadingSpinner size="small" label="Checking availability..." inline />
-                    </span>
+                    <small v-if="checkingEmail" class="checking-status">
+                      Checking availability...
+                    </small>
                     <small v-else-if="emailAvailable === true" class="success-text">
                       Email is available
                     </small>
@@ -988,7 +939,7 @@ const resetPredictionFilters = () => {
           </div>
         </TabPanel>
 
-        <TabPanel header="Favourites" value="Favourites">
+        <TabPanel header="Favourites" value="Favourites" class="tab-navigation__favourites">
           <div class="favourites-header">
             <div class="favourites-stats">
               <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
@@ -1027,7 +978,7 @@ const resetPredictionFilters = () => {
           </ChartCardHolder>
         </TabPanel>
 
-        <TabPanel header="Predictions" value="Predictions">
+        <TabPanel header="Predictions" value="Predictions" class="tab-navigation__predictions">
           <div class="predictions-header">
             <h3>Your Prediction History</h3>
 
@@ -1086,10 +1037,12 @@ const resetPredictionFilters = () => {
             </div>
           </div>
 
-          <!-- Loading state -->
-          <div v-if="isPredictionsLoading" class="loading-container">
-            <LoadingSpinner size="medium" label="Loading your predictions..." centerInContainer />
-          </div>
+          <LoadingSpinner
+            v-if="isPredictionsLoading"
+            size="medium"
+            label="Loading your predictions..."
+            centerInContainer
+          />
 
           <!-- No predictions state -->
           <div v-else-if="predictionStore.userPredictions.length === 0" class="empty-container">
@@ -1172,11 +1125,6 @@ const resetPredictionFilters = () => {
               </template>
             </Card>
           </div>
-
-          <!-- View more button -->
-          <div class="text-center mt-4">
-            <Button label="View All Predictions" @click="goToPredictionsView" />
-          </div>
         </TabPanel>
       </TabView>
     </div>
@@ -1212,17 +1160,24 @@ const resetPredictionFilters = () => {
   text-align: center;
 }
 
-.profile-content {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
 .profile-section {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid #eee;
+}
+
+.profile-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.tab-navigation,
+.tab-navigation__predictions {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 h2,
@@ -1319,6 +1274,8 @@ h4 {
 }
 
 .profile-actions {
+  max-width: 400px;
+  margin: 0 auto;
   margin-top: 24px;
 }
 
@@ -1448,7 +1405,7 @@ h4 {
   background: white;
   border-radius: 12px;
   padding: 24px;
-  max-width: 500px;
+  max-width: 400px;
   margin: 0 auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

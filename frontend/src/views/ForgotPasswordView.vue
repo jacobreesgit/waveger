@@ -49,58 +49,56 @@ const handleSubmit = async () => {
 
 <template>
   <div class="forgot-password-view">
-    <div class="card">
-      <h2>Forgot Password</h2>
+    <h2>Forgot Password</h2>
 
-      <div v-if="requestSent" class="success-container">
-        <Message severity="success" :closable="false">
-          If an account exists with that email, we've sent password reset instructions. Please check
-          your inbox (and spam folder) for further instructions.
-        </Message>
-        <div class="text-center mt-4">
-          <router-link to="/login">
-            <Button label="Back to Login" />
-          </router-link>
-        </div>
+    <div v-if="requestSent" class="success-container">
+      <Message severity="success" :closable="false">
+        If an account exists with that email, we've sent password reset instructions. Please check
+        your inbox (and spam folder) for further instructions.
+      </Message>
+      <div class="text-center mt-4">
+        <router-link to="/login">
+          <Button label="Back to Login" />
+        </router-link>
       </div>
-
-      <template v-else>
-        <p class="instruction">
-          Enter your email address below and we'll send you instructions to reset your password.
-        </p>
-
-        <Message v-if="generalError" severity="error" :closable="false">
-          {{ generalError }}
-        </Message>
-
-        <form @submit.prevent="handleSubmit">
-          <div class="form-field">
-            <label for="email">Email</label>
-            <InputText
-              id="email"
-              v-model="email"
-              type="email"
-              required
-              :disabled="isSubmitting"
-              @input="emailError = ''"
-              class="w-full"
-            />
-            <small v-if="emailError" class="error-text">{{ emailError }}</small>
-          </div>
-
-          <Button
-            type="submit"
-            :label="isSubmitting ? 'Sending...' : 'Send Reset Instructions'"
-            :disabled="isSubmitting"
-            class="w-full mt-3"
-          />
-        </form>
-
-        <div class="mt-4 text-center">
-          Remember your password? <router-link to="/login">Back to Login</router-link>
-        </div>
-      </template>
     </div>
+
+    <template v-else>
+      <p class="instruction">
+        Enter your email address below and we'll send you instructions to reset your password.
+      </p>
+
+      <Message v-if="generalError" severity="error" :closable="false">
+        {{ generalError }}
+      </Message>
+
+      <form @submit.prevent="handleSubmit">
+        <div class="form-field">
+          <label for="email">Email</label>
+          <InputText
+            id="email"
+            v-model="email"
+            type="email"
+            required
+            :disabled="isSubmitting"
+            @input="emailError = ''"
+            class="w-full"
+          />
+          <small v-if="emailError" class="error-text">{{ emailError }}</small>
+        </div>
+
+        <Button
+          type="submit"
+          :label="isSubmitting ? 'Sending...' : 'Send Reset Instructions'"
+          :disabled="isSubmitting"
+          class="w-full mt-3"
+        />
+      </form>
+
+      <div class="mt-4 text-center">
+        Remember your password? <router-link to="/login">Back to Login</router-link>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -108,14 +106,6 @@ const handleSubmit = async () => {
 .forgot-password-view {
   display: flex;
   justify-content: center;
-}
-
-.card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
 }
 
 form {

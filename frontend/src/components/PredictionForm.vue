@@ -611,9 +611,11 @@ const isDeadlinePassed = computed(() => {
     </div>
 
     <div v-else class="no-contest">
-      <div v-if="predictionStore.loading.contest">
-        <LoadingSpinner label="Loading contest information..." size="medium" />
-      </div>
+      <LoadingSpinner
+        v-if="predictionStore.loading.contest"
+        label="Loading contest information..."
+        size="medium"
+      />
       <div v-else>
         <p>There is no active prediction contest at this time.</p>
         <p>Check back soon for the next prediction window!</p>

@@ -42,7 +42,7 @@ const { stop: stopObserver } = useIntersectionObserver(
     }
   },
   {
-    rootMargin: '200px', // Start loading before the element is fully in view
+    rootMargin: '100px', // Start loading before the element is fully in view
     threshold: 0.1, // Trigger when at least 10% of the element is visible
   },
 )
@@ -71,9 +71,13 @@ onUnmounted(() => {
       />
 
       <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
-        <div v-if="isLoadingMore" class="loading-more">
-          <LoadingSpinner label="Loading more songs..." inline size="small" />
-        </div>
+        <LoadingSpinner
+          v-if="isLoadingMore"
+          class="loading-more"
+          label="Loading more songs..."
+          inline
+          size="small"
+        />
         <div v-else class="load-more-text">Scroll for more songs</div>
       </div>
 

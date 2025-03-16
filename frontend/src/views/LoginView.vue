@@ -188,6 +188,8 @@ const handleLogin = async () => {
 
 <style lang="scss" scoped>
 .login-view {
+  display: flex;
+  justify-content: center;
 }
 
 .card {

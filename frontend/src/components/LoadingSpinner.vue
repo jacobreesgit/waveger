@@ -35,6 +35,18 @@ const spinnerSize = () => {
       return '60px'
   }
 }
+
+const labelFontSize = () => {
+  switch (props.size) {
+    case 'small':
+      return '0.75rem'
+    case 'large':
+      return '1.25rem'
+    case 'medium':
+    default:
+      return '1rem'
+  }
+}
 </script>
 
 <template>
@@ -53,7 +65,13 @@ const spinnerSize = () => {
       :animationDuration="animationDuration"
       aria-label="Loading"
     />
-    <p v-if="label" class="loading-spinner-wrapper__loading-label">{{ label }}</p>
+    <p
+      v-if="label"
+      class="loading-spinner-wrapper__loading-label"
+      :style="{ fontSize: labelFontSize() }"
+    >
+      {{ label }}
+    </p>
   </div>
 </template>
 
@@ -72,7 +90,6 @@ const spinnerSize = () => {
     height: 100%;
   }
   &__loading-label {
-    font-size: 1rem;
     color: grey;
   }
 }

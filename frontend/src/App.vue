@@ -52,6 +52,7 @@ onMounted(async () => {
     flex: 1;
     padding: 1rem;
     overflow-y: auto;
+    justify-content: center;
     & .loading-spinner-wrapper {
       height: unset;
     }
@@ -59,6 +60,8 @@ onMounted(async () => {
       display: flex;
       flex-direction: column;
       width: 100%;
+      max-width: 1200px;
+      align-items: center;
     }
   }
 }

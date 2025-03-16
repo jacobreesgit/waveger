@@ -22,3 +22,19 @@ body {
 .p-password-input {
   width: 100%;
 }
+
+.p-tabview-panels {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tab-navigation .p-tabview-panels .p-tabview-panel:nth-child(3) {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.p-message {
+  width: fit-content;
+}

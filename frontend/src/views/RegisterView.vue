@@ -191,9 +191,9 @@ watch(email, (newValue) => {
               {{ formErrors.username }}
             </small>
             <div v-else-if="username" class="availability-status">
-              <span v-if="checkingUsername" class="checking-status">
-                <LoadingSpinner size="small" label="Checking availability..." inline />
-              </span>
+              <small v-if="checkingUsername" class="checking-status">
+                Checking availability...
+              </small>
               <small v-else-if="usernameAvailable === true" class="success-text">
                 Username is available
               </small>
@@ -222,9 +222,7 @@ watch(email, (newValue) => {
               {{ formErrors.email }}
             </small>
             <div v-else-if="email" class="availability-status">
-              <span v-if="checkingEmail" class="checking-status">
-                <LoadingSpinner size="small" label="Checking availability..." inline />
-              </span>
+              <small v-if="checkingEmail" class="checking-status"> Checking availability... </small>
               <small v-else-if="emailAvailable === true" class="success-text">
                 Email is available
               </small>
