@@ -1112,14 +1112,6 @@ h2 {
   font-weight: bold;
 }
 
-.error-message {
-  background: #f8d7da;
-  color: #721c24;
-  padding: 12px 16px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-}
-
 /* Enhanced search functionality styles */
 .search-container {
   position: relative;

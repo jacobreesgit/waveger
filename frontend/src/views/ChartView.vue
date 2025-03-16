@@ -15,8 +15,6 @@ const route = useRoute()
 const router = useRouter()
 const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
-const favouritesStore = useFavouritesStore()
-const authStore = useAuthStore()
 const timezoneStore = useTimezoneStore()
 
 // Simplified state management
