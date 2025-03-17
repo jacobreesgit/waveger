@@ -9,6 +9,7 @@ const props = defineProps<{
   chartTitle: string
   showDetails?: boolean
   appleMusicData?: any
+  compact?: boolean
 }>()
 
 // Emit events that parent components might need
@@ -95,14 +96,14 @@ const isArtistChart = computed(() => {
       </div>
     </div>
 
-    <div class="chart-item-card__stats">
+    <div class="chart-item-card__stats" v-if="!compact">
       <div>Peak: #{{ song.peak_position }}</div>
       <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
     </div>
 
     <!-- Additional Apple Music metadata if available and showDetails is true -->
     <div
-      v-if="showDetails && appleMusicData?.attributes && !isArtistChart"
+      v-if="showDetails && appleMusicData?.attributes && !isArtistChart && !compact"
       class="chart-item-card__metadata"
     >
       <div class="chart-item-card__metadata__album-name">
@@ -142,12 +143,24 @@ const isArtistChart = computed(() => {
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  height: 100%; /* Ensure consistent height with skeleton card */
+  background: white;
+  will-change: transform, opacity; /* Optimize for transitions */
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  }
+
   &__image-container {
     position: relative;
     width: 100%;
     padding-bottom: 100%; /* 1:1 Aspect Ratio */
     overflow: hidden;
+
     &__rank {
       position: absolute;
       top: 10px;
@@ -160,6 +173,7 @@ const isArtistChart = computed(() => {
       border-radius: 4px;
       z-index: 2;
     }
+
     &__image {
       position: absolute;
       top: 0;
@@ -167,7 +181,14 @@ const isArtistChart = computed(() => {
       width: 100%;
       height: 100%;
       object-fit: cover;
+      transition: transform 0.3s ease;
     }
+
+    /* Subtle zoom effect on hover */
+    &:hover &__image {
+      transform: scale(1.05);
+    }
+
     &__favourite-btn {
       position: absolute;
       top: 10px;
@@ -175,11 +196,13 @@ const isArtistChart = computed(() => {
       z-index: 2;
     }
   }
+
   &__item-info {
     padding: 15px;
     display: flex;
     flex-direction: column;
     gap: 8px;
+
     &__title {
       font-weight: 600;
       font-size: 1.1rem;
@@ -187,40 +210,48 @@ const isArtistChart = computed(() => {
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     &__artist {
       color: #6c757d;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+
     &__trend {
       display: flex;
       align-items: center;
       gap: 12px;
       margin-top: 4px;
+
       &__indicator {
         font-weight: bold;
         padding: 2px 6px;
         border-radius: 4px;
-        &--trend-up {
-          background: #e8f5e9;
-          color: #28a745;
-        }
-        &--trend-down {
-          background: #ffebee;
-          color: #dc3545;
-        }
-        &--trend-same {
-          background: #f8f9fa;
-          color: #6c757d;
-        }
+      }
+
+      &--trend-up {
+        background: #e8f5e9;
+        color: #28a745;
+      }
+
+      &--trend-down {
+        background: #ffebee;
+        color: #dc3545;
+      }
+
+      &--trend-same {
+        background: #f8f9fa;
+        color: #6c757d;
       }
     }
+
     &__weeks-on-chart {
       color: #6c757d;
       font-size: 0.9rem;
     }
   }
+
   &__stats {
     display: flex;
     justify-content: space-between;
@@ -228,21 +259,25 @@ const isArtistChart = computed(() => {
     font-size: 0.85rem;
     padding: 0 15px 15px;
   }
+
   &__metadata {
     padding: 0 15px 15px;
     font-size: 0.9rem;
     display: flex;
     flex-direction: column;
     gap: 4px;
+
     &__actions {
       display: flex;
       flex-direction: column;
       gap: 12px;
       margin-top: 8px;
+
       &__preview-player {
         width: 100%;
         height: 32px;
       }
+
       &__apple-music-button {
         display: inline-block;
         background: #fa324a;
@@ -253,6 +288,11 @@ const isArtistChart = computed(() => {
         font-weight: 500;
         text-align: center;
         width: 100%;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background: #e61e3c;
+        }
       }
     }
   }

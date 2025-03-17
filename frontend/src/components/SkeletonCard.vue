@@ -60,7 +60,9 @@ const animate = props.animate !== false
   /* Match exact dimensions of real card */
   height: 100%;
   box-sizing: border-box;
+  will-change: transform, opacity; /* Optimize for transitions */
 
+  /* Following the same structure as ChartItemCard for consistent dimensions */
   &__image-container {
     position: relative;
     width: 100%;
@@ -186,7 +188,6 @@ const animate = props.animate !== false
   }
 }
 
-// Shared skeleton pulse animation
 .skeleton-pulse {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
