@@ -409,6 +409,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .contest-info-bar {
