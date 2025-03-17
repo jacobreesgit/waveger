@@ -4,8 +4,7 @@ import { useFavouritesStore } from '@/stores/favourites'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import Select from 'primevue/select'
-import Badge from 'primevue/badge'
+import Dropdown from 'primevue/dropdown'
 
 const favouritesStore = useFavouritesStore()
 
@@ -21,7 +20,7 @@ const sortOptions = [
   { value: 'mostCharts', label: 'Most Chart Appearances' },
 ]
 
-// Computed property for filtered and sorted favourites
+// Computed property for filterped and sorted favourites
 const filteredFavourites = computed(() => {
   let result = [...favouritesStore.favourites]
 
@@ -55,35 +54,53 @@ const filteredFavourites = computed(() => {
 
   return result
 })
+
+// Clear search query
+const clearSearch = () => {
+  searchQuery.value = ''
+}
+
+// Format stats text
+const statsText = computed(() => {
+  const songCount = favouritesStore.favouritesCount
+  const chartCount = favouritesStore.chartAppearancesCount
+
+  return `${songCount} ${songCount === 1 ? 'song' : 'songs'}, ${chartCount} chart ${chartCount === 1 ? 'appearance' : 'appearances'}`
+})
 </script>
 
 <template>
-  <div>
-    <div class="favourites-header">
-      <div class="favourites-stats">
-        <Badge :value="favouritesStore.favouritesCount" severity="primary">Songs</Badge>
-        <Badge :value="favouritesStore.chartAppearancesCount" severity="info">
-          Chart Appearances
-        </Badge>
-      </div>
+  <div class="favourites-container">
+    <!-- Stats info - subtle text instead of badges -->
+    <div class="stats-info" v-if="favouritesStore.favouritesCount > 0">
+      {{ statsText }}
     </div>
 
-    <div class="favourites-controls">
-      <span class="p-input-icon-left w-full mr-3">
-        <i class="pi pi-search" />
-        <InputText v-model="searchQuery" placeholder="Search favourites..." class="w-full" />
-      </span>
+    <!-- Search and filter controls -->
+    <div class="search-sort-container">
+      <div class="search-container">
+        <InputText v-model="searchQuery" placeholder="Search favourites..." class="search-input" />
+        <Button
+          v-if="searchQuery"
+          icon="pi pi-times"
+          text
+          class="clear-button"
+          @click="clearSearch"
+          aria-label="Clear search"
+        />
+      </div>
 
-      <Select
+      <Dropdown
         v-model="selectedSort"
         :options="sortOptions"
         optionLabel="label"
         optionValue="value"
         placeholder="Sort by"
+        class="sort-dropdown"
       />
     </div>
 
-    <!-- Using ChartCardHolder for favourites -->
+    <!-- Content area -->
     <ChartCardHolder
       :loading="favouritesStore.loading"
       :error="favouritesStore.error"
@@ -91,54 +108,67 @@ const filteredFavourites = computed(() => {
       :isForFavourites="true"
       emptyMessage="No favourites match your search"
     >
-      <template #empty-action>
-        <Button label="Clear Search" @click="searchQuery = ''" class="mt-3" />
+      <template #empty-action v-if="searchQuery">
+        <Button label="Clear Search" @click="clearSearch" class="clear-search-button" />
       </template>
     </ChartCardHolder>
   </div>
 </template>
 
 <style scoped>
-.favourites-header {
-  margin-bottom: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.favourites-stats {
-  display: flex;
-  gap: 12px;
-}
-
-.favourites-controls {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-/* Utility classes */
-.w-full {
+.favourites-container {
   width: 100%;
 }
 
-.mr-3 {
-  margin-right: 1rem;
+.stats-info {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin-bottom: 16px;
 }
 
-.mt-3 {
-  margin-top: 1rem;
+.search-sort-container {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.search-container {
+  position: relative;
+  flex-grow: 1;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+.clear-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.sort-dropdown {
+  width: 200px;
+}
+
+.clear-search-button {
+  margin-top: 12px;
 }
 
 /* Responsive styles */
-@media (max-width: 576px) {
-  .favourites-controls {
+@media (max-width: 768px) {
+  .search-sort-container {
     flex-direction: column;
     gap: 12px;
   }
 
-  .favourites-controls .p-input-icon-left {
-    margin-right: 0;
-    margin-bottom: 12px;
+  .sort-dropdown {
+    width: 100%;
   }
 }
 </style>
