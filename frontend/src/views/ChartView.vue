@@ -23,6 +23,11 @@ const isLoadingAppleMusic = ref(false)
 // Use the existing mediaQueries utility to detect responsive breakpoints
 const { xs, sm, md, lg, xl } = useBreakpoints()
 
+// Helper function to normalize chart IDs
+const normalizeChartId = (id: string): string => {
+  return id ? id.replace(/\/$/, '') : 'hot-100'
+}
+
 // Calculate grid columns based on breakpoints
 const gridColumns = computed(() => {
   if (xs.value) return 1 // Mobile: 1 column
@@ -131,7 +136,7 @@ const fetchMoreSongs = async () => {
 onMounted(async () => {
   try {
     // Get chart ID and date from URL or defaults
-    const chartId = (route.query.id as string) || 'hot-100'
+    const chartId = route.query.id ? normalizeChartId(route.query.id as string) : 'hot-100'
     const dateParam = route.query.date as string
 
     // Format date if provided
@@ -203,7 +208,7 @@ watch(
   { deep: true },
 )
 
-// Watch for route parameter changes - using fetchChartDetails instead of loadChart
+// Watch for route parameter changes
 watch(
   () => [route.query.id, route.query.date],
   async ([newChartId, newDate]) => {
@@ -214,9 +219,12 @@ watch(
         formattedDate = store.parseDateFromURL(newDate as string)
       }
 
-      // USE fetchChartDetails INSTEAD OF loadChart - fetch based on responsive grid size
+      // Normalize chart ID for consistency
+      const chartId = newChartId ? normalizeChartId(newChartId as string) : 'hot-100'
+
+      // Use fetchChartDetails with normalized chart ID
       await store.fetchChartDetails({
-        id: (newChartId as string) || 'hot-100',
+        id: chartId,
         week: formattedDate,
         range: `1-${itemsPerPage.value}`,
       })

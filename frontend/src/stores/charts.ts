@@ -5,12 +5,17 @@ import { getChartDetails } from '@/services/api'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
-  const selectedChartId = ref('hot-100/')
+  const selectedChartId = ref('hot-100') // Store without trailing slash consistently
   const loading = ref(false)
   const error = ref<string | null>(null)
   const hasMore = ref(true)
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
+
+  // Helper to normalize chart IDs (remove trailing slashes) for consistency
+  const normalizeChartId = (id: string): string => {
+    return id.replace(/\/$/, '')
+  }
 
   // IMPORTANT: Keep the original function name and signature
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
@@ -25,12 +30,13 @@ export const useChartsStore = defineStore('charts', () => {
         currentPage.value = 1
       }
 
-      const chartId = params.id || 'hot-100/'
+      // Normalize the chart ID for consistency
+      const chartId = params.id ? normalizeChartId(params.id) : 'hot-100'
 
-      // Store the selected chart ID with consistent formatting
-      selectedChartId.value = chartId.endsWith('/') ? chartId : `${chartId}/`
+      // Store the selected chart ID - consistently without trailing slash
+      selectedChartId.value = chartId
 
-      // Save to localStorage for persistence
+      // Save to localStorage for persistence - without trailing slash
       localStorage.setItem('lastViewedChart', chartId)
 
       // If a date is provided, save it to localStorage in URL format
@@ -43,7 +49,7 @@ export const useChartsStore = defineStore('charts', () => {
         localStorage.setItem('lastViewedDate', urlFormattedDate)
       }
 
-      console.log(`Requesting chart data: ${params.id}, date: ${params.week || 'current'}`)
+      console.log(`Requesting chart data: ${chartId}, date: ${params.week || 'current'}`)
       const response = await getChartDetails(params)
 
       if (params.range && params.range !== '1-10' && currentChart.value) {
@@ -129,7 +135,7 @@ export const useChartsStore = defineStore('charts', () => {
   // Reset store state
   const reset = () => {
     currentChart.value = null
-    selectedChartId.value = 'hot-100/'
+    selectedChartId.value = 'hot-100'
     loading.value = false
     error.value = null
     hasMore.value = true
@@ -151,5 +157,6 @@ export const useChartsStore = defineStore('charts', () => {
     formatDateForURL,
     initialize,
     reset,
+    normalizeChartId,
   }
 })

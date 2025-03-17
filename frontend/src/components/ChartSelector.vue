@@ -9,12 +9,12 @@ const route = useRoute()
 const router = useRouter()
 
 // Create a local reactive reference for the selected chart ID
-const selectedChartId = ref('hot-100/')
+const selectedChartId = ref('hot-100')
 
 // Hardcoded chart options
 const chartOptions = [
-  { id: 'hot-100/', title: 'Billboard Hot 100™' },
-  { id: 'billboard-200/', title: 'Billboard 200™' },
+  { id: 'hot-100', title: 'Billboard Hot 100™' },
+  { id: 'billboard-200', title: 'Billboard 200™' },
   { id: 'artist-100', title: 'Billboard Artist 100' },
   { id: 'emerging-artists', title: 'Emerging Artists' },
   { id: 'streaming-songs', title: 'Streaming Songs' },
@@ -22,7 +22,7 @@ const chartOptions = [
   { id: 'digital-song-sales', title: 'Digital Song Sales' },
   { id: 'summer-songs', title: 'Songs of the Summer' },
   { id: 'top-album-sales', title: 'Top Album Sales' },
-  { id: 'top-streaming-albums/', title: 'Top Streaming Albums' },
+  { id: 'top-streaming-albums', title: 'Top Streaming Albums' },
   { id: 'independent-albums', title: 'Independent Albums' },
   { id: 'vinyl-albums', title: 'Vinyl Albums' },
   { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
@@ -40,14 +40,19 @@ const parseDateFromURL = (urlDate: string): string => {
   }
 }
 
+// Helper to normalize chart IDs (remove trailing slashes)
+const normalizeChartId = (id: string): string => {
+  return id.replace(/\/$/, '')
+}
+
 // Update route and ALWAYS load chart data
 const updateRoute = async () => {
-  // Normalize chart ID for consistency (remove trailing slash if needed)
-  const chartId = selectedChartId.value.replace(/\/$/, '')
+  // Normalize chart ID for consistency (remove trailing slash)
+  const chartId = normalizeChartId(selectedChartId.value)
   console.log(`Chart changed to: ${chartId}`)
 
-  // Update the store's selected chart ID
-  store.selectedChartId = selectedChartId.value
+  // Update the store's selected chart ID - WITHOUT trailing slash
+  store.selectedChartId = chartId
 
   // Get current date from query parameter or default to today's date in URL format
   let datePath =
@@ -92,9 +97,9 @@ onMounted(() => {
   // Use the chart ID from the route if available
   const routeChartId = route.query.id as string
   if (routeChartId) {
-    // Normalize IDs for comparison
-    const normalizedRouteId = routeChartId.endsWith('/') ? routeChartId : `${routeChartId}/`
-    const normalizedStoreId = store.selectedChartId.replace(/\/$/, '') + '/'
+    // Normalize IDs for comparison - consistently without trailing slash
+    const normalizedRouteId = normalizeChartId(routeChartId)
+    const normalizedStoreId = normalizeChartId(store.selectedChartId)
 
     console.log('Chart selector mounting with IDs:', {
       routeId: normalizedRouteId,
@@ -122,30 +127,32 @@ onMounted(() => {
       }
     }
 
-    // Update the local selectedChartId and store.selectedChartId
+    // Set local selectedChartId to match route's chart ID (without trailing slash)
     selectedChartId.value = normalizedRouteId
 
     // Only update the store's selectedChartId if there's a mismatch
     if (idMismatch || titleMismatch) {
-      store.selectedChartId = selectedChartId.value
+      store.selectedChartId = normalizedRouteId
 
       // Force a data reload if there's a mismatch and we already have chart data
       if (store.currentChart) {
         console.log('Detected chart type mismatch, forcing data reload')
-        const formattedDate = route.params.date
-          ? parseDateFromURL(route.params.date as string)
+        const formattedDate = route.query.date
+          ? parseDateFromURL(route.query.date as string)
           : new Date().toISOString().split('T')[0]
 
         store.fetchChartDetails({
-          id: routeChartId,
+          id: normalizedRouteId,
           week: formattedDate,
           range: '1-10',
         })
       }
     }
   } else {
-    // Make sure store ID matches local ID
-    store.selectedChartId = selectedChartId.value
+    // Make sure store ID matches local ID (use default 'hot-100')
+    const normalizedStoreId = normalizeChartId(store.selectedChartId)
+    selectedChartId.value = normalizedStoreId
+    store.selectedChartId = normalizedStoreId
   }
 })
 </script>
