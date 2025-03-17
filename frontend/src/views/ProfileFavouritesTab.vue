@@ -1,37 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
-import { useAppleMusicStore } from '@/stores/appleMusic'
-import { useBreakpoints } from '@/utils/mediaQueries'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Dropdown from 'primevue/dropdown'
 
 const favouritesStore = useFavouritesStore()
-const appleMusicStore = useAppleMusicStore()
-
-// Use the existing mediaQueries utility to detect responsive breakpoints
-const { xs, sm, md, lg, xl } = useBreakpoints()
 
 // Favourites-related states
 const searchQuery = ref('')
 const selectedSort = ref('latest')
-const songData = ref(new Map())
-const isLoadingAppleMusic = ref(false)
-const isInitialLoad = ref(true)
-
-// Calculate grid columns based on breakpoints
-const gridColumns = computed(() => {
-  if (xs.value) return 1 // Mobile: 1 column
-  if (sm.value) return 2 // Small tablet: 2 columns
-  if (md.value) return 3 // Tablet: 3 columns
-  return 4 // Desktop and large desktop: 4 columns
-})
-
-// Always fetch 2 rows worth of data
-const rowsToFetch = 2
-const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
 
 // Sorting options
 const sortOptions = [
@@ -41,16 +20,7 @@ const sortOptions = [
   { value: 'mostCharts', label: 'Most Chart Appearances' },
 ]
 
-// Always show skeletons during initial loading
-const shouldShowSkeletons = ref(true)
-
-// Track if we're waiting for Apple Music data
-const isWaitingForAppleMusic = computed(() => {
-  // Always show skeletons during initial loading or when explicitly loading Apple Music data
-  return shouldShowSkeletons.value || isLoadingAppleMusic.value
-})
-
-// Computed property for filtered and sorted favourites
+// Computed property for filterped and sorted favourites
 const filteredFavourites = computed(() => {
   let result = [...favouritesStore.favourites]
 
@@ -85,48 +55,6 @@ const filteredFavourites = computed(() => {
   return result
 })
 
-// Load Apple Music data for current favourites
-const loadAppleMusicData = async () => {
-  if (!favouritesStore.favourites || !favouritesStore.favourites.length) {
-    return
-  }
-
-  isLoadingAppleMusic.value = true
-
-  try {
-    // Ensure we have an Apple Music token
-    if (!appleMusicStore.token) {
-      await appleMusicStore.fetchToken()
-    }
-
-    // Process favourites in sequential order
-    for (const favourite of favouritesStore.favourites) {
-      const songKey = `${favourite.song_name}|${favourite.artist}`
-
-      // Only fetch data if we don't already have it
-      if (!songData.value.has(songKey)) {
-        try {
-          const query = `${favourite.song_name} ${favourite.artist}`
-          const data = await appleMusicStore.searchSong(query)
-          if (data) {
-            songData.value.set(songKey, data)
-          }
-
-          // Add small delay between requests to avoid rate limits
-          await new Promise((r) => setTimeout(r, 50))
-        } catch (error) {
-          console.error(`Error searching Apple Music for ${favourite.song_name}:`, error)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error loading Apple Music data:', error)
-  } finally {
-    isLoadingAppleMusic.value = false
-    isInitialLoad.value = false
-  }
-}
-
 // Clear search query
 const clearSearch = () => {
   searchQuery.value = ''
@@ -139,66 +67,6 @@ const statsText = computed(() => {
 
   return `${songCount} ${songCount === 1 ? 'song' : 'songs'}, ${chartCount} chart ${chartCount === 1 ? 'appearance' : 'appearances'}`
 })
-
-// Watch for changes in favourites to update Apple Music data
-watch(
-  () => favouritesStore.favourites,
-  async (newFavourites) => {
-    if (newFavourites && newFavourites.length > 0) {
-      await loadAppleMusicData()
-    }
-  },
-  { deep: true },
-)
-
-// Watch for grid columns changes due to responsive breakpoints
-watch(gridColumns, (newColumns, oldColumns) => {
-  console.log(`Grid layout changed: now showing ${newColumns} columns (was ${oldColumns})`)
-  console.log(`Will fetch ${itemsPerPage.value} items per page`)
-})
-
-// Watch for changes in sort or filter to ensure Apple Music data is loaded for visible items
-watch([selectedSort, searchQuery], async () => {
-  // After sorting or filtering, ensure Apple Music data is loaded for visible favourites
-  if (filteredFavourites.value.length > 0) {
-    const missingData = filteredFavourites.value.some(
-      (fav) => !songData.value.has(`${fav.song_name}|${fav.artist}`),
-    )
-
-    if (missingData) {
-      await loadAppleMusicData()
-    }
-  }
-})
-
-// Initialize component
-onMounted(async () => {
-  shouldShowSkeletons.value = true
-
-  try {
-    if (favouritesStore.favourites.length === 0) {
-      await favouritesStore.loadFavourites()
-    }
-
-    // Always force loading Apple Music data on mount
-    isLoadingAppleMusic.value = true
-    await loadAppleMusicData()
-  } catch (error) {
-    console.error('Error initializing favourite data:', error)
-  } finally {
-    // After 2 seconds, hide skeletons regardless of data state to ensure UI doesn't get stuck
-    setTimeout(() => {
-      shouldShowSkeletons.value = false
-      isLoadingAppleMusic.value = false
-    }, 2000)
-  }
-})
-
-// Function to get Apple Music data for a song
-const getAppleMusicData = (songName: string, artist: string) => {
-  const key = `${songName}|${artist}`
-  return songData.value.get(key)
-}
 </script>
 
 <template>
@@ -238,9 +106,6 @@ const getAppleMusicData = (songName: string, artist: string) => {
       :error="favouritesStore.error"
       :items="filteredFavourites"
       :isForFavourites="true"
-      :song-data="songData"
-      :show-skeletons="true"
-      :skeleton-count="itemsPerPage"
       emptyMessage="No favourites match your search"
     >
       <template #empty-action v-if="searchQuery">
@@ -250,7 +115,7 @@ const getAppleMusicData = (songName: string, artist: string) => {
   </div>
 </template>
 
-<style lang="scss" scoped>
+<style scoped>
 .favourites-container {
   width: 100%;
 }
