@@ -5,10 +5,6 @@ import { useChartsStore } from '@/stores/charts'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
 
-const props = defineProps<{
-  initialDate?: string
-}>()
-
 const router = useRouter()
 const route = useRoute()
 const store = useChartsStore()

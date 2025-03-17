@@ -1,18 +1,4 @@
-<script setup lang="ts">
-/**
- * A skeleton loader component that mimics the structure of ChartItemCard
- * Used to show a placeholder while the actual chart data or Apple Music data is loading
- */
-
-// Props
-const props = defineProps<{
-  // Optional prop to control animation
-  animate?: boolean
-}>()
-
-// Default to animated skeleton
-const animate = props.animate !== false
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="skeleton-card">

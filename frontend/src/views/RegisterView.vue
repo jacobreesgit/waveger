@@ -11,7 +11,6 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -267,9 +266,9 @@ watch(email, (newValue) => {
             autocomplete="new-password"
             @input="formErrors.password = ''"
           />
-          <small v-if="formErrors.password" class="error-text">
+          <Message v-if="formErrors.password" severity="error" :closable="false" class="p-0">
             {{ formErrors.password }}
-          </small>
+          </Message>
         </div>
 
         <!-- Submit Button -->

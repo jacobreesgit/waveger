@@ -56,7 +56,6 @@ const formErrors = ref({
 const isSubmitting = ref(false)
 const showSuccess = ref(false)
 const successMessage = ref('')
-const activeSearchTab = ref<'chart' | 'appleMusic' | 'favourites'>('chart')
 
 // Check if user is logged in
 const isLoggedIn = computed(() => !!authStore.user)

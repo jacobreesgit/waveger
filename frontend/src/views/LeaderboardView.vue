@@ -188,9 +188,14 @@ const formatAccuracy = (value: number): string => {
       </div>
 
       <!-- Explanation for weekly leaderboard when no contest is active -->
-      <div v-if="period === 'weekly' && !predictionStore.currentContest" class="info-message">
-        <p>Weekly leaderboard is available only during active prediction contests.</p>
-      </div>
+      <Message
+        v-if="period === 'weekly' && !predictionStore.currentContest"
+        severity="info"
+        :closable="false"
+        class="info-message"
+      >
+        Weekly leaderboard is available only during active prediction contests.
+      </Message>
     </div>
   </div>
 </template>
