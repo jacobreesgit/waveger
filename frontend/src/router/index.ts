@@ -10,6 +10,10 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import PredictionView from '@/views/PredictionView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 
+import ProfileAccountTab from '@/views/ProfileAccountTab.vue'
+import ProfileFavouritesTab from '@/views/ProfileFavouritesTab.vue'
+import ProfilePredictionsTab from '@/views/ProfilePredictionsTab.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -99,7 +103,6 @@ const router = createRouter({
     },
     {
       path: '/profile',
-      name: 'profile',
       component: ProfileView,
       meta: {
         title: 'Profile',
@@ -107,6 +110,32 @@ const router = createRouter({
         requiresAuth: true,
         showInNav: true,
       },
+      children: [
+        {
+          path: '',
+          name: 'profile-account',
+          component: ProfileAccountTab,
+          meta: {
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'favourites',
+          name: 'profile-favourites',
+          component: ProfileFavouritesTab,
+          meta: {
+            requiresAuth: true,
+          },
+        },
+        {
+          path: 'predictions',
+          name: 'profile-predictions',
+          component: ProfilePredictionsTab,
+          meta: {
+            requiresAuth: true,
+          },
+        },
+      ],
     },
   ],
 })
