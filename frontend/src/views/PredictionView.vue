@@ -17,7 +17,7 @@ const authStore = useAuthStore()
 const timezoneStore = useTimezoneStore()
 
 // UI state
-const activeTab = ref<'hot-100' | 'billboard-200'>('hot-100')
+const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
 const isLoading = ref(true)
 const error = ref('')
 
@@ -111,7 +111,7 @@ const navigateToAuth = () => {
 }
 
 // Change the active chart tab
-const changeTab = (tab: 'hot-100' | 'billboard-200') => {
+const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
   activeTab.value = tab
 }
 
@@ -249,14 +249,14 @@ watch(activeTab, async () => {
       <!-- Chart type tabs -->
       <div class="chart-tabs">
         <button
-          @click="changeTab('hot-100')"
-          :class="['tab-button', { active: activeTab === 'hot-100' }]"
+          @click="changeTab('Billboard Hot 100')"
+          :class="['tab-button', { active: activeTab === 'Billboard Hot 100' }]"
         >
-          Hot 100
+          Billboard Hot 100
         </button>
         <button
-          @click="changeTab('billboard-200')"
-          :class="['tab-button', { active: activeTab === 'billboard-200' }]"
+          @click="changeTab('Billboard 200')"
+          :class="['tab-button', { active: activeTab === 'Billboard 200' }]"
         >
           Billboard 200
         </button>
@@ -270,7 +270,7 @@ watch(activeTab, async () => {
 
         <!-- User predictions -->
         <div class="user-predictions-section">
-          <h2 :class="{ isDeadlinePassed }">Your {{ activeTab.toUpperCase() }} Predictions</h2>
+          <h2 :class="{ isDeadlinePassed }">Your {{ activeTab }} Predictions</h2>
 
           <LoadingSpinner
             v-if="predictionStore.loading.predictions"
@@ -280,9 +280,11 @@ watch(activeTab, async () => {
           />
 
           <div v-else-if="userPredictions.length === 0" class="no-predictions">
-            <p>
-              You haven't made any {{ activeTab.toUpperCase() }} predictions for this contest yet.
+            <p v-if="isDeadlinePassed">
+              You didn't make any {{ activeTab }} predictions for this contest before the deadline
+              passed.
             </p>
+            <p v-else>You haven't made any {{ activeTab }} predictions for this contest yet.</p>
           </div>
 
           <div v-else class="predictions-list">

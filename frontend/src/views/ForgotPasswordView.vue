@@ -108,16 +108,15 @@ const handleSubmit = async () => {
 .forgot-password-view {
   display: flex;
   justify-content: center;
+  & h2 {
+    margin: 0 0 1.5rem;
+    text-align: center;
+  }
 }
 
 form {
   max-width: 400px;
   margin: 0 auto;
-}
-
-h2 {
-  margin: 0 0 1.5rem;
-  text-align: center;
 }
 
 .instruction {
