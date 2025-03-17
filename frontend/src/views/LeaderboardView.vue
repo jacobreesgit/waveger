@@ -269,11 +269,6 @@ h2 {
   }
 }
 
-.error-message {
-  color: #dc3545;
-  margin-bottom: 16px;
-}
-
 .retry-button {
   padding: 8px 16px;
   background: #007bff;
