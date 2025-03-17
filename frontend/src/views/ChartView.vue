@@ -3,8 +3,6 @@ import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
-import { useFavouritesStore } from '@/stores/favourites'
-import { useAuthStore } from '@/stores/auth'
 import { useTimezoneStore } from '@/stores/timezone'
 import { useBreakpoints } from '@/utils/mediaQueries'
 import ChartSelector from '@/components/ChartSelector.vue'
@@ -127,22 +125,6 @@ const fetchMoreSongs = async () => {
   } finally {
     isLoadingMore.value = false
   }
-}
-
-// Retry loading chart data
-const retryLoadingChart = async () => {
-  const lastViewedDate = localStorage.getItem('lastViewedDate')
-  const formattedDate = lastViewedDate
-    ? store.parseDateFromURL(lastViewedDate)
-    : new Date().toISOString().split('T')[0]
-
-  await store.fetchChartDetails({
-    id: store.selectedChartId,
-    week: formattedDate,
-    range: `1-${itemsPerPage.value}`,
-  })
-
-  await loadAppleMusicData()
 }
 
 // onMounted hook for ChartView.vue
