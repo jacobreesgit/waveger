@@ -9,6 +9,7 @@ import axios from 'axios'
 import { useTimezoneStore } from '@/stores/timezone'
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import Message from 'primevue/message'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -192,18 +193,57 @@ watch(activeTab, async () => {
     <!-- Main prediction content -->
     <div v-else class="prediction-content">
       <!-- Contest info bar -->
-      <div
-        v-if="!hasActiveContest"
-        class="contest-info-bar"
-        :class="{ 'contest-active': hasActiveContest }"
-      >
-        <div class="no-contest">
-          <h3>No Active Contest</h3>
-          <p>
-            New prediction contests open every Tuesday at 2:00 PM UTC ({{ formatTransitionTime() }}
-            in your local time)
-          </p>
-        </div>
+      <div class="contest-info-container">
+        <!-- No active contest -->
+        <Message v-if="!hasActiveContest" severity="info" :closable="false" class="contest-message">
+          <div>
+            <div class="message-title">No Active Contest</div>
+            <p>
+              New prediction contests open every Tuesday at 2:00 PM UTC ({{
+                formatTransitionTime()
+              }}
+              in your local time)
+            </p>
+          </div>
+        </Message>
+
+        <!-- Deadline passed notification -->
+        <Message
+          v-else-if="isDeadlinePassed"
+          severity="warn"
+          :closable="false"
+          class="contest-message"
+        >
+          <div>
+            <div class="message-title">Submission Deadline Has Passed</div>
+            <p>
+              The prediction window for this contest has closed. While the contest is still active,
+              no new predictions can be submitted at this time.
+            </p>
+            <p v-if="predictionStore.currentContest?.chart_release_date">
+              Results will be processed when the Billboard chart is released on
+              <strong>{{ formatDate(predictionStore.currentContest.chart_release_date) }}</strong
+              >.
+            </p>
+          </div>
+        </Message>
+
+        <!-- Active contest info -->
+        <Message
+          v-else-if="hasActiveContest"
+          severity="success"
+          :closable="false"
+          class="contest-message"
+        >
+          <div>
+            <div class="message-title">Active Prediction Contest</div>
+            <p v-if="predictionStore.currentContest?.end_date">
+              Submissions are open until
+              <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
+              >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
+            </p>
+          </div>
+        </Message>
       </div>
 
       <!-- Chart type tabs -->
@@ -412,21 +452,23 @@ h1 {
   width: 100%;
 }
 
-.contest-info-bar {
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.contest-info-container {
+  width: 100%;
+  margin-bottom: 10px;
 }
 
-.contest-info-bar.contest-active {
-  background: #e3f2fd;
+.contest-message {
+  width: 100%;
 }
 
-.contest-info-bar h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  color: #0069d9;
+.message-header {
+  display: flex;
+  align-items: center;
+}
+
+.message-title {
+  font-size: 1.2rem;
+  font-weight: 600;
 }
 
 .contest-details {

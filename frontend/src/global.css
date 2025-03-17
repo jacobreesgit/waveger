@@ -42,3 +42,7 @@ body {
 .p-tab {
   font-size: 16px !important;
 }
+
+.contest-message .p-message-text p:last-child {
+  margin-bottom: 0;
+}
