@@ -11,7 +11,6 @@ import type { AppleMusicData } from '@/types/appleMusic'
 import type { FavouriteSong } from '@/stores/favourites'
 
 const props = defineProps<{
-  // Original props for chart view
   currentChart?: ChartData | null
   loading: boolean
   error: string | null
@@ -20,18 +19,13 @@ const props = defineProps<{
   selectedChartId?: string
   songData?: Map<string, AppleMusicData>
   fetchMoreSongs?: () => Promise<void>
-
-  // Additional props for profile view
   items?: Array<FavouriteSong | Song>
   isForFavourites?: boolean
   emptyMessage?: string
-
-  // Skeleton loading control props
   showSkeletons?: boolean
   skeletonCount?: number
 }>()
 
-// Define emits for slot content
 const emit = defineEmits(['empty-action', 'retry'])
 
 const loadMoreTrigger = ref<HTMLElement | null>(null)
@@ -39,7 +33,7 @@ const loadMoreTrigger = ref<HTMLElement | null>(null)
 // Number of skeleton cards to show during loading
 const skeletonCount = computed(() => props.skeletonCount || 8)
 
-// Setup VueUse intersection observer for infinite scrolling
+// Infinite scrolling
 const { stop: stopObserver } = useIntersectionObserver(
   loadMoreTrigger,
   async ([{ isIntersecting }]) => {
@@ -60,21 +54,16 @@ const { stop: stopObserver } = useIntersectionObserver(
   },
 )
 
-// Check if AppleMusic data is available for a song
 const isAppleMusicDataLoaded = (position: string): boolean => {
   return props.songData ? !!props.songData.get(position) : false
 }
 
-// Get the highest position number that has Apple Music data loaded
 const getHighestLoadedPosition = (): number => {
   if (!props.songData || props.songData.size === 0) return 0
-
-  // Convert all keys to numbers and find the highest one
   const positions = Array.from(props.songData.keys()).map((pos) => parseInt(pos))
   return Math.max(...positions, 0)
 }
 
-// Helper functions to check item array properties safely
 const hasItems = computed(() => {
   return Array.isArray(props.items) && props.items.length > 0
 })
@@ -91,8 +80,6 @@ const hasSongs = computed(() => {
   )
 })
 
-// JavaScript transitions for better staggered effects with MUCH longer delays
-// Using Element type to fix TypeScript errors
 const beforeEnter = (el: Element) => {
   if (el instanceof HTMLElement) {
     el.style.opacity = '0'
@@ -101,126 +88,88 @@ const beforeEnter = (el: Element) => {
 }
 
 const enter = (el: Element, done: () => void) => {
-  // Only if el is HTMLElement, we can access style
   if (!(el instanceof HTMLElement)) {
     done()
     return
   }
-
-  // Get index from key to calculate delay
   const keyAttr = el.getAttribute('key') || ''
   const indexMatch = keyAttr.match(/\d+/)
   const index = indexMatch ? parseInt(indexMatch[0]) : 0
-
-  // Very long delay per item - 300ms between each item
   const delay = 300 * Math.min(index, 15) // Cap at 4500ms (15 * 300ms)
-
   setTimeout(() => {
     el.style.transition = 'all 0.8s ease' // Longer transition
     el.style.opacity = '1'
     el.style.transform = 'translateY(0)'
   }, delay)
-
-  // Call done after transition plus delay
   setTimeout(done, 800 + delay)
 }
 
 const leave = (el: Element, done: () => void) => {
-  // Only if el is HTMLElement, we can access style
   if (!(el instanceof HTMLElement)) {
     done()
     return
   }
-
-  // Get index for staggered exit
   const keyAttr = el.getAttribute('key') || ''
   const indexMatch = keyAttr.match(/\d+/)
   const index = indexMatch ? parseInt(indexMatch[0]) : 0
-
-  // Exit delay - still faster than enter but slower than before
   const delay = 150 * Math.min(index, 10)
-
   setTimeout(() => {
     el.style.transition = 'all 0.6s ease'
     el.style.opacity = '0'
     el.style.transform = 'translateY(-20px)'
   }, delay)
-
-  // Call done after transition plus delay
   setTimeout(done, 600 + delay)
 }
 
-// Handle retry for error state
 const handleRetry = () => {
   emit('retry')
 }
 
-// Clean up the observer when component is unmounted
 onUnmounted(() => {
   stopObserver()
 })
 </script>
 
 <template>
-  <!-- Show only spinner for initial chart data loading -->
-  <LoadingSpinner
-    v-if="loading && !currentChart && !items"
-    centerInContainer
-    label="Loading chart data..."
-    size="medium"
-  />
+  <div class="chart-view">
+    <LoadingSpinner
+      v-if="loading && !currentChart && !items"
+      centerInContainer
+      label="Loading chart data..."
+      size="medium"
+      class="chart-view__loading"
+    />
 
-  <!-- Normal chart view -->
-  <div v-else-if="currentChart || hasItems" class="chart-container">
-    <div class="songs">
-      <!-- When we have chart data -->
-      <template v-if="hasSongs">
-        <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
-          <transition
-            name="card-fade"
-            mode="out-in"
-            appear
-            :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
-          >
-            <!-- Show real card for songs with position <= highest loaded position -->
-            <ChartItemCard
-              v-if="
-                !showSkeletons ||
-                isAppleMusicDataLoaded(`${song.position}`) ||
-                getHighestLoadedPosition() >= song.position
-              "
-              :song="song"
-              :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
-              :chart-title="currentChart?.title || ''"
-              :apple-music-data="songData?.get(`${song.position}`)"
-              :show-details="true"
-              @click="() => {}"
-              class="card-item"
-            />
-            <!-- Show skeleton for higher positions that haven't loaded yet -->
-            <SkeletonCard v-else class="card-item" />
-          </transition>
+    <div v-else-if="currentChart || hasItems" class="chart-container">
+      <div class="songs">
+        <template v-if="hasSongs">
+          <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
+            <transition
+              name="card-fade"
+              mode="out-in"
+              appear
+              :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
+            >
+              <ChartItemCard
+                v-if="
+                  !showSkeletons ||
+                  isAppleMusicDataLoaded(`${song.position}`) ||
+                  getHighestLoadedPosition() >= song.position
+                "
+                :song="song"
+                :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
+                :chart-title="currentChart?.title || ''"
+                :apple-music-data="songData?.get(`${song.position}`)"
+                :show-details="true"
+                @click="() => {}"
+                class="card-item"
+              />
+              <SkeletonCard v-else class="card-item" />
+            </transition>
+          </template>
         </template>
-      </template>
 
-      <!-- Show skeleton placeholders when loading and no cards yet -->
-      <template v-else-if="loading && showSkeletons">
-        <transition-group
-          name="card-list"
-          tag="div"
-          class="skeleton-group"
-          :css="false"
-          @before-enter="beforeEnter"
-          @enter="enter"
-          @leave="leave"
-        >
-          <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" class="card-item" />
-        </transition-group>
-      </template>
-
-      <!-- Favourites view -->
-      <template v-else-if="isForFavourites && hasItems">
-        <slot :items="items">
+        <template v-else-if="loading && showSkeletons">
           <transition-group
             name="card-list"
             tag="div"
@@ -230,68 +179,83 @@ onUnmounted(() => {
             @enter="enter"
             @leave="leave"
           >
-            <ChartItemCard
-              v-for="(item, index) in items || []"
-              :key="index"
-              :song="
-                'song_name' in item
-                  ? {
-                      name: item.song_name,
-                      artist: item.artist,
-                      position: item.charts?.[0]?.position || 0,
-                      peak_position: item.charts?.[0]?.peak_position || 0,
-                      weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
-                      image: item.image_url,
-                      last_week_position: 0,
-                      url: '',
-                    }
-                  : (item as Song)
-              "
-              :chart-id="
-                'song_name' in item
-                  ? item.charts?.[0]?.chart_id || ''
-                  : selectedChartId?.replace(/\/$/, '') || ''
-              "
-              :chart-title="
-                'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
-              "
-              :compact="true"
-              @click="() => {}"
-              class="card-item"
-            />
+            <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" class="card-item" />
           </transition-group>
-        </slot>
-      </template>
+        </template>
 
-      <!-- Load more trigger -->
-      <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
-        <LoadingSpinner
-          v-if="isLoadingMore"
-          class="loading-more"
-          label="Loading more songs..."
-          inline
-          size="small"
-        />
-        <div v-else class="load-more-text">Scroll for more songs</div>
-      </div>
+        <template v-else-if="isForFavourites && hasItems">
+          <slot :items="items">
+            <transition-group
+              name="card-list"
+              tag="div"
+              class="skeleton-group"
+              :css="false"
+              @before-enter="beforeEnter"
+              @enter="enter"
+              @leave="leave"
+            >
+              <ChartItemCard
+                v-for="(item, index) in items || []"
+                :key="index"
+                :song="
+                  'song_name' in item
+                    ? {
+                        name: item.song_name,
+                        artist: item.artist,
+                        position: item.charts?.[0]?.position || 0,
+                        peak_position: item.charts?.[0]?.peak_position || 0,
+                        weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
+                        image: item.image_url,
+                        last_week_position: 0,
+                        url: '',
+                      }
+                    : (item as Song)
+                "
+                :chart-id="
+                  'song_name' in item
+                    ? item.charts?.[0]?.chart_id || ''
+                    : selectedChartId?.replace(/\/$/, '') || ''
+                "
+                :chart-title="
+                  'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
+                "
+                :compact="true"
+                @click="() => {}"
+                class="card-item"
+              />
+            </transition-group>
+          </slot>
+        </template>
 
-      <div v-else-if="hasSongs || hasItems" :key="'end-message'" class="end-message">
-        No more songs to load
+        <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
+          <LoadingSpinner
+            v-if="isLoadingMore"
+            class="loading-more"
+            label="Loading more songs..."
+            inline
+            size="small"
+          />
+          <div v-else class="load-more-text">Scroll for more songs</div>
+        </div>
+
+        <div v-else-if="hasSongs || hasItems" :key="'end-message'" class="end-message">
+          No more songs to load
+        </div>
       </div>
     </div>
-  </div>
 
-  <div v-else-if="error" class="error-container">
-    <Message severity="error" :closable="false">{{ error }}</Message>
-    <div class="message-action">
-      <Button label="Retry" @click="handleRetry" />
+    <div v-else-if="error" class="error-container">
+      <Message severity="error" :closable="false">{{ error }}</Message>
+      <div class="message-action">
+        <Button label="Retry" @click="handleRetry" />
+      </div>
     </div>
-  </div>
 
-  <div v-else-if="!loading || isItemsEmpty" class="empty-container">
-    <Message severity="info" :closable="false">{{ emptyMessage || 'No data available' }}</Message>
-    <div class="message-action">
-      <slot name="empty-action"></slot>
+    <div v-else-if="!loading || isItemsEmpty" class="empty-container">
+      <Message severity="info" :closable="false">{{ emptyMessage || 'No data available' }}</Message>
+      <div class="message-action">
+        <slot name="empty-action"></slot>
+      </div>
     </div>
   </div>
 </template>
