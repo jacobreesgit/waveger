@@ -28,41 +28,22 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container flex flex-col min-h-screen">
     <Nav />
-    <main class="app-container__main-content">
+    <main class="app-container__main-content flex flex-1 p-4 overflow-y-auto justify-center">
       <LoadingSpinner
         v-if="isInitializing"
         label="Loading application..."
         centerInContainer
         size="large"
+        class="h-[unset]"
       />
-      <RouterView class="app-container__main-content__content" v-else />
+      <RouterView
+        class="app-container__main-content__content flex flex-col w-full max-w-[1200px] items-center"
+        v-else
+      />
     </main>
   </div>
 </template>
 
-<style lang="scss" scoped>
-.app-container {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  &__main-content {
-    display: flex;
-    flex: 1;
-    padding: 1rem;
-    overflow-y: auto;
-    justify-content: center;
-    & .loading-spinner-wrapper {
-      height: unset;
-    }
-    &__content {
-      display: flex;
-      flex-direction: column;
-      width: 100%;
-      max-width: 1200px;
-      align-items: center;
-    }
-  }
-}
-</style>
+<style lang="scss" scoped></style>

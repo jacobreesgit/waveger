@@ -133,12 +133,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="nav-container">
+  <div class="nav-container flex items-center p-2 px-4 bg-gray-100 relative">
     <div class="nav-container__logo">
-      <RouterLink to="/" class="nav-container__logo__logo-link">Waveger</RouterLink>
+      <RouterLink
+        to="/"
+        class="nav-container__logo__logo-link no-underline text-black font-bold text-xl"
+        >Waveger</RouterLink
+      >
     </div>
 
-    <Menubar :model="menuItems" class="nav-container__nav-menu" />
+    <Menubar
+      :model="menuItems"
+      class="nav-container__nav-menu flex-grow bg-transparent border-none mx-4 sm:bg-red-500 md:bg-red-500"
+    />
 
     <div class="nav-container__nav-right">
       <CountrySelector />
@@ -148,43 +155,9 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .nav-container {
-  display: flex;
-  align-items: center;
-  padding: 0.5rem 1rem;
-  background-color: #f8f9fa;
-  position: relative;
-  &__logo {
-    margin-right: 1rem;
-    &__logo-link {
-      text-decoration: none;
-      color: black;
-      font-weight: bold;
-      font-size: 1.25rem;
-    }
-  }
   &__nav-menu {
-    flex-grow: 1;
     background: transparent;
     border: none;
-    & :deep(.active-menu-item .p-menubar-item-content) {
-      background-color: black !important;
-    }
-    & :deep(.active-menu-item *) {
-      color: white !important;
-    }
-  }
-  @media (max-width: 960px) {
-    &__nav-menu {
-      order: 0;
-    }
-    &__logo {
-      order: 1;
-      position: absolute;
-      left: 72px;
-    }
-    &__nav-right {
-      order: 2;
-    }
   }
 }
 </style>
