@@ -360,21 +360,10 @@ const getActualResultText = (prediction: Prediction): string => {
   font-weight: 600;
 }
 
-.empty-container {
-  text-align: center;
-}
-
-/* Utility classes */
-.w-full {
-  width: 100%;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mt-3 {
-  margin-top: 1rem;
+.pending-message {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #6c757d;
 }
 
 /* Responsive styles */

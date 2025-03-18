@@ -160,17 +160,4 @@ onMounted(async () => {
   margin: 0 auto;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
-
-/* Utility classes */
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.mr-2 {
-  margin-right: 0.5rem;
-}
-
-.text-center {
-  text-align: center;
-}
 </style>

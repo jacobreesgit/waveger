@@ -393,34 +393,6 @@ h1 {
   padding: 40px;
   background: white;
   border-radius: 12px;
-  // box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.error-container {
-  padding: 20px;
-  background: #f8d7da;
-  color: #721c24;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.retry-button {
-  margin-top: 12px;
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
 }
 
 .auth-required {

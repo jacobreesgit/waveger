@@ -652,27 +652,8 @@ const updatePassword = async () => {
   margin-bottom: 16px;
 }
 
-.form-field {
-  margin-bottom: 16px;
-}
-
-.form-field label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.checking-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6c757d;
+.availability-status {
+  margin-top: 4px;
 }
 
 .stats-grid {
@@ -708,26 +689,5 @@ const updatePassword = async () => {
   max-width: 400px;
   margin: 0 auto;
   margin-top: 24px;
-}
-
-/* Utility classes */
-.w-full {
-  width: 100%;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mb-3 {
-  margin-bottom: 1rem;
-}
-
-.mb-4 {
-  margin-bottom: 1.5rem;
-}
-
-.mr-2 {
-  margin-right: 0.5rem;
 }
 </style>

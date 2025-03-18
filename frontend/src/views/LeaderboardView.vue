@@ -255,38 +255,13 @@ h2 {
 }
 
 .loading-container,
-.error-container,
-.empty-container {
+.error-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: #6c757d;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.retry-button {
-  padding: 8px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.2s;
-
-  &:hover {
-    background: #0069d9;
-  }
 }
 
 .leaderboard-table-container {

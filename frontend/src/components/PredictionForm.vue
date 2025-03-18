@@ -1045,13 +1045,6 @@ h2 {
   color: #6c757d;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
 .reset-button {
   padding: 10px 16px;
   background: #f8f9fa;
@@ -1146,12 +1139,6 @@ h2 {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  color: #6c757d;
-}
-
-.no-results {
-  padding: 16px;
-  text-align: center;
   color: #6c757d;
 }
 

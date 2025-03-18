@@ -131,45 +131,57 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="chart-view">
-    <LoadingSpinner
-      v-if="loading && !currentChart && !items"
-      centerInContainer
-      label="Loading chart data..."
-      size="medium"
-      class="chart-view__loading"
-    />
-
-    <div v-else-if="currentChart || hasItems" class="chart-container">
-      <div class="songs">
-        <template v-if="hasSongs">
-          <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
-            <transition
-              name="card-fade"
-              mode="out-in"
-              appear
-              :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
-            >
-              <ChartItemCard
-                v-if="
-                  !showSkeletons ||
-                  isAppleMusicDataLoaded(`${song.position}`) ||
-                  getHighestLoadedPosition() >= song.position
-                "
-                :song="song"
-                :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
-                :chart-title="currentChart?.title || ''"
-                :apple-music-data="songData?.get(`${song.position}`)"
-                :show-details="true"
-                @click="() => {}"
-                class="card-item"
-              />
-              <SkeletonCard v-else class="card-item" />
-            </transition>
-          </template>
+  <LoadingSpinner
+    v-if="loading && !currentChart && !items"
+    centerInContainer
+    label="Loading chart data..."
+    size="medium"
+  />
+  <div v-else-if="currentChart || hasItems" class="chart-container">
+    <div class="songs">
+      <template v-if="hasSongs">
+        <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
+          <transition
+            name="card-fade"
+            mode="out-in"
+            appear
+            :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
+          >
+            <ChartItemCard
+              v-if="
+                !showSkeletons ||
+                isAppleMusicDataLoaded(`${song.position}`) ||
+                getHighestLoadedPosition() >= song.position
+              "
+              :song="song"
+              :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
+              :chart-title="currentChart?.title || ''"
+              :apple-music-data="songData?.get(`${song.position}`)"
+              :show-details="true"
+              @click="() => {}"
+              class="card-item"
+            />
+            <SkeletonCard v-else class="card-item" />
+          </transition>
         </template>
+      </template>
 
-        <template v-else-if="loading && showSkeletons">
+      <template v-else-if="loading && showSkeletons">
+        <transition-group
+          name="card-list"
+          tag="div"
+          class="skeleton-group"
+          :css="false"
+          @before-enter="beforeEnter"
+          @enter="enter"
+          @leave="leave"
+        >
+          <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" class="card-item" />
+        </transition-group>
+      </template>
+
+      <template v-else-if="isForFavourites && hasItems">
+        <slot :items="items">
           <transition-group
             name="card-list"
             tag="div"
@@ -179,83 +191,67 @@ onUnmounted(() => {
             @enter="enter"
             @leave="leave"
           >
-            <SkeletonCard v-for="i in skeletonCount" :key="`skeleton-${i}`" class="card-item" />
+            <ChartItemCard
+              v-for="(item, index) in items || []"
+              :key="index"
+              :song="
+                'song_name' in item
+                  ? {
+                      name: item.song_name,
+                      artist: item.artist,
+                      position: item.charts?.[0]?.position || 0,
+                      peak_position: item.charts?.[0]?.peak_position || 0,
+                      weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
+                      image: item.image_url,
+                      last_week_position: 0,
+                      url: '',
+                    }
+                  : (item as Song)
+              "
+              :chart-id="
+                'song_name' in item
+                  ? item.charts?.[0]?.chart_id || ''
+                  : selectedChartId?.replace(/\/$/, '') || ''
+              "
+              :chart-title="
+                'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
+              "
+              :compact="true"
+              @click="() => {}"
+              class="card-item"
+            />
           </transition-group>
-        </template>
+        </slot>
+      </template>
 
-        <template v-else-if="isForFavourites && hasItems">
-          <slot :items="items">
-            <transition-group
-              name="card-list"
-              tag="div"
-              class="skeleton-group"
-              :css="false"
-              @before-enter="beforeEnter"
-              @enter="enter"
-              @leave="leave"
-            >
-              <ChartItemCard
-                v-for="(item, index) in items || []"
-                :key="index"
-                :song="
-                  'song_name' in item
-                    ? {
-                        name: item.song_name,
-                        artist: item.artist,
-                        position: item.charts?.[0]?.position || 0,
-                        peak_position: item.charts?.[0]?.peak_position || 0,
-                        weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
-                        image: item.image_url,
-                        last_week_position: 0,
-                        url: '',
-                      }
-                    : (item as Song)
-                "
-                :chart-id="
-                  'song_name' in item
-                    ? item.charts?.[0]?.chart_id || ''
-                    : selectedChartId?.replace(/\/$/, '') || ''
-                "
-                :chart-title="
-                  'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
-                "
-                :compact="true"
-                @click="() => {}"
-                class="card-item"
-              />
-            </transition-group>
-          </slot>
-        </template>
+      <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
+        <LoadingSpinner
+          v-if="isLoadingMore"
+          class="loading-more"
+          label="Loading more songs..."
+          inline
+          size="small"
+        />
+        <div v-else class="load-more-text">Scroll for more songs</div>
+      </div>
 
-        <div v-if="hasMore" ref="loadMoreTrigger" :key="'load-more'" class="load-more-trigger">
-          <LoadingSpinner
-            v-if="isLoadingMore"
-            class="loading-more"
-            label="Loading more songs..."
-            inline
-            size="small"
-          />
-          <div v-else class="load-more-text">Scroll for more songs</div>
-        </div>
-
-        <div v-else-if="hasSongs || hasItems" :key="'end-message'" class="end-message">
-          No more songs to load
-        </div>
+      <div v-else-if="hasSongs || hasItems" :key="'end-message'" class="end-message">
+        No more songs to load
       </div>
     </div>
+  </div>
 
-    <div v-else-if="error" class="error-container">
-      <Message severity="error" :closable="false">{{ error }}</Message>
-      <div class="message-action">
-        <Button label="Retry" @click="handleRetry" />
-      </div>
+  <div v-else-if="error" class="error-container">
+    <Message severity="error" :closable="false">{{ error }}</Message>
+    <div class="message-action">
+      <Button label="Retry" @click="handleRetry" />
     </div>
+  </div>
 
-    <div v-else-if="!loading || isItemsEmpty" class="empty-container">
-      <Message severity="info" :closable="false">{{ emptyMessage || 'No data available' }}</Message>
-      <div class="message-action">
-        <slot name="empty-action"></slot>
-      </div>
+  <div v-else-if="!loading || isItemsEmpty" class="empty-container">
+    <Message severity="info" :closable="false">{{ emptyMessage || 'No data available' }}</Message>
+    <div class="message-action">
+      <slot name="empty-action"></slot>
     </div>
   </div>
 </template>

@@ -108,6 +108,7 @@ const handleSubmit = async () => {
 .forgot-password-view {
   display: flex;
   justify-content: center;
+
   & h2 {
     margin: 0 0 1.5rem;
     text-align: center;
@@ -123,34 +124,5 @@ form {
   margin-bottom: 1.5rem;
   text-align: center;
   color: #6c757d;
-}
-
-.form-field {
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-}
-
-.success-container {
-  text-align: center;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.w-full {
-  width: 100%;
 }
 </style>

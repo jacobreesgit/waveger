@@ -294,14 +294,6 @@ watch(email, (newValue) => {
   justify-content: center;
 }
 
-.card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-}
-
 form {
   max-width: 400px;
   margin: 0 auto;
@@ -312,18 +304,13 @@ h2 {
   text-align: center;
 }
 
-.form-field {
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-}
-
 .hint-container {
   min-height: 1.5rem;
   margin-top: 0.25rem;
+}
+
+.availability-status {
+  margin-top: 4px;
 }
 
 .checking-status {
@@ -332,21 +319,5 @@ h2 {
   gap: 0.5rem;
   font-size: 0.875rem;
   color: #6c757d;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.w-full {
-  width: 100%;
 }
 </style>

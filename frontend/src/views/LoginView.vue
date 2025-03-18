@@ -192,14 +192,6 @@ const handleLogin = async () => {
   justify-content: center;
 }
 
-.card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-}
-
 form {
   max-width: 400px;
   margin: 0 auto;
@@ -208,54 +200,5 @@ form {
 h2 {
   margin: 0 0 1.5rem;
   text-align: center;
-}
-
-.form-field {
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.text-sm {
-  font-size: 0.875rem;
-}
-
-.ml-2 {
-  margin-left: 0.5rem;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.flex {
-  display: flex;
-}
-
-.align-items-center {
-  align-items: center;
 }
 </style>

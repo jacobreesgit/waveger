@@ -202,49 +202,12 @@ form {
   margin: 0 auto;
 }
 
-.card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 100%;
-}
-
 h2 {
   margin: 0 0 1.5rem;
   text-align: center;
 }
 
-.form-field {
-  margin-bottom: 1.5rem;
-
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-  }
-}
-
-.text-center {
-  text-align: center;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.mb-3 {
-  margin-bottom: 1rem;
-}
-
-.mb-4 {
-  margin-bottom: 1.5rem;
+.user-info {
+  margin-bottom: 16px;
 }
 </style>
