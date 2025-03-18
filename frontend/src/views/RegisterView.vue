@@ -300,24 +300,11 @@ form {
 }
 
 h2 {
-  margin: 0 0 1.5rem;
   text-align: center;
 }
 
 .hint-container {
   min-height: 1.5rem;
   margin-top: 0.25rem;
-}
-
-.availability-status {
-  margin-top: 4px;
-}
-
-.checking-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6c757d;
 }
 </style>

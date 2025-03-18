@@ -53,6 +53,10 @@ body {
 }
 
 /* Margin utilities */
+.mt-1 {
+  margin-top: 0.25rem;
+}
+
 .mt-2 {
   margin-top: 0.5rem;
 }
@@ -122,6 +126,7 @@ body {
 .form-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
 }
 
 /* Card styles */
@@ -156,7 +161,6 @@ body {
   border-radius: 8px;
 }
 
-/* Status indicators */
 .success-container {
   text-align: center;
 }
@@ -184,7 +188,8 @@ body {
 
 /* Common form styles */
 .form-select,
-.form-input {
+.form-input,
+.search-input {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #ddd;
@@ -194,14 +199,16 @@ body {
 }
 
 .form-select:focus,
-.form-input:focus {
+.form-input:focus,
+.search-input:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
 
 .form-select:disabled,
-.form-input:disabled {
+.form-input:disabled,
+.search-input:disabled {
   background-color: #f8f9fa;
   cursor: not-allowed;
 }
@@ -212,6 +219,18 @@ h2 {
   margin-bottom: 20px;
   color: #333;
   font-size: 1.5rem;
+}
+
+h3 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  color: #333;
+  font-size: 1.25rem;
+}
+
+/* Availability status (for registration/profile forms) */
+.availability-status {
+  margin-top: 4px;
 }
 
 /* Accessibility */
@@ -225,6 +244,17 @@ h2 {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+/* Loading spinner container */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: white;
+  border-radius: 12px;
 }
 
 /* Responsive helpers */

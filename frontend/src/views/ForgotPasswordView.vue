@@ -110,7 +110,6 @@ const handleSubmit = async () => {
   justify-content: center;
 
   & h2 {
-    margin: 0 0 1.5rem;
     text-align: center;
   }
 }

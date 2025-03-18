@@ -652,10 +652,6 @@ const updatePassword = async () => {
   margin-bottom: 16px;
 }
 
-.availability-status {
-  margin-top: 4px;
-}
-
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));

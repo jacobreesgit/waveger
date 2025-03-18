@@ -385,16 +385,6 @@ h1 {
   color: #333;
 }
 
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  background: white;
-  border-radius: 12px;
-}
-
 .auth-required {
   text-align: center;
   padding: 40px 20px;

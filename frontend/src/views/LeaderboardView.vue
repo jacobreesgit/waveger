@@ -254,16 +254,6 @@ h2 {
   }
 }
 
-.loading-container,
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  color: #6c757d;
-}
-
 .leaderboard-table-container {
   overflow-x: auto;
 }
