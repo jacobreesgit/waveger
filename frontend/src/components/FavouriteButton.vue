@@ -66,15 +66,9 @@ watchEffect(async () => {
   >
     <template #icon>
       <i
-        :class="['pi', isFavourited ? 'pi-heart-fill' : 'pi-heart']"
+        :class="['pi text-xl', isFavourited ? 'pi-heart-fill' : 'pi-heart']"
         :style="{ color: '#ff4757' }"
       />
     </template>
   </Button>
 </template>
-
-<style lang="scss" scoped>
-i {
-  font-size: 20px;
-}
-</style>

@@ -2,8 +2,6 @@
 
 <template>
   <div class="home-container">
-    <h1>Welcome to Waveger</h1>
+    <h1 class="text-3xl font-bold">Welcome to Waveger</h1>
   </div>
 </template>
-
-<style lang="scss" scoped></style>

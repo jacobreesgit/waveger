@@ -18,19 +18,16 @@ const props = defineProps<{
 
 const authStore = useAuthStore()
 
-// Edit mode states
 const editingUsername = ref(false)
 const editingEmail = ref(false)
 const editingPassword = ref(false)
 
-// Form values
 const newUsername = ref('')
 const newEmail = ref('')
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 
-// Form errors
 const formErrors = reactive({
   username: '',
   email: '',
@@ -40,21 +37,17 @@ const formErrors = reactive({
   general: '',
 })
 
-// Success message
 const successMessage = ref('')
 
-// Availability states
 const checkingUsername = ref(false)
 const usernameAvailable = ref<boolean | null>(null)
 const checkingEmail = ref(false)
 const emailAvailable = ref<boolean | null>(null)
 
-// Form submission states
 const submittingUsername = ref(false)
 const submittingEmail = ref(false)
 const submittingPassword = ref(false)
 
-// Prediction accuracy calculation
 const predictionAccuracy = computed(() => {
   const user = authStore.user
   const predictionsMade = user?.predictions_made ?? 0
@@ -79,7 +72,6 @@ const formatDate = (dateString?: string | null) => {
   })
 }
 
-// Toggle edit modes
 const toggleEditUsername = () => {
   editingUsername.value = !editingUsername.value
   newUsername.value = authStore.user?.username || ''
@@ -104,20 +96,16 @@ const toggleEditPassword = () => {
   formErrors.confirmPassword = ''
 }
 
-// Check availability functions with debounce
 const debouncedCheck = (() => {
   let usernameTimeoutId: number | null = null
   let emailTimeoutId: number | null = null
 
   return async (type: 'username' | 'email', value: string) => {
-    // Clear previous timeout
     if (type === 'username' && usernameTimeoutId) {
       clearTimeout(usernameTimeoutId)
     } else if (type === 'email' && emailTimeoutId) {
       clearTimeout(emailTimeoutId)
     }
-
-    // Skip check if value is unchanged from current user data
     if (type === 'username' && value === authStore.user?.username) {
       usernameAvailable.value = null
       return
@@ -127,7 +115,6 @@ const debouncedCheck = (() => {
       return
     }
 
-    // Only check if value is not empty
     if (!value) {
       if (type === 'username') {
         usernameAvailable.value = null
@@ -159,7 +146,7 @@ const debouncedCheck = (() => {
           checkingEmail.value = false
         }
       }
-    }, 500) // 500ms debounce
+    }, 500)
 
     if (type === 'username') {
       usernameTimeoutId = timeoutId
@@ -173,7 +160,6 @@ const debouncedCheck = (() => {
   }
 })()
 
-// Watch input changes and check availability
 const onUsernameInput = (e: Event) => {
   const target = e.target as HTMLInputElement
   newUsername.value = target.value
@@ -188,40 +174,32 @@ const onEmailInput = (e: Event) => {
   debouncedCheck('email', newEmail.value)
 }
 
-// Form submission handlers
 const updateUsername = async () => {
   formErrors.username = ''
   formErrors.general = ''
   successMessage.value = ''
 
-  // Validation
   if (!newUsername.value) {
     formErrors.username = 'Username is required'
     return
   }
-
   if (newUsername.value.length < 3) {
     formErrors.username = 'Username must be at least 3 characters long'
     return
   }
-
   if (newUsername.value.length > 20) {
     formErrors.username = 'Username cannot exceed 20 characters'
     return
   }
-
   if (!/^[a-zA-Z0-9_]+$/.test(newUsername.value)) {
     formErrors.username = 'Username can only contain letters, numbers, and underscores'
     return
   }
-
-  // No change
   if (newUsername.value === authStore.user?.username) {
     toggleEditUsername()
     return
   }
 
-  // Check availability once more
   try {
     submittingUsername.value = true
     const isAvailable = await checkUsernameAvailability(newUsername.value)
@@ -229,8 +207,6 @@ const updateUsername = async () => {
       formErrors.username = 'Username is already taken'
       return
     }
-
-    // Submit update
     await authStore.updateProfile({ username: newUsername.value })
     successMessage.value = 'Username updated successfully'
     toggleEditUsername()
@@ -247,7 +223,6 @@ const updateEmail = async () => {
   formErrors.general = ''
   successMessage.value = ''
 
-  // Validation
   if (!newEmail.value) {
     formErrors.email = 'Email is required'
     return
@@ -259,13 +234,11 @@ const updateEmail = async () => {
     return
   }
 
-  // No change
   if (newEmail.value === authStore.user?.email) {
     toggleEditEmail()
     return
   }
 
-  // Check availability once more
   try {
     submittingEmail.value = true
     const isAvailable = await checkEmailAvailability(newEmail.value)
@@ -274,7 +247,6 @@ const updateEmail = async () => {
       return
     }
 
-    // Submit update
     await authStore.updateProfile({ email: newEmail.value })
     successMessage.value = 'Email updated successfully'
     toggleEditEmail()
@@ -293,7 +265,6 @@ const updatePassword = async () => {
   formErrors.general = ''
   successMessage.value = ''
 
-  // Validation
   if (!currentPassword.value) {
     formErrors.currentPassword = 'Current password is required'
     return
@@ -337,27 +308,32 @@ const updatePassword = async () => {
 </script>
 
 <template>
-  <div>
-    <!-- Success Message -->
-    <Message v-if="successMessage" severity="success" :closable="false" class="mb-4">
+  <div class="profile-account-tab">
+    <Message
+      v-if="successMessage"
+      class="profile-account-tab__success-message mb-4"
+      severity="success"
+      :closable="false"
+    >
       {{ successMessage }}
     </Message>
 
-    <div class="profile-section">
-      <h3>Account Details</h3>
+    <div class="profile-section mb-6 pb-4 border-b border-[#eee]">
+      <h2 class="text-2xl font-bold">Account Details</h2>
 
-      <!-- Username section -->
-      <div class="profile-detail" v-if="!editingUsername">
-        <div class="detail-label">Username</div>
-        <div class="detail-value">
+      <div
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        v-if="!editingUsername"
+      >
+        <div class="detail-label font-medium text-gray-600">Username</div>
+        <div class="detail-value flex items-center gap-2 font-medium">
           <span>{{ authStore.user?.username }}</span>
           <Button icon="pi pi-pencil" text @click="toggleEditUsername" aria-label="Edit username" />
         </div>
       </div>
 
-      <!-- Username edit form -->
-      <div class="edit-form" v-if="editingUsername">
-        <h4>Change Username</h4>
+      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingUsername">
+        <p class="font-bold">Change Username</p>
         <div class="form-field mb-3">
           <label for="newUsername">New Username</label>
           <InputText
@@ -416,18 +392,19 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <!-- Email section -->
-      <div class="profile-detail" v-if="!editingEmail">
-        <div class="detail-label">Email</div>
-        <div class="detail-value">
+      <div
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        v-if="!editingEmail"
+      >
+        <div class="detail-label font-medium text-gray-600">Email</div>
+        <div class="detail-value flex items-center gap-2 font-medium">
           <span>{{ authStore.user?.email }}</span>
           <Button icon="pi pi-pencil" text @click="toggleEditEmail" aria-label="Edit email" />
         </div>
       </div>
 
-      <!-- Email edit form -->
-      <div class="edit-form" v-if="editingEmail">
-        <h4>Change Email</h4>
+      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingEmail">
+        <p class="font-bold">Change Email</p>
         <div class="form-field mb-3">
           <label for="newEmail">New Email</label>
           <InputText
@@ -483,10 +460,12 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <!-- Password section -->
-      <div class="profile-detail" v-if="!editingPassword">
-        <div class="detail-label">Password</div>
-        <div class="detail-value">
+      <div
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        v-if="!editingPassword"
+      >
+        <div class="detail-label font-medium text-gray-600">Password</div>
+        <div class="detail-value flex items-center gap-2 font-medium">
           <span>•••••••••</span>
           <Button
             icon="pi pi-pencil"
@@ -497,9 +476,8 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <!-- Password edit form -->
-      <div class="edit-form" v-if="editingPassword">
-        <h4>Change Password</h4>
+      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingPassword">
+        <p class="font-bold">Change Password</p>
         <div class="form-field mb-3">
           <label for="currentPassword">Current Password</label>
           <Password
@@ -565,47 +543,71 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <div class="profile-detail">
-        <div class="detail-label">Account Created</div>
-        <div class="detail-value">{{ formatDate(authStore.user?.created_at) }}</div>
+      <div
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+      >
+        <div class="detail-label font-medium text-gray-600">Account Created</div>
+        <div class="detail-value flex items-center gap-2 font-medium">
+          {{ formatDate(authStore.user?.created_at) }}
+        </div>
       </div>
-      <div class="profile-detail">
-        <div class="detail-label">Last Login</div>
-        <div class="detail-value">{{ formatDate(authStore.user?.last_login) }}</div>
-      </div>
-    </div>
-
-    <div class="profile-section">
-      <h3>Prediction Stats</h3>
-      <div class="stats-grid">
-        <Card class="stat-card">
-          <template #content>
-            <div class="stat-value">{{ authStore.user?.predictions_made || 0 }}</div>
-            <div class="stat-label">Total Predictions</div>
-          </template>
-        </Card>
-        <Card class="stat-card">
-          <template #content>
-            <div class="stat-value">{{ authStore.user?.correct_predictions || 0 }}</div>
-            <div class="stat-label">Correct Predictions</div>
-          </template>
-        </Card>
-        <Card class="stat-card">
-          <template #content>
-            <div class="stat-value">{{ predictionAccuracy }}</div>
-            <div class="stat-label">Overall Accuracy</div>
-          </template>
-        </Card>
-        <Card class="stat-card">
-          <template #content>
-            <div class="stat-value">{{ authStore.user?.total_points || 0 }}</div>
-            <div class="stat-label">Total Points</div>
-          </template>
-        </Card>
+      <div
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+      >
+        <div class="detail-label font-medium text-gray-600">Last Login</div>
+        <div class="detail-value flex items-center gap-2 font-medium">
+          {{ formatDate(authStore.user?.last_login) }}
+        </div>
       </div>
     </div>
 
-    <div class="profile-actions">
+    <div class="profile-section border-b border-[#eee]">
+      <h3 class="text-lg font-bold">Prediction Stats</h3>
+      <div class="stats-grid grid grid-cols-[repeat(auto-fill,_minmax(200px,_1fr))] gap-4 mt-4">
+        <Card
+          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+        >
+          <template #content>
+            <div class="stat-value text-2xl font-bold text-[#007bff]">
+              {{ authStore.user?.predictions_made || 0 }}
+            </div>
+            <div class="stat-label text-[#6c757d] mt-1">Total Predictions</div>
+          </template>
+        </Card>
+        <Card
+          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+        >
+          <template #content>
+            <div class="stat-value text-2xl font-bold text-[#007bff]">
+              {{ authStore.user?.correct_predictions || 0 }}
+            </div>
+            <div class="stat-label text-[#6c757d] mt-1">Correct Predictions</div>
+          </template>
+        </Card>
+        <Card
+          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+        >
+          <template #content>
+            <div class="stat-value text-2xl font-bold text-[#007bff]">
+              {{ predictionAccuracy }}
+            </div>
+            <div class="stat-label text-[#6c757d] mt-1">Overall Accuracy</div>
+          </template>
+        </Card>
+        <Card
+          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+        >
+          <template #content>
+            <div class="stat-value text-2xl font-bold text-[#007bff]">
+              {{ authStore.user?.total_points || 0 }}
+            </div>
+            <div class="stat-label text-[#6c757d] mt-1">Total Points</div>
+          </template>
+        </Card>
+      </div>
+    </div>
+
+    <div class="profile-actions max-w-[400px] mx-auto mt-6">
       <Button
         label="Logout"
         severity="danger"
@@ -616,74 +618,3 @@ const updatePassword = async () => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.profile-section {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
-}
-
-.profile-detail {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-  padding: 8px 0;
-  border-bottom: 1px solid #f4f4f4;
-}
-
-.detail-label {
-  font-weight: 500;
-  color: #666;
-}
-
-.detail-value {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-}
-
-.edit-form {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
-}
-
-.stat-card {
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s;
-}
-
-.stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #007bff;
-}
-
-.stat-label {
-  color: #6c757d;
-  margin-top: 4px;
-}
-
-.profile-actions {
-  max-width: 400px;
-  margin: 0 auto;
-  margin-top: 24px;
-}
-</style>

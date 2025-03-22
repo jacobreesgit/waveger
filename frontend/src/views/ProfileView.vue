@@ -7,6 +7,11 @@ import { usePredictionsStore } from '@/stores/predictions'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
+import TabPanels from 'primevue/tabpanels'
+import TabPanel from 'primevue/tabpanel'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,24 +22,25 @@ const predictionStore = usePredictionsStore()
 const isLoading = ref(true)
 const error = ref('')
 
-// Compute the active tab based on the current route
-const activeTab = computed(() => {
+// Compute the active tab value based on the current route
+const activeTabValue = computed(() => {
   if (route.path.includes('/profile/favourites')) return 'favourites'
   if (route.path.includes('/profile/predictions')) return 'predictions'
   return 'profile'
 })
 
-// Navigation methods
-const navigateToTab = (tab: string) => {
-  switch (tab) {
+// Handle tab change from Tabs
+const onTabChange = (value: any) => {
+  switch (value) {
+    case 'profile':
+      router.push('/profile')
+      break
     case 'favourites':
       router.push('/profile/favourites')
       break
     case 'predictions':
       router.push('/profile/predictions')
       break
-    default:
-      router.push('/profile')
   }
 }
 
@@ -43,10 +49,12 @@ onMounted(async () => {
     // Initialize data for the active user
     if (authStore.user) {
       // Load predictions and favourites data based on current route
-      if (activeTab.value === 'favourites' || activeTab.value === 'predictions') {
+      if (activeTabValue.value === 'favourites' || activeTabValue.value === 'predictions') {
         await Promise.all([
-          activeTab.value === 'favourites' ? favouritesStore.loadFavourites() : Promise.resolve(),
-          activeTab.value === 'predictions'
+          activeTabValue.value === 'favourites'
+            ? favouritesStore.loadFavourites()
+            : Promise.resolve(),
+          activeTabValue.value === 'predictions'
             ? predictionStore.fetchUserPredictions()
             : Promise.resolve(),
         ])
@@ -62,34 +70,26 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="profile-view">
-    <LoadingSpinner v-if="isLoading" size="medium" label="Loading profile..." centerInContainer />
+  <div class="profile-view flex flex-col max-w-[1200px]">
+    <LoadingSpinner
+      v-if="isLoading"
+      class="loading-spinner"
+      size="medium"
+      label="Loading profile..."
+      centerInContainer
+    />
 
-    <div v-else-if="authStore.user" class="profile-content">
-      <h2>Your Account</h2>
+    <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6 gap-2">
+      <h1 class="text-3xl font-bold">Your Account</h1>
 
-      <!-- Tab Navigation using computed property for active state -->
-      <div class="profile-tabs">
-        <router-link to="/profile" custom v-slot="{ navigate }">
-          <a @click="navigate" class="tab-button" :class="{ active: activeTab === 'profile' }">
-            Profile
-          </a>
-        </router-link>
+      <Tabs v-model:value="activeTabValue" @update:value="onTabChange">
+        <TabList>
+          <Tab value="profile">Profile</Tab>
+          <Tab value="favourites">Favourites</Tab>
+          <Tab value="predictions">Predictions</Tab>
+        </TabList>
+      </Tabs>
 
-        <router-link to="/profile/favourites" custom v-slot="{ navigate }">
-          <a @click="navigate" class="tab-button" :class="{ active: activeTab === 'favourites' }">
-            Favourites
-          </a>
-        </router-link>
-
-        <router-link to="/profile/predictions" custom v-slot="{ navigate }">
-          <a @click="navigate" class="tab-button" :class="{ active: activeTab === 'predictions' }">
-            Predictions
-          </a>
-        </router-link>
-      </div>
-
-      <!-- Router view for nested routes -->
       <div class="tab-content">
         <router-view />
       </div>
@@ -106,58 +106,3 @@ onMounted(async () => {
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.profile-view {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
-
-.profile-content {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  width: 100%;
-}
-
-.profile-tabs {
-  display: flex;
-  border-bottom: 1px solid #dee2e6;
-  margin-bottom: 20px;
-}
-
-.tab-button {
-  padding: 12px 20px;
-  margin-right: 4px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  text-decoration: none;
-  color: #495057;
-  font-weight: 500;
-  transition: all 0.2s;
-
-  &:hover {
-    background-color: #f8f9fa;
-    color: #007bff;
-  }
-
-  &.active {
-    color: #007bff;
-    border-bottom-color: #007bff;
-  }
-}
-
-.tab-content {
-  flex: 1;
-}
-
-.unauthenticated {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  max-width: 400px;
-  margin: 0 auto;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-</style>

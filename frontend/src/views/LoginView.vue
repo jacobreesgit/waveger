@@ -35,27 +35,20 @@ const clearErrors = () => {
 
 // Pre-fetch user data when username field loses focus
 const handleUsernameBlur = async () => {
-  // Only attempt to prefetch if username is valid
   if (username.value.length < 3) return
-
   try {
     isPreFetching.value = true
-
-    // Create a request to a new endpoint we'll add to the backend
     const response = await axios.get(
       `${import.meta.env.VITE_API_URL || 'https://wavegerpython.onrender.com/api'}/auth/user-info`,
       {
         params: { username: username.value },
       },
     )
-
-    // Store the pre-fetched data
     if (response.data && response.data.success) {
       preLoadedUserData.value = response.data.user
       console.log('Pre-loaded user data found:', preLoadedUserData.value)
     }
   } catch (error) {
-    // Silently fail - no need to show errors for prefetching
     preLoadedUserData.value = null
   } finally {
     isPreFetching.value = false
@@ -63,17 +56,10 @@ const handleUsernameBlur = async () => {
 }
 
 const handleLogin = async () => {
-  // Clear previous errors
   clearErrors()
-
   try {
-    // Set submitting state
     isSubmitting.value = true
-
-    // Validate the form
     const validationResult = validateLoginForm(username.value, password.value)
-
-    // If validation fails, set errors and return
     if (!validationResult.isValid) {
       if (validationResult.errors.username) {
         formErrors.username = validationResult.errors.username
@@ -87,15 +73,12 @@ const handleLogin = async () => {
       isSubmitting.value = false
       return
     }
-
-    // Proceed with login
     await authStore.login({
       username: username.value,
       password: password.value,
       remember_me: rememberMe.value,
       preLoadedUserData: preLoadedUserData.value, // Pass pre-loaded data to login method
     })
-
     router.push('/profile')
   } catch (e) {
     if (e instanceof Error) {
@@ -103,8 +86,6 @@ const handleLogin = async () => {
     } else {
       formErrors.general = 'Login failed. Please try again.'
     }
-
-    // Clear pre-loaded data on login failure
     preLoadedUserData.value = null
   } finally {
     isSubmitting.value = false
@@ -113,20 +94,38 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="login-view">
-    <div class="card">
-      <h2>Login</h2>
+  <div class="login-view flex flex-col items-center justify-center min-h-full bg-gray-50">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 flex flex-col gap-6">
+      <h1 class="login-view__title text-3xl font-bold text-center">Login</h1>
 
-      <!-- General Error Message -->
-      <Message v-if="formErrors.general" severity="error" :closable="false">
+      <Message
+        class="login-view__error-message w-full"
+        v-if="formErrors.general"
+        severity="error"
+        :closable="false"
+      >
         {{ formErrors.general }}
       </Message>
 
-      <form @submit.prevent="handleLogin">
-        <!-- Username Field -->
-        <div class="form-field">
-          <label for="username">Username</label>
+      <form class="login-view__form flex flex-col gap-6" @submit.prevent="handleLogin">
+        <div class="login-view__form__form-field__username flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <label
+              class="login-view__form__form-field__username_label text-sm font-medium text-gray-600"
+              for="username"
+              >Username</label
+            >
+            <Message
+              v-if="formErrors.username"
+              severity="error"
+              :closable="false"
+              class="login-view__form__form-field__username_error-message text-xs"
+            >
+              {{ formErrors.username }}
+            </Message>
+          </div>
           <InputText
+            class="login-view__form__form-field__username_input w-full"
             id="username"
             v-model="username"
             autocomplete="username"
@@ -134,70 +133,85 @@ const handleLogin = async () => {
             :disabled="isSubmitting"
             @input="formErrors.username = ''"
             @blur="handleUsernameBlur"
-            class="w-full"
+            placeholder="Enter your username"
           />
-          <Message v-if="formErrors.username" severity="error" :closable="false" class="p-0">
-            {{ formErrors.username }}
-          </Message>
         </div>
 
-        <!-- Password Field -->
-        <div class="form-field">
-          <label for="password">Password</label>
+        <div class="login-view__form__form-field__password flex flex-col gap-2">
+          <div class="flex items-center justify-between">
+            <label
+              for="password"
+              class="login-view__form__form-field__password_label text-sm font-medium text-gray-600"
+              >Password</label
+            >
+            <Message
+              v-if="formErrors.password"
+              severity="error"
+              :closable="false"
+              class="login-view__form__form-field__password_error-message text-xs"
+            >
+              {{ formErrors.password }}
+            </Message>
+          </div>
           <Password
             id="password"
             v-model="password"
             :disabled="isSubmitting"
             toggleMask
             :feedback="false"
-            inputClass="w-full"
-            class="w-full"
+            class="login-view__form__form-field__password_input w-full"
             autocomplete="current-password"
             @input="formErrors.password = ''"
+            placeholder="Enter your password"
           />
-          <Message v-if="formErrors.password" severity="error" :closable="false" class="p-0">
-            {{ formErrors.password }}
-          </Message>
-          <div class="mt-2 text-right">
-            <router-link to="/forgot-password" class="text-sm">Forgot password?</router-link>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="login-view__form__form-field__actions__remember-me flex items-center gap-2">
+            <Checkbox
+              class="login-view__form__form-field__actions__remember-me__checkbox"
+              id="rememberMe"
+              v-model="rememberMe"
+              :binary="true"
+              :disabled="isSubmitting"
+            />
+            <label
+              class="login-view__form__form-field__actions__remember-me__label text-sm text-gray-600"
+              for="rememberMe"
+              >Remember me</label
+            >
           </div>
+          <router-link
+            to="/forgot-password"
+            class="login-view__form__form-field__actions__password_forgot text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >Forgot password?</router-link
+          >
         </div>
 
-        <!-- Remember Me Checkbox -->
-        <div class="form-field flex align-items-center">
-          <Checkbox id="rememberMe" v-model="rememberMe" :binary="true" :disabled="isSubmitting" />
-          <label for="rememberMe" class="ml-2">Remember me</label>
-        </div>
-
-        <!-- Submit Button -->
         <Button
           type="submit"
           :label="isSubmitting ? 'Logging in...' : 'Login'"
           :disabled="isSubmitting"
-          class="w-full mt-3"
+          class="login-view__form__actions__submit-button w-full"
         />
       </form>
 
-      <div class="mt-4 text-center">
-        Don't have an account?
-        <router-link to="/register">Register</router-link>
+      <div
+        class="login-view__form__form-field__actions flex flex-col items-center gap-4 pt-4 border-t border-gray-200"
+      >
+        <div
+          class="login-view__form__form-field__actions__register flex items-center gap-2 text-sm text-gray-600"
+        >
+          <span class="login-view__form__form-field__actions__register__message"
+            >Don't have an account?
+          </span>
+          <router-link
+            class="login-view__form__form-field__actions__register__button text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            to="/register"
+            >Register</router-link
+          >
+        </div>
       </div>
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.login-view {
-  display: flex;
-  justify-content: center;
-}
-
-form {
-  max-width: 400px;
-  margin: 0 auto;
-}
-
-h2 {
-  text-align: center;
-}
-</style>

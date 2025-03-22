@@ -235,16 +235,21 @@ watch(
 </script>
 
 <template>
-  <div class="chart-view">
-    <div class="chart-view__chart-controls">
+  <div class="chart-view flex flex-col gap-6 max-w-[1200px]">
+    <div class="chart-view__chart-controls flex w-full gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
       <ChartSelector />
       <ChartDatePicker />
     </div>
 
-    <div v-if="store.currentChart && !isLoading && !store.error" class="chart-view__chart-header">
-      <h1>{{ store.currentChart.title }}</h1>
-      <p class="chart-view__chart-header__chart-info">{{ store.currentChart.info }}</p>
-      <p class="chart-view__chart-header__chart-week">{{ formattedChartWeek }}</p>
+    <div
+      v-if="store.currentChart && !isLoading && !store.error"
+      class="chart-view__chart-header p-6 flex flex-col items-center gap-2"
+    >
+      <h1 class="text-3xl font-bold">{{ store.currentChart.title }}</h1>
+      <p class="chart-view__chart-header__chart-info text-sm text-center">
+        {{ store.currentChart.info }}
+      </p>
+      <p class="chart-view__chart-header__chart-week font-medium">{{ formattedChartWeek }}</p>
     </div>
 
     <ChartCardHolder
@@ -258,42 +263,8 @@ watch(
       :fetch-more-songs="fetchMoreSongs"
       :show-skeletons="isWaitingForAppleMusic"
       :skeleton-count="itemsPerPage"
-      class="chart-view__chart-card-holder"
+      class="chart-view__chart-card-holder grow w-full"
     >
     </ChartCardHolder>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.chart-view {
-  &__chart-controls {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 24px;
-    width: 100%;
-  }
-  &__chart-header {
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 20px;
-    & h1 {
-      margin: 0;
-      font-size: 2rem;
-    }
-    &__chart-info {
-      font-size: 0.9rem;
-      margin: 8px 0;
-    }
-    &__chart-week {
-      font-weight: 500;
-      margin: 0;
-    }
-  }
-  @media (max-width: 639px) {
-    &__chart-controls {
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-  }
-}
-</style>

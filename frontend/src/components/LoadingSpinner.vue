@@ -21,10 +21,8 @@ const props = withDefaults(defineProps<Props>(), {
   centerInContainer: false,
 })
 
-// Computed size in pixels
 const spinnerSize = () => {
   if (props.customSize) return props.customSize
-
   switch (props.size) {
     case 'small':
       return '20px'
@@ -52,8 +50,11 @@ const labelFontSize = () => {
 <template>
   <div
     :class="[
-      'loading-spinner-wrapper',
-      { 'loading-spinner-wrapper--center-container': centerInContainer },
+      'loading-spinner-wrapper inline-flex flex-col items-center gap-2',
+      {
+        'loading-spinner-wrapper--center-container flex justify-center items-center w-full min-h-[100px] h-full':
+          centerInContainer,
+      },
     ]"
   >
     <ProgressSpinner
@@ -67,30 +68,10 @@ const labelFontSize = () => {
     />
     <p
       v-if="label"
-      class="loading-spinner-wrapper__loading-label"
+      class="loading-spinner-wrapper__loading-label text-gray-600"
       :style="{ fontSize: labelFontSize() }"
     >
       {{ label }}
     </p>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.loading-spinner-wrapper {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  &--center-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
-    min-height: 100px;
-    height: 100%;
-  }
-  &__loading-label {
-    color: grey;
-  }
-}
-</style>

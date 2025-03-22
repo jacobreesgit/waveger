@@ -8,10 +8,8 @@ const store = useChartsStore()
 const route = useRoute()
 const router = useRouter()
 
-// Create a local reactive reference for the selected chart ID
 const selectedChartId = ref('hot-100')
 
-// Hardcoded chart options
 const chartOptions = [
   { id: 'hot-100', title: 'Billboard Hot 100™' },
   { id: 'billboard-200', title: 'Billboard 200™' },
@@ -29,7 +27,6 @@ const chartOptions = [
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
 
-// Parse date format from URL (DD-MM-YYYY to YYYY-MM-DD)
 const parseDateFromURL = (urlDate: string): string => {
   try {
     const [day, month, year] = urlDate.split('-')
@@ -45,20 +42,12 @@ const normalizeChartId = (id: string): string => {
   return id.replace(/\/$/, '')
 }
 
-// Update route and ALWAYS load chart data
 const updateRoute = async () => {
-  // Normalize chart ID for consistency (remove trailing slash)
   const chartId = normalizeChartId(selectedChartId.value)
   console.log(`Chart changed to: ${chartId}`)
-
-  // Update the store's selected chart ID - WITHOUT trailing slash
   store.selectedChartId = chartId
-
-  // Get current date from query parameter or default to today's date in URL format
   let datePath =
     (route.query.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
-
-  // Get the current date in YYYY-MM-DD format for API call
   const formattedDate = route.query.date
     ? parseDateFromURL(route.query.date as string)
     : new Date().toISOString().split('T')[0]
@@ -69,8 +58,6 @@ const updateRoute = async () => {
     week: formattedDate,
     range: '1-10',
   })
-
-  // Update the URL after fetching data using query parameters
   await router.push({
     path: '/charts',
     query: {
@@ -80,13 +67,11 @@ const updateRoute = async () => {
   })
 }
 
-// Format a date for URL (YYYY-MM-DD to DD-MM-YYYY)
 const formatDateForURL = (date: string): string => {
   const [year, month, day] = date.split('-')
   return `${day}-${month}-${year}`
 }
 
-// Watch for changes to the local selectedChartId and update route when it changes
 watch(selectedChartId, async (newValue, oldValue) => {
   if (newValue !== oldValue) {
     await updateRoute()
@@ -97,7 +82,6 @@ onMounted(() => {
   // Use the chart ID from the route if available
   const routeChartId = route.query.id as string
   if (routeChartId) {
-    // Normalize IDs for comparison - consistently without trailing slash
     const normalizedRouteId = normalizeChartId(routeChartId)
     const normalizedStoreId = normalizeChartId(store.selectedChartId)
 
@@ -107,10 +91,8 @@ onMounted(() => {
       currentChart: store.currentChart?.title || 'None',
     })
 
-    // Compare normalized IDs to detect mismatches
     const idMismatch = normalizedRouteId !== normalizedStoreId
 
-    // Also check for mismatches between the displayed chart title and route ID
     let titleMismatch = false
     if (store.currentChart) {
       const currentTitle = store.currentChart.title.toLowerCase()
@@ -158,7 +140,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="chart-selector">
+  <div class="chart-selector grow">
     <Select
       v-model="selectedChartId"
       :options="chartOptions"
@@ -170,13 +152,3 @@ onMounted(() => {
     />
   </div>
 </template>
-
-<style lang="scss" scoped>
-.chart-selector {
-  flex-grow: 1;
-  width: 100%;
-  & :deep(.p-select) {
-    width: 100% !important;
-  }
-}
-</style>

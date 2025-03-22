@@ -5,7 +5,6 @@ import Select from 'primevue/select'
 
 const timezoneStore = useTimezoneStore()
 
-// Define country options with timezones
 const countryOptions = [
   { code: 'US', name: 'United States', timezone: 'America/New_York' },
   { code: 'GB', name: 'United Kingdom', timezone: 'Europe/London' },
@@ -25,10 +24,8 @@ const countryOptions = [
   { code: 'UTC', name: 'Global (GMT)', timezone: 'UTC' },
 ]
 
-// Selected country code
 const selectedCountry = ref(timezoneStore.countryCode || 'UTC')
 
-// Watch for changes and update the store
 watch(selectedCountry, (newValue) => {
   const selected = countryOptions.find((option) => option.code === newValue)
   if (selected) {
@@ -36,19 +33,15 @@ watch(selectedCountry, (newValue) => {
   }
 })
 
-// Initialize on component mount
 onMounted(() => {
-  // Check if country is stored in localStorage first
   const storedCountry = localStorage.getItem('country_code')
   const storedTimezone = localStorage.getItem('timezone')
 
   if (storedCountry && storedTimezone) {
-    // Use stored country/timezone
     selectedCountry.value = storedCountry
     timezoneStore.setCountry(storedCountry, storedTimezone)
     console.log(`Using stored country: ${storedCountry} with timezone: ${storedTimezone}`)
   } else {
-    // No stored preference, detect based on browser
     detectCountry()
   }
 })
@@ -56,17 +49,13 @@ onMounted(() => {
 // Function to detect country based on browser timezone
 const detectCountry = () => {
   try {
-    // Get browser timezone
     const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-    // Find matching country or default to UTC
     const matchingCountry = countryOptions.find((country) => country.timezone === browserTimezone)
 
     if (matchingCountry) {
       selectedCountry.value = matchingCountry.code
       timezoneStore.setCountry(matchingCountry.code, matchingCountry.timezone)
     } else {
-      // Try to find a country in the same timezone region
       const timezoneParts = browserTimezone.split('/')
       if (timezoneParts.length > 1) {
         const timezoneRegion = timezoneParts[0]
@@ -80,8 +69,6 @@ const detectCountry = () => {
           return
         }
       }
-
-      // Default to UTC if no match
       selectedCountry.value = 'UTC'
       timezoneStore.setCountry('UTC', 'UTC')
     }
@@ -93,13 +80,10 @@ const detectCountry = () => {
   }
 }
 
-// Get country flag emoji
 const getCountryFlagEmoji = (countryCode: string): string => {
   if (countryCode === 'UTC') {
-    return '🌐' // Globe for UTC/Global
+    return '🌐'
   }
-
-  // Convert country code to regional indicator symbols (flag emoji)
   return countryCode
     .toUpperCase()
     .split('')
@@ -107,7 +91,6 @@ const getCountryFlagEmoji = (countryCode: string): string => {
     .join('')
 }
 
-// Get current country name
 const currentCountryName = computed(() => {
   const country = countryOptions.find((option) => option.code === selectedCountry.value)
   return country ? country.name : 'Global (GMT)'
@@ -123,46 +106,20 @@ const currentCountryName = computed(() => {
     class="country-selector"
   >
     <template #value="slotProps">
-      <div class="country-selector__value align-items-center">
-        <span class="country-selector__value__country-flag">{{
+      <div class="country-selector__value flex items-center">
+        <span class="country-selector__value__country-flag text-base">{{
           getCountryFlagEmoji(slotProps.value)
         }}</span>
-        <span class="country-selector__value__country-name">{{ currentCountryName }}</span>
+        <span class="country-selector__value__country-name hidden">{{ currentCountryName }}</span>
       </div>
     </template>
     <template #option="slotProps">
-      <div class="country-selector__item">
-        <span class="country-selector__item__country-flag">{{
+      <div class="country-selector__item flex items-center">
+        <span class="country-selector__item__country-flag text-base mr-2">{{
           getCountryFlagEmoji(slotProps.option.code)
         }}</span>
-        <span class="country-selector__item__country-name">{{ slotProps.option.name }}</span>
+        <span class="country-selector__item__country-name inline">{{ slotProps.option.name }}</span>
       </div>
     </template>
   </Select>
 </template>
-
-<style lang="scss" scoped>
-.country-selector {
-  &__value {
-    display: flex;
-    align-items: center;
-    &__country-flag {
-      font-size: 16px;
-    }
-    &__country-name {
-      display: none;
-    }
-  }
-  &__item {
-    display: flex;
-    align-items: center;
-    &__country-flag {
-      font-size: 16px;
-      margin-right: 8px;
-    }
-    &__country-name {
-      display: inline;
-    }
-  }
-}
-</style>
