@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import {
   checkUsernameAvailability,
@@ -11,6 +11,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
 import Card from 'primevue/card'
+import _ from 'lodash'
 
 const props = defineProps<{
   onLogout: () => void
@@ -96,83 +97,76 @@ const toggleEditPassword = () => {
   formErrors.confirmPassword = ''
 }
 
-const debouncedCheck = (() => {
-  let usernameTimeoutId: number | null = null
-  let emailTimeoutId: number | null = null
-
-  return async (type: 'username' | 'email', value: string) => {
-    if (type === 'username' && usernameTimeoutId) {
-      clearTimeout(usernameTimeoutId)
-    } else if (type === 'email' && emailTimeoutId) {
-      clearTimeout(emailTimeoutId)
-    }
-    if (type === 'username' && value === authStore.user?.username) {
-      usernameAvailable.value = null
-      return
-    }
-    if (type === 'email' && value === authStore.user?.email) {
-      emailAvailable.value = null
-      return
-    }
-
-    if (!value) {
-      if (type === 'username') {
-        usernameAvailable.value = null
-      } else {
-        emailAvailable.value = null
-      }
-      return
-    }
-
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        if (type === 'username') {
-          checkingUsername.value = true
-          const isAvailable = await checkUsernameAvailability(value)
-          usernameAvailable.value = isAvailable
-          formErrors.username = isAvailable ? '' : 'Username is already taken'
-        } else if (type === 'email') {
-          checkingEmail.value = true
-          const isAvailable = await checkEmailAvailability(value)
-          emailAvailable.value = isAvailable
-          formErrors.email = isAvailable ? '' : 'Email is already registered'
-        }
-      } catch (error) {
-        console.error(`Error checking ${type} availability:`, error)
-      } finally {
-        if (type === 'username') {
-          checkingUsername.value = false
-        } else {
-          checkingEmail.value = false
-        }
-      }
-    }, 500)
-
-    if (type === 'username') {
-      usernameTimeoutId = timeoutId
-      checkingUsername.value = true
-      usernameAvailable.value = null
-    } else {
-      emailTimeoutId = timeoutId
-      checkingEmail.value = true
-      emailAvailable.value = null
-    }
+// Create debounced functions using Lodash
+const debouncedCheckUsername = _.debounce(async (value: string) => {
+  if (!value) {
+    usernameAvailable.value = null
+    return
   }
-})()
+
+  if (value === authStore.user?.username) {
+    usernameAvailable.value = null
+    return
+  }
+
+  try {
+    checkingUsername.value = true
+    const isAvailable = await checkUsernameAvailability(value)
+    usernameAvailable.value = isAvailable
+    formErrors.username = isAvailable ? '' : 'Username is already taken'
+  } catch (error) {
+    console.error('Error checking username availability:', error)
+  } finally {
+    checkingUsername.value = false
+  }
+}, 500)
+
+const debouncedCheckEmail = _.debounce(async (value: string) => {
+  if (!value) {
+    emailAvailable.value = null
+    return
+  }
+
+  if (value === authStore.user?.email) {
+    emailAvailable.value = null
+    return
+  }
+
+  try {
+    checkingEmail.value = true
+    const isAvailable = await checkEmailAvailability(value)
+    emailAvailable.value = isAvailable
+    formErrors.email = isAvailable ? '' : 'Email is already registered'
+  } catch (error) {
+    console.error('Error checking email availability:', error)
+  } finally {
+    checkingEmail.value = false
+  }
+}, 500)
 
 const onUsernameInput = (e: Event) => {
   const target = e.target as HTMLInputElement
   newUsername.value = target.value
   formErrors.username = ''
-  debouncedCheck('username', newUsername.value)
+  checkingUsername.value = true
+  usernameAvailable.value = null
+  debouncedCheckUsername(newUsername.value)
 }
 
 const onEmailInput = (e: Event) => {
   const target = e.target as HTMLInputElement
   newEmail.value = target.value
   formErrors.email = ''
-  debouncedCheck('email', newEmail.value)
+  checkingEmail.value = true
+  emailAvailable.value = null
+  debouncedCheckEmail(newEmail.value)
 }
+
+// Clean up debounced functions
+onBeforeUnmount(() => {
+  debouncedCheckUsername.cancel()
+  debouncedCheckEmail.cancel()
+})
 
 const updateUsername = async () => {
   formErrors.username = ''

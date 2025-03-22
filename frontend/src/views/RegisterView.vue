@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -11,6 +11,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import _ from 'lodash' // Import lodash
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -82,64 +83,68 @@ const handleRegister = async () => {
   }
 }
 
-const debouncedCheck = (() => {
-  let usernameTimeoutId: number | null = null
-  let emailTimeoutId: number | null = null
-  return async (type: 'username' | 'email', value: string) => {
-    if (type === 'username' && usernameTimeoutId) {
-      clearTimeout(usernameTimeoutId)
-    } else if (type === 'email' && emailTimeoutId) {
-      clearTimeout(emailTimeoutId)
-    }
-    if (!value) {
-      if (type === 'username') {
-        usernameAvailable.value = null
-      } else {
-        emailAvailable.value = null
-      }
-      return
-    }
-    const timeoutId = window.setTimeout(async () => {
-      try {
-        if (type === 'username') {
-          checkingUsername.value = true
-          const isAvailable = await checkUsernameAvailability(value)
-          usernameAvailable.value = isAvailable
-          formErrors.username = isAvailable ? '' : 'Username is already taken'
-        } else if (type === 'email') {
-          checkingEmail.value = true
-          const isAvailable = await checkEmailAvailability(value)
-          emailAvailable.value = isAvailable
-          formErrors.email = isAvailable ? '' : 'Email is already registered'
-        }
-      } catch (error) {
-        console.error(`Error checking ${type} availability:`, error)
-      } finally {
-        if (type === 'username') {
-          checkingUsername.value = false
-        } else {
-          checkingEmail.value = false
-        }
-      }
-    }, 500)
-    if (type === 'username') {
-      usernameTimeoutId = timeoutId
-      checkingUsername.value = true
-      usernameAvailable.value = null
-    } else {
-      emailTimeoutId = timeoutId
-      checkingEmail.value = true
-      emailAvailable.value = null
-    }
+// Create the debounced functions using Lodash
+const debouncedCheckUsername = _.debounce(async (value: string) => {
+  if (!value) {
+    usernameAvailable.value = null
+    return
   }
-})()
 
+  try {
+    const isAvailable = await checkUsernameAvailability(value)
+    usernameAvailable.value = isAvailable
+    formErrors.username = isAvailable ? '' : 'Username is already taken'
+  } catch (error) {
+    console.error('Error checking username availability:', error)
+  } finally {
+    checkingUsername.value = false
+  }
+}, 500)
+
+const debouncedCheckEmail = _.debounce(async (value: string) => {
+  if (!value) {
+    emailAvailable.value = null
+    return
+  }
+
+  try {
+    const isAvailable = await checkEmailAvailability(value)
+    emailAvailable.value = isAvailable
+    formErrors.email = isAvailable ? '' : 'Email is already registered'
+  } catch (error) {
+    console.error('Error checking email availability:', error)
+  } finally {
+    checkingEmail.value = false
+  }
+}, 500)
+
+// Update watch handlers to use the Lodash debounced functions
 watch(username, (newValue) => {
-  debouncedCheck('username', newValue)
+  if (newValue) {
+    checkingUsername.value = true
+    usernameAvailable.value = null
+  } else {
+    usernameAvailable.value = null
+    checkingUsername.value = false
+  }
+  debouncedCheckUsername(newValue)
 })
 
 watch(email, (newValue) => {
-  debouncedCheck('email', newValue)
+  if (newValue) {
+    checkingEmail.value = true
+    emailAvailable.value = null
+  } else {
+    emailAvailable.value = null
+    checkingEmail.value = false
+  }
+  debouncedCheckEmail(newValue)
+})
+
+// Clean up debounced functions on component unmount
+onBeforeUnmount(() => {
+  debouncedCheckUsername.cancel()
+  debouncedCheckEmail.cancel()
 })
 </script>
 
