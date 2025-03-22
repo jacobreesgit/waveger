@@ -50,12 +50,12 @@ const isArtistChart = computed(() => {
 
 <template>
   <div
-    class="chart-item-card flex flex-col w-full border border-[#eee] rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out h-full bg-white will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
+    class="chart-item-card flex flex-col w-full border border-gray-200 rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out h-full bg-white will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
     @click="handleClick"
   >
     <div class="chart-item-card__image-container relative w-full pb-[100%] overflow-hidden">
       <div
-        class="chart-item-card__image-container__rank absolute top-2.5 left-2.5 bg-[rgba(0,0,0,0.6)] text-white text-lg font-bold px-2.5 py-1.5 rounded-sm z-2"
+        class="chart-item-card__image-container__rank absolute top-2.5 left-2.5 bg-black bg-opacity-60 text-white text-lg font-bold px-2.5 py-1.5 rounded-sm z-2"
       >
         #{{ song.position }}
       </div>
@@ -100,13 +100,13 @@ const isArtistChart = computed(() => {
         >
           {{ trendIcon }}
         </span>
-        <span class="chart-item-card__item-info__weeks-on-chart text-[#6c757d] text-[0.9rem]">
+        <span class="chart-item-card__item-info__weeks-on-chart text-gray-600 text-[0.9rem]">
           {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
         </span>
       </div>
     </div>
     <div
-      class="chart-item-card__stats flex justify-between text-[#6c757d] text-sm p-4"
+      class="chart-item-card__stats flex justify-between text-gray-600 text-sm p-4"
       v-if="!compact"
     >
       <div>Peak: #{{ song.peak_position }}</div>
@@ -136,7 +136,7 @@ const isArtistChart = computed(() => {
         <a
           :href="appleMusicData.attributes.url"
           target="_blank"
-          class="chart-item-card__metadata__actions__apple-music-button inline-block bg-[#fa324a] text-white no-underline px-4 py-2 rounded-md font-medium text-center w-full transition-colors duration-200 ease-in-out hover:bg-[#e61e3c]"
+          class="chart-item-card__metadata__actions__apple-music-button inline-block bg-red-500 text-white no-underline px-4 py-2 rounded-md font-medium text-center w-full transition-colors duration-200 ease-in-out hover:bg-red-600"
         >
           Listen on Apple Music
         </a>

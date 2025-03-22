@@ -318,11 +318,11 @@ const updatePassword = async () => {
       {{ successMessage }}
     </Message>
 
-    <div class="profile-section mb-6 pb-4 border-b border-[#eee]">
+    <div class="profile-section mb-6 pb-4 border-b border-gray-200">
       <h2 class="text-2xl font-bold">Account Details</h2>
 
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
         v-if="!editingUsername"
       >
         <div class="detail-label font-medium text-gray-600">Username</div>
@@ -332,7 +332,7 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingUsername">
+      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingUsername">
         <p class="font-bold">Change Username</p>
         <div class="form-field mb-3">
           <label for="newUsername">New Username</label>
@@ -393,7 +393,7 @@ const updatePassword = async () => {
       </div>
 
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
         v-if="!editingEmail"
       >
         <div class="detail-label font-medium text-gray-600">Email</div>
@@ -403,7 +403,7 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingEmail">
+      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingEmail">
         <p class="font-bold">Change Email</p>
         <div class="form-field mb-3">
           <label for="newEmail">New Email</label>
@@ -461,7 +461,7 @@ const updatePassword = async () => {
       </div>
 
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
         v-if="!editingPassword"
       >
         <div class="detail-label font-medium text-gray-600">Password</div>
@@ -476,7 +476,7 @@ const updatePassword = async () => {
         </div>
       </div>
 
-      <div class="edit-form bg-[#f8f9fa] rounded-lg p-4 mb-4" v-if="editingPassword">
+      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingPassword">
         <p class="font-bold">Change Password</p>
         <div class="form-field mb-3">
           <label for="currentPassword">Current Password</label>
@@ -544,7 +544,7 @@ const updatePassword = async () => {
       </div>
 
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
       >
         <div class="detail-label font-medium text-gray-600">Account Created</div>
         <div class="detail-value flex items-center gap-2 font-medium">
@@ -552,7 +552,7 @@ const updatePassword = async () => {
         </div>
       </div>
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-[#f4f4f4]"
+        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
       >
         <div class="detail-label font-medium text-gray-600">Last Login</div>
         <div class="detail-value flex items-center gap-2 font-medium">
@@ -561,47 +561,47 @@ const updatePassword = async () => {
       </div>
     </div>
 
-    <div class="profile-section border-b border-[#eee]">
+    <div class="profile-section border-b border-gray-200">
       <h3 class="text-lg font-bold">Prediction Stats</h3>
       <div class="stats-grid grid grid-cols-[repeat(auto-fill,_minmax(200px,_1fr))] gap-4 mt-4">
         <Card
           class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
         >
           <template #content>
-            <div class="stat-value text-2xl font-bold text-[#007bff]">
+            <div class="stat-value text-2xl font-bold text-blue-600">
               {{ authStore.user?.predictions_made || 0 }}
             </div>
-            <div class="stat-label text-[#6c757d] mt-1">Total Predictions</div>
+            <div class="stat-label text-gray-600 mt-1">Total Predictions</div>
           </template>
         </Card>
         <Card
           class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
         >
           <template #content>
-            <div class="stat-value text-2xl font-bold text-[#007bff]">
+            <div class="stat-value text-2xl font-bold text-blue-600">
               {{ authStore.user?.correct_predictions || 0 }}
             </div>
-            <div class="stat-label text-[#6c757d] mt-1">Correct Predictions</div>
+            <div class="stat-label text-gray-600 mt-1">Correct Predictions</div>
           </template>
         </Card>
         <Card
           class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
         >
           <template #content>
-            <div class="stat-value text-2xl font-bold text-[#007bff]">
+            <div class="stat-value text-2xl font-bold text-blue-600">
               {{ predictionAccuracy }}
             </div>
-            <div class="stat-label text-[#6c757d] mt-1">Overall Accuracy</div>
+            <div class="stat-label text-gray-600 mt-1">Overall Accuracy</div>
           </template>
         </Card>
         <Card
           class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
         >
           <template #content>
-            <div class="stat-value text-2xl font-bold text-[#007bff]">
+            <div class="stat-value text-2xl font-bold text-blue-600">
               {{ authStore.user?.total_points || 0 }}
             </div>
-            <div class="stat-label text-[#6c757d] mt-1">Total Points</div>
+            <div class="stat-label text-gray-600 mt-1">Total Points</div>
           </template>
         </Card>
       </div>

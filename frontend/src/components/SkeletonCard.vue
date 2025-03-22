@@ -2,14 +2,14 @@
 
 <template>
   <div
-    class="skeleton-card flex flex-col w-full border border-[#eee] rounded-lg overflow-hidden bg-white h-full box-border will-change-[transform,opacity]"
+    class="skeleton-card flex flex-col w-full border border-gray-200rounded-lg overflow-hidden bg-white h-full box-border will-change-[transform,opacity]"
   >
-    <div class="skeleton-card__image-container relative w-full pb-[100%] bg-[#f6f6f6]">
+    <div class="skeleton-card__image-container relative w-full pb-[100%] bg-gray-100">
       <div
         class="skeleton-card__image-container__rank skeleton-pulse absolute top-2.5 right-2.5 w-[40px] h-[30px] rounded-sm z-20"
       ></div>
       <div
-        class="skeleton-card__image-container__image skeleton-pulse absolute top-0 left-0 w-full h-full bg-[#f0f0f0]"
+        class="skeleton-card__image-container__image skeleton-pulse absolute top-0 left-0 w-full h-full bg-gray-100"
       ></div>
       <div
         class="skeleton-card__image-container__favourite-btn skeleton-pulse absolute top-2.5 left-2.5 w-[30px] h-[30px] rounded-full z-20"
