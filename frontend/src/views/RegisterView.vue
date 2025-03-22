@@ -82,7 +82,6 @@ const handleRegister = async () => {
   }
 }
 
-// Debounced availability checking
 const debouncedCheck = (() => {
   let usernameTimeoutId: number | null = null
   let emailTimeoutId: number | null = null

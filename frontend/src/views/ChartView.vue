@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useTimezoneStore } from '@/stores/timezone'
-import { useBreakpoints } from '@/utils/mediaQueries'
+import { useMediaQuery } from '@vueuse/core'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
@@ -15,35 +15,36 @@ const store = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const timezoneStore = useTimezoneStore()
 
-// Simplified state management
 const songData = ref(new Map())
 const isLoadingMore = ref(false)
 const isLoadingAppleMusic = ref(false)
 
-// Use the existing mediaQueries utility to detect responsive breakpoints
-const { xs, sm, md, lg, xl } = useBreakpoints()
+const isSm = useMediaQuery('(min-width: 40rem)') // 640px
+const isMd = useMediaQuery('(min-width: 48rem)') // 768px
+const isLg = useMediaQuery('(min-width: 64rem)') // 1024px
+const isXl = useMediaQuery('(min-width: 80rem)') // 1280px
+const is2Xl = useMediaQuery('(min-width: 96rem)') // 1536px
 
-// Helper function to normalize chart IDs
+// Calculate grid columns based on Tailwind's breakpoints
+const gridColumns = computed(() => {
+  if (is2Xl.value) return 4 // 2xl: 4 columns (2xl:grid-cols-4)
+  if (isXl.value) return 4 // xl: 4 columns (xl:grid-cols-4)
+  if (isLg.value) return 4 // lg: 4 columns (lg:grid-cols-4)
+  if (isMd.value) return 3 // md: 3 columns (md:grid-cols-3)
+  if (isSm.value) return 2 // sm: 2 columns (sm:grid-cols-2)
+  return 1 // Default: 1 column (grid-cols-1)
+})
+
 const normalizeChartId = (id: string): string => {
   return id ? id.replace(/\/$/, '') : 'hot-100'
 }
-
-// Calculate grid columns based on breakpoints
-const gridColumns = computed(() => {
-  if (xs.value) return 1 // Mobile: 1 column
-  if (sm.value) return 2 // Small tablet: 2 columns
-  if (md.value) return 3 // Tablet: 3 columns
-  return 4 // Desktop and large desktop: 4 columns
-})
 
 // Always fetch 2 rows worth of data
 const rowsToFetch = 2
 const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
 
-// Use a computed prop to determine if we should show the loading indicator
 const isLoading = computed(() => store.loading && !isLoadingMore.value)
 
-// Track if we're waiting for Apple Music data
 const isWaitingForAppleMusic = computed(() => {
   // If we have chart data but not all songs have Apple Music data
   if (store.currentChart?.songs && store.currentChart.songs.length > 0) {
@@ -57,7 +58,6 @@ const isWaitingForAppleMusic = computed(() => {
   return false
 })
 
-// Format chart week with the current timezone
 const formattedChartWeek = computed(() => {
   if (!store.currentChart) return ''
 
@@ -72,7 +72,6 @@ const formattedChartWeek = computed(() => {
   return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
 })
 
-// Load Apple Music data for current songs
 const loadAppleMusicData = async () => {
   if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
     return
@@ -81,7 +80,6 @@ const loadAppleMusicData = async () => {
   isLoadingAppleMusic.value = true
 
   try {
-    // Ensure we have an Apple Music token
     if (!appleMusicStore.token) {
       await appleMusicStore.fetchToken()
     }
@@ -116,7 +114,6 @@ const loadAppleMusicData = async () => {
   }
 }
 
-// Method to fetch more songs
 const fetchMoreSongs = async () => {
   if (!store.hasMore || isLoadingMore.value) return
 
@@ -135,11 +132,9 @@ const fetchMoreSongs = async () => {
 // onMounted hook for ChartView.vue
 onMounted(async () => {
   try {
-    // Get chart ID and date from URL or defaults
     const chartId = route.query.id ? normalizeChartId(route.query.id as string) : 'hot-100'
     const dateParam = route.query.date as string
 
-    // Format date if provided
     let formattedDate: string | undefined
     if (dateParam) {
       formattedDate = store.parseDateFromURL(dateParam)
@@ -152,7 +147,6 @@ onMounted(async () => {
       range: `1-${itemsPerPage.value}`,
     })
 
-    // Load Apple Music data in parallel
     await loadAppleMusicData()
 
     // Update URL if needed

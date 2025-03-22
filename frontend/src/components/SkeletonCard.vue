@@ -2,7 +2,7 @@
 
 <template>
   <div
-    class="skeleton-card flex flex-col w-full border border-gray-200rounded-lg overflow-hidden bg-white h-full box-border will-change-[transform,opacity]"
+    class="skeleton-card flex flex-col w-full border border-gray-200 rounded-lg overflow-hidden bg-white h-full box-border will-change-[transform,opacity]"
   >
     <div class="skeleton-card__image-container relative w-full pb-[100%] bg-gray-100">
       <div

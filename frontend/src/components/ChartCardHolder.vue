@@ -49,7 +49,7 @@ const { stop: stopObserver } = useIntersectionObserver(
     }
   },
   {
-    rootMargin: '100px', // Start loading before the element is fully in view
+    rootMargin: '200px', // Start loading before the element is fully in view
     threshold: 0.1, // Trigger when at least 10% of the element is visible
   },
 )

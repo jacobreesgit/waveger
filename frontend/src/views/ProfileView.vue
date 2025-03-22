@@ -79,7 +79,7 @@ onMounted(async () => {
       centerInContainer
     />
 
-    <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6 gap-2">
+    <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6">
       <h1 class="text-3xl font-bold">Your Account</h1>
 
       <Tabs v-model:value="activeTabValue" @update:value="onTabChange">
