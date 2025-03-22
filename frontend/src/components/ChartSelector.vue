@@ -2,7 +2,8 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
-import { parseDateFromURL, formatDateForURL } from '@/utils/dateUtils' // Import from utility file
+import { parseDateFromURL, formatDateForURL } from '@/utils/dateUtils'
+import { normalizeChartId } from '@/utils/chartUtils'
 import Select from 'primevue/select'
 
 const store = useChartsStore()
@@ -27,11 +28,6 @@ const chartOptions = [
   { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
-
-// Helper to normalize chart IDs (remove trailing slashes)
-const normalizeChartId = (id: string): string => {
-  return id.replace(/\/$/, '')
-}
 
 const updateRoute = async () => {
   const chartId = normalizeChartId(selectedChartId.value)

@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChartData } from '@/types/api'
 import { getChartDetails } from '@/services/api'
-import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils' // Import from utility file
+import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils'
+import { normalizeChartId } from '@/utils/chartUtils'
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
@@ -12,11 +13,6 @@ export const useChartsStore = defineStore('charts', () => {
   const hasMore = ref(true)
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
-
-  // Helper to normalize chart IDs (remove trailing slashes) for consistency
-  const normalizeChartId = (id: string): string => {
-    return id.replace(/\/$/, '')
-  }
 
   // IMPORTANT: Keep the original function name and signature
   const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
@@ -143,6 +139,6 @@ export const useChartsStore = defineStore('charts', () => {
     formatDateForURL,
     initialize,
     reset,
-    normalizeChartId,
+    normalizeChartId, // Keep this in the return object for backwards compatibility
   }
 })
