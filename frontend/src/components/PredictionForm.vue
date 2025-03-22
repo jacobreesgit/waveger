@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useRouter } from 'vue-router'
-import type { PredictionSubmission } from '@/types/predictions'
+import type { PredictionSubmission, SearchResult } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
@@ -33,16 +33,6 @@ const selectedSong = ref<SearchResult | null>(null)
 const searchResultsVisible = ref(false)
 const dataSource = ref<'chart' | 'appleMusic' | 'favourites' | 'custom'>('chart')
 const activeTab = ref<'search' | 'favourites'>('search')
-
-interface SearchResult {
-  name: string
-  artist: string
-  imageUrl?: string
-  chartPosition?: number
-  source: 'chart' | 'appleMusic' | 'favourites' | 'custom'
-  id?: string
-  originalData?: any
-}
 
 const formErrors = ref({
   songName: '',

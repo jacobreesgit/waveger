@@ -1,17 +1,8 @@
 <script setup lang="ts">
 import ProgressSpinner from 'primevue/progressspinner'
+import type { LoadingSpinnerProps } from '@/types/ui'
 
-interface Props {
-  size?: 'small' | 'medium' | 'large' | 'custom'
-  customSize?: string
-  strokeWidth?: string
-  fill?: string
-  animationDuration?: string
-  label?: string
-  centerInContainer?: boolean
-}
-
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<LoadingSpinnerProps>(), {
   size: 'medium',
   customSize: '',
   strokeWidth: '4px',

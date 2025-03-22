@@ -66,3 +66,13 @@ export interface UserPredictionsResponse {
 export interface LeaderboardResponse {
   leaderboard: LeaderboardEntry[]
 }
+
+export interface SearchResult {
+  name: string
+  artist: string
+  imageUrl?: string
+  chartPosition?: number
+  source: 'chart' | 'appleMusic' | 'favourites' | 'custom'
+  id?: string
+  originalData?: any
+}
