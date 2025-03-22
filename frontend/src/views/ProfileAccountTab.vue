@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router' // Import router for redirection after logout
 import {
   checkUsernameAvailability,
   checkEmailAvailability,
@@ -13,10 +14,7 @@ import Message from 'primevue/message'
 import Card from 'primevue/card'
 import _ from 'lodash'
 
-const props = defineProps<{
-  onLogout: () => void
-}>()
-
+const router = useRouter()
 const authStore = useAuthStore()
 
 const editingUsername = ref(false)
@@ -71,6 +69,11 @@ const formatDate = (dateString?: string | null) => {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+const handleLogout = () => {
+  authStore.logout()
+  router.push('/')
 }
 
 const toggleEditUsername = () => {
@@ -605,7 +608,7 @@ const updatePassword = async () => {
       <Button
         label="Logout"
         severity="danger"
-        @click="props.onLogout"
+        @click="handleLogout"
         icon="pi pi-sign-out"
         class="w-full"
       />
