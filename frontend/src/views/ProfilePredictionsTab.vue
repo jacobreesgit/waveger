@@ -106,7 +106,7 @@ const getActualResultText = (prediction: Prediction): string => {
 <template>
   <div>
     <div class="predictions-header">
-      <h3>Your Prediction History</h3>
+      <h2 class="text-2xl font-bold">Your Prediction History</h2>
 
       <div class="prediction-filters">
         <div class="filter-group">
@@ -165,6 +165,7 @@ const getActualResultText = (prediction: Prediction): string => {
 
     <LoadingSpinner
       v-if="isPredictionsLoading"
+      class="loading-spinner"
       size="medium"
       label="Loading your predictions..."
       centerInContainer
@@ -253,127 +254,3 @@ const getActualResultText = (prediction: Prediction): string => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.predictions-header {
-  margin-bottom: 20px;
-}
-
-.prediction-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-top: 16px;
-  background: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 200px;
-}
-
-.filter-group label {
-  margin-bottom: 8px;
-}
-
-.predictions-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.prediction-card {
-  overflow: hidden;
-  transition: transform 0.2s;
-}
-
-.prediction-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.prediction-card.pending {
-  border-left: 4px solid #ffc107;
-}
-
-.prediction-card.correct {
-  border-left: 4px solid #28a745;
-}
-
-.prediction-card.incorrect {
-  border-left: 4px solid #dc3545;
-}
-
-.prediction-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-}
-
-.prediction-title {
-  font-weight: 500;
-}
-
-.prediction-artist {
-  font-size: 0.9rem;
-  color: #6c757d;
-  margin-top: 4px;
-}
-
-.prediction-value {
-  display: inline-block;
-  padding: 4px 8px;
-  background: #f0f7ff;
-  color: #007bff;
-  border-radius: 4px;
-  font-weight: 500;
-  margin-bottom: 12px;
-}
-
-.prediction-result,
-.prediction-pending {
-  margin-top: 12px;
-}
-
-.points-earned,
-.actual-result {
-  font-size: 0.9rem;
-}
-
-.points-label,
-.actual-label {
-  color: #6c757d;
-  margin-right: 4px;
-}
-
-.points-value {
-  font-weight: 600;
-  color: #007bff;
-}
-
-.actual-value {
-  font-weight: 600;
-}
-
-.pending-message {
-  margin-top: 8px;
-  font-size: 0.9rem;
-  color: #6c757d;
-}
-
-/* Responsive styles */
-@media (max-width: 768px) {
-  .prediction-filters {
-    flex-direction: column;
-  }
-
-  .predictions-list {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

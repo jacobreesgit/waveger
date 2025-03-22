@@ -34,18 +34,16 @@ const searchResultsVisible = ref(false)
 const dataSource = ref<'chart' | 'appleMusic' | 'favourites' | 'custom'>('chart')
 const activeTab = ref<'search' | 'favourites'>('search')
 
-// Search result types
 interface SearchResult {
   name: string
   artist: string
   imageUrl?: string
-  chartPosition?: number // Changed from position to chartPosition
+  chartPosition?: number
   source: 'chart' | 'appleMusic' | 'favourites' | 'custom'
   id?: string
   originalData?: any
 }
 
-// Validation and UI state
 const formErrors = ref({
   songName: '',
   artist: '',
@@ -57,13 +55,10 @@ const isSubmitting = ref(false)
 const showSuccess = ref(false)
 const successMessage = ref('')
 
-// Check if user is logged in
 const isLoggedIn = computed(() => !!authStore.user)
 
-// Check if there's an active contest
 const hasActiveContest = computed(() => !!predictionStore.currentContest)
 
-// Filter chart songs based on prediction type
 const filteredChartSongs = computed(() => {
   if (!chartsStore.currentChart?.songs) return []
 
@@ -76,7 +71,7 @@ const filteredChartSongs = computed(() => {
       name: song.name,
       artist: song.artist,
       imageUrl: song.image,
-      chartPosition: song.position, // Changed from position to chartPosition
+      chartPosition: song.position,
       source: 'chart' as const,
       originalData: song,
     }))
@@ -101,14 +96,13 @@ const filteredFavorites = computed(() => {
         name: fav.song_name,
         artist: fav.artist,
         imageUrl: fav.image_url,
-        chartPosition: chartSong?.position, // Use chartPosition instead of position
+        chartPosition: chartSong?.position,
         source: 'favourites' as const,
         originalData: fav,
       }
     })
   } else if (predictionType.value === 'position_change' || predictionType.value === 'exit') {
     // For position_change and exit, only show favorites that are on current chart
-    // This would require cross-referencing with chart data
     const currentChartIds = new Set(
       chartsStore.currentChart?.songs.map((s) => `${s.name}|${s.artist}`) || [],
     )
@@ -125,7 +119,7 @@ const filteredFavorites = computed(() => {
           name: fav.song_name,
           artist: fav.artist,
           imageUrl: fav.image_url,
-          chartPosition: chartSong?.position, // Use chartPosition instead of position
+          chartPosition: chartSong?.position,
           source: 'favourites' as const,
           originalData: fav,
         }
@@ -135,40 +129,30 @@ const filteredFavorites = computed(() => {
   return []
 })
 
-// Get remaining predictions count
 const remainingPredictions = computed(() => predictionStore.remainingPredictions)
 
-// Get current contest ID from store
 const contestId = computed(() =>
   predictionStore.currentContest ? predictionStore.currentContest.id : 0,
 )
 
-// Helper to determine if form can be submitted
 const canSubmit = computed(() => {
   if (!isLoggedIn.value || !hasActiveContest.value || isSubmitting.value) {
     return false
   }
-
-  // Basic validation - required fields
   if (!selectedSong.value) {
     return false
   }
-
-  // Validate based on prediction type
   if (predictionType.value === 'entry' && !position.value) {
     return false
   }
   if (predictionType.value === 'position_change' && !predictionChange.value) {
     return false
   }
-
   return true
 })
 
-// Search debounce
 let searchTimeout: number | null = null
 
-// Handle input search with debounce
 const handleSearchInput = () => {
   if (searchTimeout) {
     clearTimeout(searchTimeout)
@@ -198,8 +182,7 @@ const performSearch = async () => {
     if (!query) return
 
     if (activeTab.value === 'search') {
-      // First, check if this song is in the current chart
-      // This ensures we prioritize getting chart position if available
+      // Check if this song is in the current chart to ensure we prioritize getting chart position if available
       let chartMatchFound = false
 
       if (chartsStore.currentChart?.songs) {
@@ -223,14 +206,12 @@ const performSearch = async () => {
               originalData: song,
             })
 
-            // Limit to first 5 matches
             if (searchResults.value.length >= 5) break
           }
         }
 
         // If no exact matches but query length is reasonable, try partial matches
         if (!chartMatchFound && query.length > 2) {
-          // First, search in current chart data using looser criteria
           const chartResults = filteredChartSongs.value
             .filter(
               (song) =>
@@ -291,7 +272,6 @@ const performSearch = async () => {
         }
       }
     } else if (activeTab.value === 'favourites') {
-      // Just filter favorites based on query
       searchResults.value = filteredFavorites.value
         .filter(
           (fav) =>
@@ -306,29 +286,19 @@ const performSearch = async () => {
   }
 }
 
-// Handle song selection
 const selectSong = (result: SearchResult) => {
   selectedSong.value = result
   searchQuery.value = `${result.name} - ${result.artist}`
   dataSource.value = result.source
   searchResultsVisible.value = false
 
-  // Clear errors
   formErrors.value.songName = ''
   formErrors.value.artist = ''
-
-  // For position_change, show current position
-  if (predictionType.value === 'position_change' && result.chartPosition) {
-    // Maybe suggest a value based on trends?
-  }
 }
 
-// Create a custom entry
 const createCustomEntry = () => {
-  // Only create if there's some content
   if (!searchQuery.value.trim()) return
 
-  // Try to parse artist from song format "Song - Artist"
   let songName = searchQuery.value.trim()
   let artist = ''
 
@@ -347,16 +317,14 @@ const createCustomEntry = () => {
   selectSong(customSong)
 }
 
-// Clear song selection
 const clearSelection = () => {
   selectedSong.value = null
   searchQuery.value = ''
   searchResultsVisible.value = false
 }
 
-// Watch for prediction type changes to reset relevant fields
+// Reset position/change fields when switching types
 watch(predictionType, () => {
-  // Reset position/change fields when switching types
   if (predictionType.value === 'entry') {
     predictionChange.value = null
   } else if (predictionType.value === 'position_change') {
@@ -366,11 +334,9 @@ watch(predictionType, () => {
     predictionChange.value = null
   }
 
-  // Reset search fields
   selectedSong.value = null
   searchQuery.value = ''
 
-  // Clear errors for the previous type
   formErrors.value = {
     songName: '',
     artist: '',
@@ -380,16 +346,13 @@ watch(predictionType, () => {
   }
 })
 
-// Watch for chart type changes
+// Reset song selection when chart type changes
 watch(chartType, () => {
-  // Reset song selection when chart type changes
   selectedSong.value = null
   searchQuery.value = ''
 })
 
-// Input validation functions
 const validateForm = (): boolean => {
-  // Reset errors
   formErrors.value = {
     songName: '',
     artist: '',
@@ -400,7 +363,6 @@ const validateForm = (): boolean => {
 
   let isValid = true
 
-  // Validate song selection
   if (!selectedSong.value) {
     formErrors.value.songName = 'Please select a song'
     isValid = false
@@ -409,7 +371,6 @@ const validateForm = (): boolean => {
     isValid = false
   }
 
-  // Validate position for 'entry' prediction type
   if (predictionType.value === 'entry') {
     if (!position.value) {
       formErrors.value.position = 'Predicted position is required'
@@ -420,7 +381,6 @@ const validateForm = (): boolean => {
     }
   }
 
-  // Validate position change for 'position_change' prediction type
   if (predictionType.value === 'position_change') {
     if (!predictionChange.value && predictionChange.value !== 0) {
       formErrors.value.predictionChange = 'Predicted change is required'
@@ -441,7 +401,6 @@ const validateForm = (): boolean => {
 
   // Validate exit predictions
   if (predictionType.value === 'exit') {
-    // Context-aware validation
     if (
       selectedSong.value &&
       selectedSong.value.source !== 'chart' &&
@@ -455,25 +414,18 @@ const validateForm = (): boolean => {
   return isValid
 }
 
-// Submit the prediction
 const submitPrediction = async () => {
   if (!validateForm()) {
     return
   }
-
-  // Check authentication
   if (!authStore.user) {
     formErrors.value.general = 'You must be logged in to submit predictions'
     return
   }
-
-  // Check active contest
   if (!predictionStore.currentContest) {
     formErrors.value.general = 'No active prediction contest available'
     return
   }
-
-  // Check if we have a selected song
   if (!selectedSong.value) {
     formErrors.value.songName = 'Please select a song'
     return
@@ -482,7 +434,6 @@ const submitPrediction = async () => {
   try {
     isSubmitting.value = true
 
-    // Prepare submission data
     const submission: PredictionSubmission = {
       contest_id: contestId.value,
       chart_type: chartType.value,
@@ -494,21 +445,17 @@ const submitPrediction = async () => {
           ? position.value || 0
           : predictionType.value === 'position_change'
             ? predictionChange.value || 0
-            : 0, // For 'exit' predictions, position is just a placeholder
+            : 0,
     }
 
-    // Submit prediction
     const result = await predictionStore.createPrediction(submission)
 
     if (result) {
-      // Show success message
       showSuccess.value = true
       successMessage.value = 'Prediction submitted successfully!'
 
-      // Reset form
       resetForm()
 
-      // Hide success message after 3 seconds
       setTimeout(() => {
         showSuccess.value = false
       }, 3000)
@@ -523,7 +470,6 @@ const submitPrediction = async () => {
   }
 }
 
-// Reset form
 const resetForm = () => {
   predictionType.value = 'entry'
   selectedSong.value = null
@@ -540,12 +486,10 @@ const resetForm = () => {
   }
 }
 
-// Redirect to login
 const goToLogin = () => {
   router.push('/login')
 }
 
-// Format date for display
 const formatDate = (dateString: string | null | undefined): string => {
   return timezoneStore.formatDate(dateString)
 }
@@ -558,44 +502,27 @@ const handleClickOutside = (event: MouseEvent) => {
   }
 }
 
-// Set up click handler
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-
-  // Initialize by fetching the current contest if not already loaded
   if (!predictionStore.currentContest) {
     predictionStore.fetchCurrentContest()
   }
-
-  // Load favorites for logged in users
   if (authStore.user) {
     favouritesStore.loadFavourites()
   }
 })
 
-// Clean up event handlers
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-})
-
-// Check if deadline has passed
-const isDeadlinePassed = computed(() => {
-  if (!predictionStore.currentContest?.end_date) return false
-
-  const endDate = new Date(predictionStore.currentContest.end_date)
-  const now = new Date()
-
-  return endDate < now
 })
 </script>
 
 <template>
   <div class="prediction-form">
-    <h2>Make a Chart Prediction</h2>
+    <h2 class="text-2xl font-bold">Make a Chart Prediction</h2>
 
-    <!-- Contest Information -->
     <div v-if="hasActiveContest" class="contest-info">
-      <h3>Current Prediction Window</h3>
+      <h3 class="text-lg font-bold">Current Prediction Window</h3>
       <p>
         Make your predictions for the Billboard chart that will be released on
         <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong>
@@ -615,16 +542,19 @@ const isDeadlinePassed = computed(() => {
         v-if="predictionStore.loading.contest"
         label="Loading contest information..."
         size="medium"
+        class="loading-spinner"
       />
-      <div v-else>
-        <p>There is no active prediction contest at this time.</p>
-        <p>Check back soon for the next prediction window!</p>
-      </div>
+      <Message severity="warn" :closable="false">
+        There is no active prediction contest at this time.<br />
+        Check back soon for the next prediction window!</Message
+      >
     </div>
 
     <!-- Authentication Check -->
     <div v-if="!isLoggedIn" class="auth-required">
-      <p>You must be logged in to make predictions.</p>
+      <Message severity="error" :closable="false">
+        You must be logged in to make predictions.</Message
+      >
       <button @click="goToLogin" class="login-button">Login</button>
     </div>
 
@@ -747,7 +677,7 @@ const isDeadlinePassed = computed(() => {
             <!-- Search Results -->
             <div v-if="searchResultsVisible" class="search-results">
               <div v-if="isSearching" class="search-loading">
-                <LoadingSpinner size="small" label="Searching..." inline />
+                <LoadingSpinner class="loading-spinner" size="small" label="Searching..." inline />
               </div>
 
               <div v-else-if="searchResults.length === 0" class="no-results">
@@ -806,11 +736,21 @@ const isDeadlinePassed = computed(() => {
 
             <div class="favourites-list">
               <div v-if="isSearching" class="search-loading">
-                <LoadingSpinner size="small" label="Filtering favorites..." inline />
+                <LoadingSpinner
+                  class="loading-spinner"
+                  size="small"
+                  label="Filtering favorites..."
+                  inline
+                />
               </div>
 
               <div v-else-if="favouritesStore.loading" class="search-loading">
-                <LoadingSpinner size="small" label="Loading favorites..." inline />
+                <LoadingSpinner
+                  class="loading-spinner"
+                  size="small"
+                  label="Loading favorites..."
+                  inline
+                />
               </div>
 
               <div v-else-if="filteredFavorites.length === 0" class="no-results">
@@ -915,416 +855,3 @@ const isDeadlinePassed = computed(() => {
     </form>
   </div>
 </template>
-
-<style lang="scss" scoped>
-h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 1.5rem;
-}
-
-.contest-info {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 24px;
-}
-
-.contest-info h3 {
-  margin-top: 0;
-  margin-bottom: 12px;
-  font-size: 1.1rem;
-  color: #495057;
-}
-
-.contest-info p {
-  margin: 8px 0;
-  color: #6c757d;
-}
-
-.deadline {
-  color: #dc3545 !important;
-  font-weight: 500;
-}
-
-.remaining-count {
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: #e9ecef;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  display: inline-block;
-}
-
-.no-contest {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 24px;
-  color: #6c757d;
-}
-
-.auth-required {
-  background: #f8f9fa;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-.login-button {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.login-button:hover {
-  background: #0069d9;
-}
-
-.form-container {
-  margin-top: 16px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #495057;
-}
-
-.form-select,
-.form-input,
-.search-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: border-color 0.2s;
-}
-
-.form-select:focus,
-.form-input:focus,
-.search-input:focus {
-  outline: none;
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-}
-
-.form-select:disabled,
-.form-input:disabled,
-.search-input:disabled {
-  background-color: #f8f9fa;
-  cursor: not-allowed;
-}
-
-.prediction-type-description {
-  margin-top: 8px;
-  padding: 8px;
-  background: #e9ecef;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  color: #495057;
-}
-
-.input-hint {
-  margin-top: 6px;
-  font-size: 0.85rem;
-  color: #6c757d;
-}
-
-.reset-button {
-  padding: 10px 16px;
-  background: #f8f9fa;
-  color: #6c757d;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.reset-button:hover:not(:disabled) {
-  background: #e9ecef;
-}
-
-.submit-button {
-  padding: 10px 16px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: #0069d9;
-}
-
-.submit-button:disabled,
-.reset-button:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
-}
-
-/* Enhanced search functionality styles */
-.search-container {
-  position: relative;
-}
-
-.search-tabs {
-  display: flex;
-  margin-top: 8px;
-  border-bottom: 1px solid #dee2e6;
-}
-
-.main-tabs {
-  margin-bottom: 16px;
-}
-
-.tab-button {
-  padding: 6px 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: #6c757d;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-}
-
-.tab-button:hover:not(:disabled) {
-  color: #495057;
-}
-
-.tab-button.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
-}
-
-.tab-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.search-results {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 10;
-  margin-top: 8px;
-}
-
-.search-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px;
-  color: #6c757d;
-}
-
-.create-custom-btn {
-  margin-top: 8px;
-  padding: 6px 12px;
-  background: #f8f9fa;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  color: #495057;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.create-custom-btn:hover {
-  background: #e9ecef;
-}
-
-.results-list {
-  padding: 8px 0;
-}
-
-.result-item {
-  display: flex;
-  padding: 8px 16px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  align-items: center;
-  position: relative;
-}
-
-.result-item:hover {
-  background-color: #f8f9fa;
-}
-
-.result-image {
-  width: 40px;
-  height: 40px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-right: 12px;
-}
-
-.result-image-placeholder {
-  width: 40px;
-  height: 40px;
-  background-color: #e9ecef;
-  border-radius: 4px;
-  margin-right: 12px;
-}
-
-.result-details {
-  flex: 1;
-}
-
-.result-name {
-  font-weight: 500;
-  color: #212529;
-  margin-bottom: 2px;
-}
-
-.result-artist {
-  color: #6c757d;
-  font-size: 0.875rem;
-}
-
-.result-position {
-  color: #007bff;
-  font-size: 0.75rem;
-  margin-top: 2px;
-}
-
-.result-source {
-  font-size: 0.7rem;
-  color: #6c757d;
-  margin-top: 2px;
-}
-
-.create-custom-option {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 16px;
-  border: none;
-  background-color: #f8f9fa;
-  border-top: 1px solid #dee2e6;
-  color: #495057;
-  cursor: pointer;
-  font-size: 0.875rem;
-}
-
-.create-custom-option:hover {
-  background-color: #e9ecef;
-}
-
-/* Selected song display */
-.selected-song {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  background-color: #f8f9fa;
-}
-
-.selected-song-content {
-  display: flex;
-  align-items: center;
-}
-
-.selected-song-image {
-  width: 64px;
-  height: 64px;
-  object-fit: cover;
-  border-radius: 4px;
-  margin-right: 16px;
-}
-
-.selected-song-image-placeholder {
-  width: 64px;
-  height: 64px;
-  background-color: #e9ecef;
-  border-radius: 4px;
-  margin-right: 16px;
-}
-
-.selected-song-details {
-  flex: 1;
-}
-
-.selected-song-name {
-  font-weight: 600;
-  color: #212529;
-  margin-bottom: 4px;
-}
-
-.selected-song-artist {
-  color: #495057;
-  margin-bottom: 4px;
-}
-
-.selected-song-position {
-  color: #007bff;
-  font-size: 0.875rem;
-  margin-bottom: 4px;
-}
-
-.selected-song-source {
-  font-size: 0.75rem;
-  color: #6c757d;
-}
-
-.clear-selection-btn {
-  background: none;
-  border: none;
-  color: #6c757d;
-  font-size: 1.25rem;
-  cursor: pointer;
-  padding: 4px 8px;
-  line-height: 1;
-}
-
-.clear-selection-btn:hover {
-  color: #dc3545;
-}
-
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.current-position-reminder {
-  background-color: #e3f2fd;
-  padding: 8px 12px;
-  border-radius: 4px;
-  color: #0d6efd;
-  font-size: 0.875rem;
-  margin-bottom: 8px;
-  border-left: 3px solid #0d6efd;
-}
-</style>

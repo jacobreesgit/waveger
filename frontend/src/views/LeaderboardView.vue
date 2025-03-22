@@ -7,7 +7,6 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
 
-// Leaderboard state
 const period = ref<'all' | 'weekly'>('all')
 const currentPage = ref(1)
 const entriesPerPage = 10
@@ -15,49 +14,38 @@ const isLoading = computed(() => predictionStore.loading.leaderboard)
 const error = computed(() => predictionStore.error.leaderboard)
 const hasMorePages = ref(true)
 
-// Computed property for current page entries
 const paginatedLeaderboard = computed(() => {
   const startIndex = (currentPage.value - 1) * entriesPerPage
   const endIndex = startIndex + entriesPerPage
   return predictionStore.leaderboard.slice(startIndex, endIndex)
 })
 
-// Computed property for total pages
 const totalPages = computed(() => {
   return Math.ceil(predictionStore.leaderboard.length / entriesPerPage)
 })
 
-// Determine if user is highlighted in the leaderboard
 const isCurrentUser = (userId: number) => {
   return authStore.user && authStore.user.id === userId
 }
 
-// Load leaderboard data
 const loadLeaderboard = async () => {
   try {
-    // Get active contest if available (for weekly leaderboard)
     let contestId: number | undefined
     if (period.value === 'weekly' && predictionStore.currentContest) {
       contestId = predictionStore.currentContest.id
     }
-
     await predictionStore.fetchLeaderboard({
       period: period.value,
       contest_id: contestId,
       limit: 100, // Fetch enough to support pagination client-side
     })
-
-    // Check if there are more pages
     hasMorePages.value = predictionStore.leaderboard.length > entriesPerPage * currentPage.value
-
-    // Reset to first page when changing period
     currentPage.value = 1
   } catch (error) {
     console.error('Error loading leaderboard:', error)
   }
 }
 
-// Pagination methods
 const goToPage = (page: number) => {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page
@@ -76,23 +64,17 @@ const goToNextPage = () => {
   }
 }
 
-// Handle period change
 watch(period, () => {
   loadLeaderboard()
 })
 
-// Load data on mount
 onMounted(async () => {
-  // First ensure we have contest data
   if (!predictionStore.currentContest) {
     await predictionStore.fetchCurrentContest()
   }
-
-  // Then load leaderboard
   await loadLeaderboard()
 })
 
-// Format accuracy percentage
 const formatAccuracy = (value: number): string => {
   return `${value.toFixed(1)}%`
 }
@@ -101,7 +83,7 @@ const formatAccuracy = (value: number): string => {
 <template>
   <div class="leaderboard-view">
     <div class="leaderboard-content">
-      <h2>Predictions Leaderboard</h2>
+      <h1 class="text-3xl font-bold">Predictions Leaderboard</h1>
 
       <!-- Period toggle -->
       <div class="period-toggle">
@@ -120,6 +102,7 @@ const formatAccuracy = (value: number): string => {
 
       <LoadingSpinner
         v-if="isLoading"
+        class="loading-spinner"
         label="Loading leaderboard data..."
         centerInContainer
         size="medium"
@@ -187,7 +170,6 @@ const formatAccuracy = (value: number): string => {
         </div>
       </div>
 
-      <!-- Explanation for weekly leaderboard when no contest is active -->
       <Message
         v-if="period === 'weekly' && !predictionStore.currentContest"
         severity="info"
@@ -199,195 +181,3 @@ const formatAccuracy = (value: number): string => {
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.leaderboard-view {
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.leaderboard-content {
-  background: white;
-  border-radius: 12px;
-  flex-direction: column;
-  display: flex;
-  align-items: center;
-}
-
-h2 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  color: #333;
-  font-size: 1.5rem;
-}
-
-.period-toggle {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-  gap: 12px;
-}
-
-.toggle-button {
-  padding: 8px 16px;
-  border: 1px solid #dee2e6;
-  background: #f8f9fa;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-
-  &.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-
-  &.disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  &:hover:not(.active):not(.disabled) {
-    background: #e9ecef;
-  }
-}
-
-.leaderboard-table-container {
-  overflow-x: auto;
-}
-
-.leaderboard-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: 12px 16px;
-    text-align: left;
-    border-bottom: 1px solid #dee2e6;
-  }
-
-  th {
-    background: #f8f9fa;
-    color: #495057;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-  }
-
-  tr.current-user {
-    background: #e8f4ff;
-    font-weight: 500;
-  }
-
-  tr:hover:not(.current-user) {
-    background: #f8f9fa;
-  }
-
-  .rank-cell {
-    text-align: center;
-    font-weight: 600;
-    width: 60px;
-  }
-
-  .username-cell {
-    font-weight: 500;
-  }
-
-  .points-cell {
-    font-weight: 600;
-    color: #007bff;
-  }
-
-  .accuracy-cell {
-    color: #28a745;
-  }
-}
-
-.pagination-controls {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 24px;
-  gap: 16px;
-}
-
-.pagination-button {
-  padding: 8px 16px;
-  background: #f8f9fa;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #e9ecef;
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
-
-.page-indicators {
-  display: flex;
-  gap: 8px;
-}
-
-.page-button {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #dee2e6;
-  border-radius: 4px;
-  background: #f8f9fa;
-  cursor: pointer;
-
-  &.active {
-    background: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-
-  &:hover:not(.active) {
-    background: #e9ecef;
-  }
-}
-
-.info-message {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  color: #6c757d;
-  text-align: center;
-  font-style: italic;
-}
-
-// Responsive styles
-@media (max-width: 639px) {
-  .leaderboard-table {
-    th,
-    td {
-      padding: 8px;
-    }
-
-    .predictions-cell,
-    .correct-cell {
-      display: none;
-    }
-  }
-
-  .page-indicators {
-    // Show only 3 pages on mobile
-    .page-button:nth-child(n + 4):not(:last-child):not(:nth-last-child(2)) {
-      display: none;
-    }
-  }
-}
-</style>

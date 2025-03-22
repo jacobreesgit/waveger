@@ -174,9 +174,14 @@ watch(activeTab, async () => {
 
 <template>
   <div class="prediction-view">
-    <h1>Billboard Chart Predictions</h1>
+    <h1 class="text-3xl font-bold">Predictions</h1>
 
-    <LoadingSpinner v-if="isLoading" label="Loading prediction data..." centerInContainer />
+    <LoadingSpinner
+      v-if="isLoading"
+      class="loading-spinner"
+      label="Loading prediction data..."
+      centerInContainer
+    />
 
     <div v-else-if="error" class="error-container">
       <p>{{ error }}</p>
@@ -185,7 +190,7 @@ watch(activeTab, async () => {
 
     <!-- Authentication check -->
     <div v-else-if="!authStore.user" class="auth-required">
-      <h2>Authentication Required</h2>
+      <h2 class="text-2xl font-bold">Authentication Required</h2>
       <p>You need to log in to make Billboard chart predictions.</p>
       <button @click="navigateToAuth" class="auth-button">Log In</button>
     </div>
@@ -270,10 +275,13 @@ watch(activeTab, async () => {
 
         <!-- User predictions -->
         <div class="user-predictions-section">
-          <h2 :class="{ isDeadlinePassed }">Your {{ activeTab }} Predictions</h2>
+          <h2 class="text-2xl font-bold" :class="{ isDeadlinePassed }">
+            Your {{ activeTab }} Predictions
+          </h2>
 
           <LoadingSpinner
             v-if="predictionStore.loading.predictions"
+            class="loading-spinner"
             label="Loading your predictions..."
             size="small"
             centerInContainer
@@ -297,7 +305,7 @@ watch(activeTab, async () => {
               <div class="prediction-type-badge">{{ prediction.prediction_type }}</div>
 
               <div class="prediction-header">
-                <h3>{{ prediction.target_name }}</h3>
+                <h3 class="text-lg font-bold">{{ prediction.target_name }}</h3>
                 <div class="prediction-artist">{{ prediction.artist }}</div>
               </div>
 
@@ -375,313 +383,3 @@ watch(activeTab, async () => {
     </div>
   </div>
 </template>
-
-<style lang="scss" scoped>
-.prediction-view {
-}
-
-h1 {
-  margin-bottom: 24px;
-  color: #333;
-}
-
-.auth-required {
-  text-align: center;
-  padding: 40px 20px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.auth-button {
-  padding: 12px 24px;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.auth-button:hover {
-  background: #0069d9;
-}
-
-.prediction-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  width: 100%;
-}
-
-.contest-info-container {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.contest-message {
-  width: 100%;
-}
-
-.message-header {
-  display: flex;
-  align-items: center;
-}
-
-.message-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.contest-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.contest-date-range {
-  margin-bottom: 10px;
-  color: #333;
-  font-weight: 500;
-}
-
-.contest-date-range.closed {
-  color: #dc3545;
-}
-
-.contest-release-info {
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.expired-tag {
-  display: inline-block;
-  background-color: #dc3545;
-  color: white;
-  font-weight: bold;
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-left: 8px;
-}
-
-.no-contest {
-  text-align: center;
-  color: #6c757d;
-}
-
-.no-contest h3 {
-  color: #6c757d;
-}
-
-.chart-tabs {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.tab-button {
-  padding: 12px 24px;
-  background: #f8f9fa;
-  border: 1px solid #e9ecef;
-  border-radius: 6px;
-  font-size: 16px;
-  font-weight: 500;
-  color: #6c757d;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.tab-button:hover {
-  background: #e9ecef;
-}
-
-.tab-button.active {
-  background: #007bff;
-  color: white;
-  border-color: #007bff;
-}
-
-.prediction-sections {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.prediction-sections.deadline-passed {
-  grid-template-columns: 1fr;
-}
-
-.prediction-form-section,
-.user-predictions-section {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-bottom: 24px;
-}
-
-.user-predictions-section h2 {
-  margin-top: 0;
-  margin-bottom: 16px;
-  color: #333;
-  font-size: 1.25rem;
-  &.isDeadlinePassed {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: #333;
-    font-size: 1.5rem;
-  }
-}
-
-.predictions-loading {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #6c757d;
-}
-
-.no-predictions {
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  text-align: center;
-  color: #6c757d;
-}
-
-.predictions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.prediction-card {
-  position: relative;
-  padding: 16px;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border-left: 4px solid #6c757d;
-  transition: transform 0.2s;
-}
-
-.prediction-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.prediction-card.pending {
-  border-left-color: #007bff;
-}
-
-.prediction-card.correct {
-  border-left-color: #28a745;
-}
-
-.prediction-card.incorrect {
-  border-left-color: #dc3545;
-}
-
-.prediction-type-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  padding: 4px 8px;
-  background: #e9ecef;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #6c757d;
-  text-transform: capitalize;
-}
-
-.prediction-header {
-  margin-bottom: 12px;
-  padding-right: 80px; /* Make room for the type badge */
-}
-
-.prediction-header h3 {
-  margin: 0 0 4px 0;
-  color: #333;
-  font-size: 1.1rem;
-}
-
-.prediction-artist {
-  color: #6c757d;
-  font-size: 0.9rem;
-}
-
-.prediction-details {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.9rem;
-}
-
-.prediction-date {
-  color: #6c757d;
-  font-size: 0.8rem;
-  margin-top: 4px;
-}
-
-.positive-change {
-  color: #28a745;
-}
-
-.negative-change {
-  color: #dc3545;
-}
-
-.prediction-result {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid #e9ecef;
-}
-
-.result-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 0.8rem;
-  margin-bottom: 8px;
-}
-
-.result-badge.correct {
-  background: #d4edda;
-  color: #155724;
-}
-
-.result-badge.incorrect {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.points-earned {
-  font-weight: 500;
-}
-
-/* Responsive styles */
-@media (max-width: 900px) {
-  .prediction-sections {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 600px) {
-  .contest-details {
-    flex-direction: column;
-  }
-
-  .chart-tabs {
-    flex-direction: column;
-  }
-
-  .tab-button {
-    width: 100%;
-  }
-}
-</style>
