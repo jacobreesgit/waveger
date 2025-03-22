@@ -2,6 +2,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
+import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils' // Import from utility file
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
 
@@ -19,26 +20,9 @@ const isNotToday = computed(() => {
   return todayDate.getTime() !== selectedDateTime.getTime()
 })
 
-const formatDateForURL = (dateObj: Date): string => {
-  const day = dateObj.getDate().toString().padStart(2, '0')
-  const month = (dateObj.getMonth() + 1).toString().padStart(2, '0')
-  const year = dateObj.getFullYear()
-  return `${day}-${month}-${year}`
-}
-
-const parseDateFromURL = (urlDate: string): Date => {
-  try {
-    const [day, month, year] = urlDate.split('-')
-    return new Date(`${year}-${month}-${day}`)
-  } catch (e) {
-    console.error('Date parsing error:', e)
-    return new Date() // Return today as fallback
-  }
-}
-
 // Update the route when the date changes - using query parameters
 const updateRoute = async (newDate: Date) => {
-  const urlDate = formatDateForURL(newDate)
+  const urlDate = formatDateForURL(newDate.toISOString().split('T')[0])
   const chartId = route.query.id || 'hot-100'
   console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
   await router.push({
@@ -60,7 +44,7 @@ watch(
   (newDate) => {
     if (newDate) {
       console.log(`Route date query param changed to: ${newDate}`)
-      selectedDate.value = parseDateFromURL(newDate as string)
+      selectedDate.value = new Date(parseDateFromURL(newDate as string))
     }
   },
   { immediate: true },
@@ -71,7 +55,7 @@ watch(selectedDate, async (newDate) => {
   console.log(`Date picker changed to: ${newDate}`)
   // Only update route if the date actually changed
   const currentUrlDate = route.query.date as string
-  const newUrlDate = formatDateForURL(newDate)
+  const newUrlDate = formatDateForURL(newDate.toISOString().split('T')[0])
   if (!currentUrlDate || currentUrlDate !== newUrlDate) {
     await updateRoute(newDate)
   }
@@ -79,7 +63,7 @@ watch(selectedDate, async (newDate) => {
 
 onMounted(() => {
   if (route.query.date) {
-    selectedDate.value = parseDateFromURL(route.query.date as string)
+    selectedDate.value = new Date(parseDateFromURL(route.query.date as string))
   } else {
     updateRoute(today)
   }

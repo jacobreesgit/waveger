@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import type { ChartData } from '@/types/api'
 import { getChartDetails } from '@/services/api'
+import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils' // Import from utility file
 
 export const useChartsStore = defineStore('charts', () => {
   const currentChart = ref<ChartData | null>(null)
@@ -97,23 +98,6 @@ export const useChartsStore = defineStore('charts', () => {
     })
   }
 
-  // Helper method to parse date from URL format
-  const parseDateFromURL = (urlDate: string): string => {
-    try {
-      const [day, month, year] = urlDate.split('-')
-      return `${year}-${month}-${day}`
-    } catch (e) {
-      console.error('Date parsing error:', e)
-      return new Date().toISOString().split('T')[0]
-    }
-  }
-
-  // Helper method to format date for URL
-  const formatDateForURL = (date: string): string => {
-    const [year, month, day] = date.split('-')
-    return `${day}-${month}-${year}`
-  }
-
   // Method to load current chart (for retry functionality)
   const loadCurrentChart = async (itemsPerRequest = 8) => {
     const lastViewedDate = localStorage.getItem('lastViewedDate')
@@ -153,6 +137,8 @@ export const useChartsStore = defineStore('charts', () => {
     fetchChartDetails,
     fetchMoreSongs,
     loadCurrentChart,
+    // We retain these methods in the store's return value for backwards compatibility
+    // but they now use the imported utility functions
     parseDateFromURL,
     formatDateForURL,
     initialize,

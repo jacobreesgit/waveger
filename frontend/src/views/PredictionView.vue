@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 import PredictionForm from '@/components/PredictionForm.vue'
 import type { Prediction } from '@/types/predictions'
 import axios from 'axios'
-import { useTimezoneStore } from '@/stores/timezone'
+import { formatDate, formatTimeOnly } from '@/utils/dateUtils' // Import from utility file
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
@@ -14,7 +14,6 @@ import Message from 'primevue/message'
 const router = useRouter()
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
-const timezoneStore = useTimezoneStore()
 
 // UI state
 const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
@@ -34,11 +33,6 @@ const userPredictions = computed(() => {
   return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
 })
 
-// Format date for display
-const formatDate = (dateString: string | null | undefined): string => {
-  return timezoneStore.formatDate(dateString)
-}
-
 // Format a specific time in UTC to the user's timezone
 const formatTransitionTime = () => {
   // Create a date object for 2PM UTC today
@@ -55,7 +49,7 @@ const formatTransitionTime = () => {
   )
 
   // Format only the time portion
-  return timezoneStore.formatTimeOnly(transitionDate.toISOString())
+  return formatTimeOnly(transitionDate.toISOString())
 }
 
 // Check if the transition time has passed today

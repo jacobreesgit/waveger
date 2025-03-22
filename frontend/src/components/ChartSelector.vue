@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
+import { parseDateFromURL, formatDateForURL } from '@/utils/dateUtils' // Import from utility file
 import Select from 'primevue/select'
 
 const store = useChartsStore()
@@ -26,16 +27,6 @@ const chartOptions = [
   { id: 'indie-store-album-sales', title: 'Indie Store Album Sales' },
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
-
-const parseDateFromURL = (urlDate: string): string => {
-  try {
-    const [day, month, year] = urlDate.split('-')
-    return `${year}-${month}-${day}`
-  } catch (e) {
-    console.error('Date parsing error:', e)
-    return new Date().toISOString().split('T')[0]
-  }
-}
 
 // Helper to normalize chart IDs (remove trailing slashes)
 const normalizeChartId = (id: string): string => {
@@ -65,11 +56,6 @@ const updateRoute = async () => {
       id: chartId,
     },
   })
-}
-
-const formatDateForURL = (date: string): string => {
-  const [year, month, day] = date.split('-')
-  return `${day}-${month}-${year}`
 }
 
 watch(selectedChartId, async (newValue, oldValue) => {
