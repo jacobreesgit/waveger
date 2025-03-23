@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useFavouritesStore } from '@/stores/favourites'
 import { usePredictionsStore } from '@/stores/predictions'
+import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
@@ -45,7 +46,7 @@ const onTabChange = (value: any) => {
 onMounted(async () => {
   try {
     // Initialize data for the active user
-    if (authStore.user) {
+    if (!isAuthenticated()) {
       // Load predictions and favourites data based on current route
       if (activeTabValue.value === 'favourites' || activeTabValue.value === 'predictions') {
         await Promise.all([
@@ -98,7 +99,7 @@ onMounted(async () => {
         You must be logged in to view your profile.
       </Message>
       <div class="text-center mt-4">
-        <Button label="Login" @click="router.push('/login')" class="mr-2" />
+        <Button label="Login" @click="redirectToLogin(router, '/profile')" class="mr-2" />
         <Button label="Register" @click="router.push('/register')" severity="secondary" />
       </div>
     </div>

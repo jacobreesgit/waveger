@@ -14,6 +14,8 @@ import ProfileAccountTab from '@/views/ProfileAccountTab.vue'
 import ProfileFavouritesTab from '@/views/ProfileFavouritesTab.vue'
 import ProfilePredictionsTab from '@/views/ProfilePredictionsTab.vue'
 
+import { isAuthenticated } from '@/utils/authUtils'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -142,17 +144,19 @@ const router = createRouter({
 
 // Navigation guard
 router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore()
-
   // Check if the route requires authentication
   if (to.matched.some((record) => record.meta.requiresAuth)) {
-    // If no user is logged in, redirect to login
-    if (!authStore.user) {
-      next('/login')
+    if (!isAuthenticated()) {
+      // Redirect to login with return path
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath },
+      })
       return
     }
   }
 
+  // Route doesn't require auth or user is authenticated
   next()
 })
 

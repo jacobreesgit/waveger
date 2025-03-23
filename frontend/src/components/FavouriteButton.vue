@@ -2,6 +2,7 @@
 import { ref, onMounted, computed, watchEffect } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useAuthStore } from '@/stores/auth'
+import { isAuthenticated } from '@/utils/authUtils'
 import Button from 'primevue/button'
 import type { Song } from '@/types/api'
 
@@ -25,7 +26,7 @@ const toggleFavourite = async (event: Event) => {
   // Stop event from bubbling up (in case button is inside a clickable card)
   event.stopPropagation()
 
-  if (!authStore.user) {
+  if (!isAuthenticated()) {
     // If not logged in, redirect to login (or show a login modal, etc.)
     alert('Please log in to add favourites')
     return
@@ -42,16 +43,16 @@ const toggleFavourite = async (event: Event) => {
   }
 }
 
-// Initial load of favourites when component mounts
-onMounted(async () => {
-  if (authStore.user && !favouritesStore.favourites.length) {
+// Watch for auth changes to load favourites when a user logs in
+watchEffect(async () => {
+  if (isAuthenticated() && !favouritesStore.loading) {
     await favouritesStore.loadFavourites()
   }
 })
 
-// Watch for auth changes to load favourites when a user logs in
-watchEffect(async () => {
-  if (authStore.user && !favouritesStore.loading) {
+// Initial load of favourites when component mounts
+onMounted(async () => {
+  if (isAuthenticated() && !favouritesStore.favourites.length) {
     await favouritesStore.loadFavourites()
   }
 })

@@ -3,10 +3,11 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
+import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import PredictionForm from '@/components/PredictionForm.vue'
 import type { Prediction } from '@/types/predictions'
 import axios from 'axios'
-import { formatDate, formatTimeOnly } from '@/utils/dateUtils' // Import from utility file
+import { formatDate, formatTimeOnly } from '@/utils/dateUtils'
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
@@ -101,7 +102,7 @@ const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'i
 
 // Navigate to authentication page if needed
 const navigateToAuth = () => {
-  router.push('/login')
+  redirectToLogin(router, '/predictions')
 }
 
 // Change the active chart tab
@@ -183,7 +184,7 @@ watch(activeTab, async () => {
     </div>
 
     <!-- Authentication check -->
-    <div v-else-if="!authStore.user" class="auth-required">
+    <div v-else-if="!isAuthenticated()" class="auth-required">
       <h2 class="text-2xl font-bold">Authentication Required</h2>
       <p>You need to log in to make Billboard chart predictions.</p>
       <button @click="navigateToAuth" class="auth-button">Log In</button>

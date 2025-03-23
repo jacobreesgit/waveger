@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useRouter } from 'vue-router'
+import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import type { PredictionSubmission, SearchResult } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -45,7 +46,7 @@ const isSubmitting = ref(false)
 const showSuccess = ref(false)
 const successMessage = ref('')
 
-const isLoggedIn = computed(() => !!authStore.user)
+const isLoggedIn = computed(() => isAuthenticated())
 
 const hasActiveContest = computed(() => !!predictionStore.currentContest)
 
@@ -408,7 +409,7 @@ const submitPrediction = async () => {
   if (!validateForm()) {
     return
   }
-  if (!authStore.user) {
+  if (!isAuthenticated()) {
     formErrors.value.general = 'You must be logged in to submit predictions'
     return
   }
@@ -477,7 +478,7 @@ const resetForm = () => {
 }
 
 const goToLogin = () => {
-  router.push('/login')
+  redirectToLogin(router, '/predictions')
 }
 
 const formatDate = (dateString: string | null | undefined): string => {
