@@ -4,14 +4,13 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
   validateRegistrationForm,
-  checkUsernameAvailability,
-  checkEmailAvailability,
+  createDebouncedUsernameCheck,
+  createDebouncedEmailCheck,
 } from '@/utils/validation'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
-import _ from 'lodash' // Import lodash
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -83,65 +82,47 @@ const handleRegister = async () => {
   }
 }
 
-// Create the debounced functions using Lodash
-const debouncedCheckUsername = _.debounce(async (value: string) => {
-  if (!value) {
-    usernameAvailable.value = null
-    return
-  }
-
-  try {
-    const isAvailable = await checkUsernameAvailability(value)
+// Create debounced check functions using the utility
+const debouncedCheckUsername = createDebouncedUsernameCheck(
+  (isAvailable) => {
     usernameAvailable.value = isAvailable
-    formErrors.username = isAvailable ? '' : 'Username is already taken'
-  } catch (error) {
-    console.error('Error checking username availability:', error)
-  } finally {
-    checkingUsername.value = false
-  }
-}, 500)
+    formErrors.username = isAvailable === false ? 'Username is already taken' : ''
+  },
+  (isLoading) => {
+    checkingUsername.value = isLoading
+  },
+)
 
-const debouncedCheckEmail = _.debounce(async (value: string) => {
-  if (!value) {
-    emailAvailable.value = null
-    return
-  }
-
-  try {
-    const isAvailable = await checkEmailAvailability(value)
+const debouncedCheckEmail = createDebouncedEmailCheck(
+  (isAvailable) => {
     emailAvailable.value = isAvailable
-    formErrors.email = isAvailable ? '' : 'Email is already registered'
-  } catch (error) {
-    console.error('Error checking email availability:', error)
-  } finally {
-    checkingEmail.value = false
-  }
-}, 500)
+    formErrors.email = isAvailable === false ? 'Email is already registered' : ''
+  },
+  (isLoading) => {
+    checkingEmail.value = isLoading
+  },
+)
 
-// Update watch handlers to use the Lodash debounced functions
+// Update the watchers
 watch(username, (newValue) => {
   if (newValue) {
-    checkingUsername.value = true
     usernameAvailable.value = null
+    debouncedCheckUsername(newValue)
   } else {
     usernameAvailable.value = null
-    checkingUsername.value = false
   }
-  debouncedCheckUsername(newValue)
 })
 
 watch(email, (newValue) => {
   if (newValue) {
-    checkingEmail.value = true
     emailAvailable.value = null
+    debouncedCheckEmail(newValue)
   } else {
     emailAvailable.value = null
-    checkingEmail.value = false
   }
-  debouncedCheckEmail(newValue)
 })
 
-// Clean up debounced functions on component unmount
+// Clean up debounced functions
 onBeforeUnmount(() => {
   debouncedCheckUsername.cancel()
   debouncedCheckEmail.cancel()

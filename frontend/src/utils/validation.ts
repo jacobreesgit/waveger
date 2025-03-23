@@ -1,4 +1,5 @@
 import axios from 'axios'
+import _ from 'lodash'
 
 export interface ValidationResult {
   isValid: boolean
@@ -164,8 +165,85 @@ export async function checkEmailAvailability(email: string): Promise<boolean> {
   }
 }
 
-// Add these functions to frontend/src/utils/validation.ts
+/**
+ * Create a debounced function to check username availability
+ * @param callback Function to call with availability result
+ * @param loadingCallback Function to call with loading state
+ * @param wait Debounce wait time in milliseconds
+ * @returns Debounced function
+ */
+export const createDebouncedUsernameCheck = (
+  callback: (isAvailable: boolean | null) => void,
+  loadingCallback: (isLoading: boolean) => void,
+  wait = 500,
+) => {
+  return _.debounce(async (username: string, currentUsername?: string) => {
+    if (!username) {
+      callback(null)
+      loadingCallback(false)
+      return
+    }
 
+    // Skip check if username hasn't changed from current
+    if (currentUsername && username === currentUsername) {
+      callback(null)
+      loadingCallback(false)
+      return
+    }
+
+    try {
+      loadingCallback(true)
+      const isAvailable = await checkUsernameAvailability(username)
+      callback(isAvailable)
+    } catch (error) {
+      console.error('Error checking username availability:', error)
+      callback(null)
+    } finally {
+      loadingCallback(false)
+    }
+  }, wait)
+}
+
+/**
+ * Create a debounced function to check email availability
+ * @param callback Function to call with availability result
+ * @param loadingCallback Function to call with loading state
+ * @param wait Debounce wait time in milliseconds
+ * @returns Debounced function
+ */
+export const createDebouncedEmailCheck = (
+  callback: (isAvailable: boolean | null) => void,
+  loadingCallback: (isLoading: boolean) => void,
+  wait = 500,
+) => {
+  return _.debounce(async (email: string, currentEmail?: string) => {
+    if (!email) {
+      callback(null)
+      loadingCallback(false)
+      return
+    }
+
+    // Skip check if email hasn't changed from current
+    if (currentEmail && email === currentEmail) {
+      callback(null)
+      loadingCallback(false)
+      return
+    }
+
+    try {
+      loadingCallback(true)
+      const isAvailable = await checkEmailAvailability(email)
+      callback(isAvailable)
+    } catch (error) {
+      console.error('Error checking email availability:', error)
+      callback(null)
+    } finally {
+      loadingCallback(false)
+    }
+  }, wait)
+}
+
+// Password validation functions
 export interface PasswordValidationResult {
   isValid: boolean
   errors: string[]
