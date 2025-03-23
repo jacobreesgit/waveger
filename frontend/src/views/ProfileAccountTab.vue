@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router' // Import router for redirection after logout
+import { useRouter } from 'vue-router'
 import {
   validatePassword,
   createDebouncedUsernameCheck,
   createDebouncedEmailCheck,
+  checkUsernameAvailability,
+  checkEmailAvailability,
 } from '@/utils/validation'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
