@@ -110,6 +110,26 @@ const avatarGradient = computed(() => {
   return gradients[index]
 })
 
+// Compute the optimal text color based on background brightness
+const avatarTextColor = computed(() => {
+  // Extract the main color from the gradient to analyze
+  const match = avatarGradient.value.match(/#[0-9A-F]{6}/i)
+  const mainColor = match ? match[0].toLowerCase() : '#3b82f6'
+
+  // Calculate color brightness with proper normalization
+  const r = parseInt(mainColor.slice(1, 3), 16) / 255
+  const g = parseInt(mainColor.slice(3, 5), 16) / 255
+  const b = parseInt(mainColor.slice(5, 7), 16) / 255
+
+  // WCAG luminance formula (gives proper weight to each color)
+  // This better handles problematic colors like magenta
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+  // Lower threshold to catch medium-brightness colors like magenta
+  // Standard is 0.5, but 0.45 will make more colors use white text
+  return luminance > 0.45 ? '#000000' : '#ffffff'
+})
+
 // Calculate account age
 const accountAge = computed(() => {
   if (!authStore.user?.created_at) return 'New account'
@@ -368,14 +388,14 @@ const updatePassword = async () => {
       class="profile-header mb-6 p-6 rounded-lg border border-gray-200 bg-white flex flex-col md:flex-row items-center gap-6"
     >
       <div
-        class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
+        class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold overflow-hidden"
         :style="{ background: avatarGradient }"
       >
         <Avatar
           :label="userInitials"
           size="xlarge"
           class="profile-avatar"
-          :style="{ background: 'transparent' }"
+          :style="{ background: 'transparent', color: avatarTextColor }"
         />
       </div>
       <div class="profile-info flex-grow">
