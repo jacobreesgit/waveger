@@ -706,7 +706,7 @@ const updatePassword = async () => {
         </div>
       </Divider>
 
-      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
         <!-- Total Predictions -->
         <Panel
           header="Total Predictions"
@@ -715,14 +715,9 @@ const updatePassword = async () => {
           <template #icons>
             <i class="pi pi-hashtag text-blue-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-blue-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-blue-600">
             {{ authStore.user?.predictions_made || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.predictions_made ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out' }"
-          />
         </Panel>
 
         <!-- Correct Predictions -->
@@ -733,14 +728,9 @@ const updatePassword = async () => {
           <template #icons>
             <i class="pi pi-check-circle text-green-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-green-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-green-600">
             {{ authStore.user?.correct_predictions || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.correct_predictions ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#10B981' }"
-          />
         </Panel>
 
         <!-- Accuracy -->
@@ -769,14 +759,9 @@ const updatePassword = async () => {
           <template #icons>
             <i class="pi pi-star-fill text-amber-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-amber-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-amber-600">
             {{ authStore.user?.total_points || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.total_points ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#F59E0B' }"
-          />
         </Panel>
       </div>
     </div>
