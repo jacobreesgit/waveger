@@ -17,7 +17,6 @@ import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
-import Badge from 'primevue/badge'
 import Panel from 'primevue/panel'
 
 const router = useRouter()
@@ -366,7 +365,7 @@ const updatePassword = async () => {
 
     <!-- User profile header -->
     <div
-      class="profile-header mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg flex flex-col md:flex-row items-center gap-6"
+      class="profile-header mb-6 p-6 rounded-lg border border-gray-200 bg-white flex flex-col md:flex-row items-center gap-6"
     >
       <div
         class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
@@ -400,9 +399,9 @@ const updatePassword = async () => {
     </div>
 
     <!-- Account settings section -->
-    <div class="account-settings mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg">
+    <div class="account-settings mb-6 p-6 rounded-lg border border-gray-200 bg-white">
       <Divider align="left">
-        <div class="inline-flex align-items-center">
+        <div class="inline-flex align-items-center items-center">
           <i class="pi pi-user-edit mr-2 text-blue-500"></i>
           <span class="text-xl font-bold">Account Settings</span>
         </div>
@@ -420,9 +419,7 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditUsername"
             aria-label="Edit username"
-          >
-            <Badge value="Edit" severity="info" class="ml-1"></Badge>
-          </Button>
+          />
         </div>
 
         <div v-if="!editingUsername" class="setting-value font-medium text-lg">
@@ -503,9 +500,7 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditEmail"
             aria-label="Edit email"
-          >
-            <Badge value="Edit" severity="info" class="ml-1"></Badge>
-          </Button>
+          />
         </div>
 
         <div v-if="!editingEmail" class="setting-value font-medium text-lg">
@@ -578,9 +573,7 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditPassword"
             aria-label="Change password"
-          >
-            <Badge value="Edit" severity="info" class="ml-1"></Badge>
-          </Button>
+          />
         </div>
 
         <div v-if="!editingPassword" class="setting-value font-medium text-lg">••••••••••••</div>
@@ -696,7 +689,7 @@ const updatePassword = async () => {
 
     <!-- Stats section -->
     <div
-      class="prediction-stats-section mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg"
+      class="prediction-stats-section mb-6 p-6 rounded-lg border border-gray-200 bg-white"
       :class="{ 'opacity-0': !statsVisible, 'transition-opacity duration-300': true }"
     >
       <Divider align="left" class="mt-6">
@@ -706,47 +699,37 @@ const updatePassword = async () => {
         </div>
       </Divider>
 
-      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
         <!-- Total Predictions -->
         <Panel
           header="Total Predictions"
-          class="stat-card bg-blue-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
         >
           <template #icons>
             <i class="pi pi-hashtag text-blue-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-blue-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-blue-600">
             {{ authStore.user?.predictions_made || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.predictions_made ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out' }"
-          />
         </Panel>
 
         <!-- Correct Predictions -->
         <Panel
           header="Correct Predictions"
-          class="stat-card bg-green-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
         >
           <template #icons>
             <i class="pi pi-check-circle text-green-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-green-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-green-600">
             {{ authStore.user?.correct_predictions || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.correct_predictions ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#10B981' }"
-          />
         </Panel>
 
         <!-- Accuracy -->
         <Panel
           header="Overall Accuracy"
-          class="stat-card bg-purple-50 rounded-lg shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+          class="stat-card bg-purple-50 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
         >
           <template #icons>
             <i class="pi pi-percentage text-purple-500"></i>
@@ -764,19 +747,14 @@ const updatePassword = async () => {
         <!-- Total Points -->
         <Panel
           header="Total Points"
-          class="stat-card bg-amber-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
         >
           <template #icons>
             <i class="pi pi-star-fill text-amber-500"></i>
           </template>
-          <div class="stat-value text-3xl font-bold text-amber-600 mb-2">
+          <div class="stat-value text-3xl font-bold text-amber-600">
             {{ authStore.user?.total_points || 0 }}
           </div>
-          <ProgressBar
-            :value="authStore.user?.total_points ? 100 : 0"
-            class="h-2"
-            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#F59E0B' }"
-          />
         </Panel>
       </div>
     </div>
