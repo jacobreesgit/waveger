@@ -14,10 +14,11 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
-import Card from 'primevue/card'
-import ProgressBar from 'primevue/progressbar'
-import Tooltip from 'primevue/tooltip'
 import Avatar from 'primevue/avatar'
+import ProgressBar from 'primevue/progressbar'
+import Divider from 'primevue/divider'
+import Badge from 'primevue/badge'
+import Panel from 'primevue/panel'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -202,12 +203,12 @@ onMounted(() => {
   // Short delay to ensure DOM is ready
   setTimeout(() => {
     statsVisible.value = true
-  }, 100)
+  }, 50)
 
   // Slightly longer delay for animation
   setTimeout(() => {
     animateStats.value = true
-  }, 300)
+  }, 150)
 })
 
 const updateUsername = async () => {
@@ -365,7 +366,7 @@ const updatePassword = async () => {
 
     <!-- User profile header -->
     <div
-      class="profile-header mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm flex flex-col md:flex-row items-center gap-6"
+      class="profile-header mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg flex flex-col md:flex-row items-center gap-6"
     >
       <div
         class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
@@ -399,11 +400,13 @@ const updatePassword = async () => {
     </div>
 
     <!-- Account settings section -->
-    <div class="account-settings mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm">
-      <h3 class="text-xl font-bold mb-4 flex items-center">
-        <i class="pi pi-user-edit mr-2 text-blue-500"></i>
-        Account Settings
-      </h3>
+    <div class="account-settings mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg">
+      <Divider align="left">
+        <div class="inline-flex align-items-center">
+          <i class="pi pi-user-edit mr-2 text-blue-500"></i>
+          <span class="text-xl font-bold">Account Settings</span>
+        </div>
+      </Divider>
 
       <!-- Username field -->
       <div class="setting-item mb-4 pb-4 border-b border-gray-100">
@@ -417,8 +420,9 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditUsername"
             aria-label="Edit username"
-            v-tooltip="'Edit username'"
-          />
+          >
+            <Badge value="Edit" severity="info" class="ml-1"></Badge>
+          </Button>
         </div>
 
         <div v-if="!editingUsername" class="setting-value font-medium text-lg">
@@ -499,8 +503,9 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditEmail"
             aria-label="Edit email"
-            v-tooltip="'Edit email'"
-          />
+          >
+            <Badge value="Edit" severity="info" class="ml-1"></Badge>
+          </Button>
         </div>
 
         <div v-if="!editingEmail" class="setting-value font-medium text-lg">
@@ -573,8 +578,9 @@ const updatePassword = async () => {
             class="p-button-secondary"
             @click="toggleEditPassword"
             aria-label="Change password"
-            v-tooltip="'Change password'"
-          />
+          >
+            <Badge value="Edit" severity="info" class="ml-1"></Badge>
+          </Button>
         </div>
 
         <div v-if="!editingPassword" class="setting-value font-medium text-lg">••••••••••••</div>
@@ -690,90 +696,88 @@ const updatePassword = async () => {
 
     <!-- Stats section -->
     <div
-      class="prediction-stats-section mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm"
-      :class="{ 'opacity-0': !statsVisible, 'transition-opacity duration-500': true }"
+      class="prediction-stats-section mb-6 p-6 rounded-lg border border-gray-200 bg-white shadow-lg"
+      :class="{ 'opacity-0': !statsVisible, 'transition-opacity duration-300': true }"
     >
-      <h3 class="text-xl font-bold mb-4 flex items-center">
-        <i class="pi pi-chart-bar mr-2 text-blue-500"></i>
-        Prediction Stats
-      </h3>
+      <Divider align="left" class="mt-6">
+        <div class="inline-flex align-items-center">
+          <i class="pi pi-chart-bar mr-2 text-blue-500"></i>
+          <span class="text-xl font-bold">Prediction Stats</span>
+        </div>
+      </Divider>
 
-      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         <!-- Total Predictions -->
-        <div
-          class="stat-card flex flex-col bg-blue-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+        <Panel
+          header="Total Predictions"
+          class="stat-card bg-blue-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
         >
-          <div class="stat-icon text-blue-500 mb-3">
-            <i class="pi pi-hashtag text-xl"></i>
-          </div>
-          <div class="stat-label text-gray-600 font-medium mb-2">Total Predictions</div>
+          <template #icons>
+            <i class="pi pi-hashtag text-blue-500"></i>
+          </template>
           <div class="stat-value text-3xl font-bold text-blue-600 mb-2">
             {{ authStore.user?.predictions_made || 0 }}
           </div>
-          <div class="stat-progress h-1 bg-blue-200 rounded-full overflow-hidden">
-            <div
-              class="h-full bg-blue-500 transition-all duration-1500 ease-out"
-              :style="{ width: animateStats ? '100%' : '0%' }"
-            ></div>
-          </div>
-        </div>
+          <ProgressBar
+            :value="authStore.user?.predictions_made ? 100 : 0"
+            class="h-2"
+            :style="{ transition: 'all 0.8s ease-in-out' }"
+          />
+        </Panel>
 
         <!-- Correct Predictions -->
-        <div
-          class="stat-card flex flex-col bg-green-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+        <Panel
+          header="Correct Predictions"
+          class="stat-card bg-green-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
         >
-          <div class="stat-icon text-green-500 mb-3">
-            <i class="pi pi-check-circle text-xl"></i>
-          </div>
-          <div class="stat-label text-gray-600 font-medium mb-2">Correct Predictions</div>
+          <template #icons>
+            <i class="pi pi-check-circle text-green-500"></i>
+          </template>
           <div class="stat-value text-3xl font-bold text-green-600 mb-2">
             {{ authStore.user?.correct_predictions || 0 }}
           </div>
-          <div class="stat-progress h-1 bg-green-200 rounded-full overflow-hidden">
-            <div
-              class="h-full bg-green-500 transition-all duration-1500 ease-out"
-              :style="{ width: animateStats ? '100%' : '0%' }"
-            ></div>
-          </div>
-        </div>
+          <ProgressBar
+            :value="authStore.user?.correct_predictions ? 100 : 0"
+            class="h-2"
+            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#10B981' }"
+          />
+        </Panel>
 
         <!-- Accuracy -->
-        <div
-          class="stat-card flex flex-col bg-purple-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+        <Panel
+          header="Overall Accuracy"
+          class="stat-card bg-purple-50 rounded-lg shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
         >
-          <div class="stat-icon text-purple-500 mb-3">
-            <i class="pi pi-percentage text-xl"></i>
-          </div>
-          <div class="stat-label text-gray-600 font-medium mb-2">Overall Accuracy</div>
+          <template #icons>
+            <i class="pi pi-percentage text-purple-500"></i>
+          </template>
           <div class="stat-value text-3xl font-bold text-purple-600 mb-2">
             {{ formattedAccuracy }}
           </div>
-          <div class="stat-progress-container h-1 bg-purple-200 rounded-full overflow-hidden">
-            <div
-              class="h-full bg-purple-500 transition-all duration-1500 ease-out"
-              :style="{ width: animateStats ? `${predictionAccuracy}%` : '0%' }"
-            ></div>
-          </div>
-        </div>
+          <ProgressBar
+            :value="animateStats ? predictionAccuracy : 0"
+            class="h-2"
+            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#8B5CF6' }"
+          />
+        </Panel>
 
         <!-- Total Points -->
-        <div
-          class="stat-card flex flex-col bg-amber-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
+        <Panel
+          header="Total Points"
+          class="stat-card bg-amber-50 rounded-lg shadow-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
         >
-          <div class="stat-icon text-amber-500 mb-3">
-            <i class="pi pi-star-fill text-xl"></i>
-          </div>
-          <div class="stat-label text-gray-600 font-medium mb-2">Total Points</div>
+          <template #icons>
+            <i class="pi pi-star-fill text-amber-500"></i>
+          </template>
           <div class="stat-value text-3xl font-bold text-amber-600 mb-2">
             {{ authStore.user?.total_points || 0 }}
           </div>
-          <div class="stat-progress h-1 bg-amber-200 rounded-full overflow-hidden">
-            <div
-              class="h-full bg-amber-500 transition-all duration-1500 ease-out"
-              :style="{ width: animateStats ? '100%' : '0%' }"
-            ></div>
-          </div>
-        </div>
+          <ProgressBar
+            :value="authStore.user?.total_points ? 100 : 0"
+            class="h-2"
+            :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#F59E0B' }"
+          />
+        </Panel>
       </div>
     </div>
 
@@ -784,7 +788,7 @@ const updatePassword = async () => {
         severity="danger"
         icon="pi pi-sign-out"
         @click="handleLogout"
-        class="w-full max-w-sm mx-auto shadow-sm hover:shadow-md transition-all duration-200"
+        class="w-full max-w-sm mx-auto shadow-sm hover:shadow-lg transition-all duration-200"
       />
     </div>
   </div>
