@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import {
@@ -9,25 +9,37 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
 } from '@/utils/validation'
+import { useTimezoneStore } from '@/stores/timezone'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
 import Card from 'primevue/card'
+import ProgressBar from 'primevue/progressbar'
+import Tooltip from 'primevue/tooltip'
+import Avatar from 'primevue/avatar'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const timezoneStore = useTimezoneStore()
 
+// Editing states
 const editingUsername = ref(false)
 const editingEmail = ref(false)
 const editingPassword = ref(false)
 
+// Form fields
 const newUsername = ref('')
 const newEmail = ref('')
 const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 
+// Stats animations
+const animateStats = ref(false)
+const statsVisible = ref(false)
+
+// Form errors
 const formErrors = reactive({
   username: '',
   email: '',
@@ -39,38 +51,79 @@ const formErrors = reactive({
 
 const successMessage = ref('')
 
+// Availability checks
 const checkingUsername = ref(false)
 const usernameAvailable = ref<boolean | null>(null)
 const checkingEmail = ref(false)
 const emailAvailable = ref<boolean | null>(null)
 
+// Submission states
 const submittingUsername = ref(false)
 const submittingEmail = ref(false)
 const submittingPassword = ref(false)
 
+// Generate initials for avatar
+const userInitials = computed(() => {
+  const username = authStore.user?.username || ''
+  return username.substring(0, 2).toUpperCase()
+})
+
+// Calculate prediction accuracy with animation
 const predictionAccuracy = computed(() => {
   const user = authStore.user
   const predictionsMade = user?.predictions_made ?? 0
   const correctPredictions = user?.correct_predictions ?? 0
 
-  if (predictionsMade === 0) return '0%'
+  if (predictionsMade === 0) return 0
 
   const accuracy = predictionsMade > 0 ? (correctPredictions / predictionsMade) * 100 : 0
+  return accuracy
+})
 
-  return `${accuracy.toFixed(1)}%`
+// Format accuracy for display
+const formattedAccuracy = computed(() => {
+  return `${predictionAccuracy.value.toFixed(1)}%`
 })
 
 // Format date for display
 const formatDate = (dateString?: string | null) => {
   if (!dateString) return 'Not available'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  return timezoneStore.formatDateOnly(dateString)
 }
+
+// Get random gradient for avatar background
+const avatarGradient = computed(() => {
+  const gradients = [
+    'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
+    'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
+    'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)',
+    'linear-gradient(135deg, #10B981 0%, #047857 100%)',
+  ]
+
+  if (!authStore.user?.username) return gradients[0]
+
+  // Generate a consistent index based on username
+  const username = authStore.user.username
+  const charSum = username.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const index = charSum % gradients.length
+
+  return gradients[index]
+})
+
+// Calculate account age
+const accountAge = computed(() => {
+  if (!authStore.user?.created_at) return 'New account'
+
+  const createdDate = new Date(authStore.user.created_at)
+  const now = new Date()
+
+  const diffTime = Math.abs(now.getTime() - createdDate.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+  if (diffDays < 30) return `${diffDays} days`
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`
+  return `${Math.floor(diffDays / 365)} years`
+})
 
 const handleLogout = () => {
   authStore.logout()
@@ -142,6 +195,19 @@ const onEmailInput = (e: Event) => {
 onBeforeUnmount(() => {
   debouncedCheckUsername.cancel()
   debouncedCheckEmail.cancel()
+})
+
+// Trigger stats animation
+onMounted(() => {
+  // Short delay to ensure DOM is ready
+  setTimeout(() => {
+    statsVisible.value = true
+  }, 100)
+
+  // Slightly longer delay for animation
+  setTimeout(() => {
+    animateStats.value = true
+  }, 300)
 })
 
 const updateUsername = async () => {
@@ -281,309 +347,444 @@ const updatePassword = async () => {
   <div class="profile-account-tab">
     <Message
       v-if="successMessage"
-      class="profile-account-tab__success-message mb-4"
+      class="profile-account-tab__success-message mb-6 w-full"
       severity="success"
       :closable="false"
     >
       {{ successMessage }}
     </Message>
 
-    <div class="profile-section mb-6 pb-4 border-b border-gray-200">
-      <h2 class="text-2xl font-bold">Account Details</h2>
+    <Message
+      v-if="formErrors.general"
+      class="profile-account-tab__error-message mb-6 w-full"
+      severity="error"
+      :closable="false"
+    >
+      {{ formErrors.general }}
+    </Message>
 
+    <!-- User profile header -->
+    <div
+      class="profile-header mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm flex flex-col md:flex-row items-center gap-6"
+    >
       <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
-        v-if="!editingUsername"
+        class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-bold overflow-hidden"
+        :style="{ background: avatarGradient }"
       >
-        <div class="detail-label font-medium text-gray-600">Username</div>
-        <div class="detail-value flex items-center gap-2 font-medium">
-          <span>{{ authStore.user?.username }}</span>
-          <Button icon="pi pi-pencil" text @click="toggleEditUsername" aria-label="Edit username" />
-        </div>
+        <Avatar
+          :label="userInitials"
+          size="xlarge"
+          class="profile-avatar"
+          :style="{ background: 'transparent' }"
+        />
       </div>
-
-      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingUsername">
-        <p class="font-bold">Change Username</p>
-        <div class="form-field mb-3">
-          <label for="newUsername">New Username</label>
-          <InputText
-            id="newUsername"
-            v-model="newUsername"
-            :disabled="submittingUsername"
-            @input="onUsernameInput"
-            class="w-full"
-          />
-          <div class="mt-2">
-            <Message v-if="formErrors.username" severity="error" :closable="false" class="p-0">
-              {{ formErrors.username }}
-            </Message>
-            <div
-              v-else-if="newUsername && newUsername !== authStore.user?.username"
-              class="availability-status"
-            >
-              <small v-if="checkingUsername" class="checking-status">
-                Checking availability...
-              </small>
-              <Message
-                v-else-if="usernameAvailable === true"
-                severity="success"
-                :closable="false"
-                class="p-0"
-              >
-                Username is available
-              </Message>
-              <Message
-                v-else-if="usernameAvailable === false"
-                severity="error"
-                :closable="false"
-                class="p-0"
-              >
-                Username is already taken
-              </Message>
-            </div>
+      <div class="profile-info flex-grow">
+        <h2 class="text-3xl font-bold mb-1">{{ authStore.user?.username }}</h2>
+        <p class="text-gray-600 mb-3">{{ authStore.user?.email }}</p>
+        <div class="profile-meta flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <div class="meta-item flex items-center">
+            <i class="pi pi-calendar mr-2 text-blue-500"></i>
+            <span>Member for {{ accountAge }}</span>
+          </div>
+          <div class="meta-item flex items-center">
+            <i class="pi pi-clock mr-2 text-blue-500"></i>
+            <span>Last login: {{ formatDate(authStore.user?.last_login) }}</span>
+          </div>
+          <div class="meta-item flex items-center">
+            <i class="pi pi-chart-line mr-2 text-blue-500"></i>
+            <span>{{ authStore.user?.predictions_made || 0 }} predictions made</span>
           </div>
         </div>
-        <div class="form-actions">
-          <Button
-            label="Cancel"
-            severity="secondary"
-            @click="toggleEditUsername"
-            :disabled="submittingUsername"
-            class="mr-2"
-          />
-          <Button
-            label="Save"
-            @click="updateUsername"
-            :disabled="
-              submittingUsername || checkingUsername || usernameAvailable === false || !newUsername
-            "
-            :loading="submittingUsername"
-          />
-        </div>
       </div>
+    </div>
 
-      <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
-        v-if="!editingEmail"
-      >
-        <div class="detail-label font-medium text-gray-600">Email</div>
-        <div class="detail-value flex items-center gap-2 font-medium">
-          <span>{{ authStore.user?.email }}</span>
-          <Button icon="pi pi-pencil" text @click="toggleEditEmail" aria-label="Edit email" />
-        </div>
-      </div>
+    <!-- Account settings section -->
+    <div class="account-settings mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm">
+      <h3 class="text-xl font-bold mb-4 flex items-center">
+        <i class="pi pi-user-edit mr-2 text-blue-500"></i>
+        Account Settings
+      </h3>
 
-      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingEmail">
-        <p class="font-bold">Change Email</p>
-        <div class="form-field mb-3">
-          <label for="newEmail">New Email</label>
-          <InputText
-            id="newEmail"
-            v-model="newEmail"
-            type="email"
-            :disabled="submittingEmail"
-            @input="onEmailInput"
-            class="w-full"
-          />
-          <div class="mt-2">
-            <Message v-if="formErrors.email" severity="error" :closable="false" class="p-0">
-              {{ formErrors.email }}
-            </Message>
-            <div
-              v-else-if="newEmail && newEmail !== authStore.user?.email"
-              class="availability-status"
-            >
-              <small v-if="checkingEmail" class="checking-status"> Checking availability... </small>
-              <Message
-                v-else-if="emailAvailable === true"
-                severity="success"
-                :closable="false"
-                class="p-0"
-              >
-                Email is available
-              </Message>
-              <Message
-                v-else-if="emailAvailable === false"
-                severity="error"
-                :closable="false"
-                class="p-0"
-              >
-                Email is already registered
-              </Message>
-            </div>
-          </div>
-        </div>
-        <div class="form-actions">
+      <!-- Username field -->
+      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
+        <div class="setting-header flex justify-between items-center mb-2">
+          <div class="setting-label text-gray-700 font-medium">Username</div>
           <Button
-            label="Cancel"
-            severity="secondary"
-            @click="toggleEditEmail"
-            :disabled="submittingEmail"
-            class="mr-2"
-          />
-          <Button
-            label="Save"
-            @click="updateEmail"
-            :disabled="submittingEmail || checkingEmail || emailAvailable === false || !newEmail"
-            :loading="submittingEmail"
-          />
-        </div>
-      </div>
-
-      <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
-        v-if="!editingPassword"
-      >
-        <div class="detail-label font-medium text-gray-600">Password</div>
-        <div class="detail-value flex items-center gap-2 font-medium">
-          <span>•••••••••</span>
-          <Button
+            v-if="!editingUsername"
             icon="pi pi-pencil"
             text
+            rounded
+            class="p-button-secondary"
+            @click="toggleEditUsername"
+            aria-label="Edit username"
+            v-tooltip="'Edit username'"
+          />
+        </div>
+
+        <div v-if="!editingUsername" class="setting-value font-medium text-lg">
+          {{ authStore.user?.username }}
+        </div>
+
+        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
+          <div class="form-field mb-3">
+            <label for="newUsername" class="text-sm font-medium text-gray-600 block mb-1"
+              >New Username</label
+            >
+            <InputText
+              id="newUsername"
+              v-model="newUsername"
+              :disabled="submittingUsername"
+              @input="onUsernameInput"
+              class="w-full"
+              placeholder="Enter new username"
+            />
+            <div class="mt-2">
+              <Message v-if="formErrors.username" severity="error" :closable="false">
+                {{ formErrors.username }}
+              </Message>
+              <div
+                v-else-if="newUsername && newUsername !== authStore.user?.username"
+                class="availability-status"
+              >
+                <small v-if="checkingUsername" class="checking-status text-gray-600">
+                  <i class="pi pi-spin pi-spinner mr-1"></i> Checking availability...
+                </small>
+                <Message
+                  v-else-if="usernameAvailable === true"
+                  severity="success"
+                  :closable="false"
+                >
+                  <i class="pi pi-check-circle mr-1"></i> Username is available
+                </Message>
+                <Message v-else-if="usernameAvailable === false" severity="error" :closable="false">
+                  <i class="pi pi-times-circle mr-1"></i> Username is already taken
+                </Message>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions flex">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              icon="pi pi-times"
+              @click="toggleEditUsername"
+              :disabled="submittingUsername"
+              class="mr-2"
+            />
+            <Button
+              label="Save"
+              icon="pi pi-save"
+              @click="updateUsername"
+              :disabled="
+                submittingUsername ||
+                checkingUsername ||
+                usernameAvailable === false ||
+                !newUsername
+              "
+              :loading="submittingUsername"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Email field -->
+      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
+        <div class="setting-header flex justify-between items-center mb-2">
+          <div class="setting-label text-gray-700 font-medium">Email Address</div>
+          <Button
+            v-if="!editingEmail"
+            icon="pi pi-pencil"
+            text
+            rounded
+            class="p-button-secondary"
+            @click="toggleEditEmail"
+            aria-label="Edit email"
+            v-tooltip="'Edit email'"
+          />
+        </div>
+
+        <div v-if="!editingEmail" class="setting-value font-medium text-lg">
+          {{ authStore.user?.email }}
+        </div>
+
+        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
+          <div class="form-field mb-3">
+            <label for="newEmail" class="text-sm font-medium text-gray-600 block mb-1"
+              >New Email Address</label
+            >
+            <InputText
+              id="newEmail"
+              v-model="newEmail"
+              type="email"
+              :disabled="submittingEmail"
+              @input="onEmailInput"
+              class="w-full"
+              placeholder="Enter new email address"
+            />
+            <div class="mt-2">
+              <Message v-if="formErrors.email" severity="error" :closable="false">
+                {{ formErrors.email }}
+              </Message>
+              <div
+                v-else-if="newEmail && newEmail !== authStore.user?.email"
+                class="availability-status"
+              >
+                <small v-if="checkingEmail" class="checking-status text-gray-600">
+                  <i class="pi pi-spin pi-spinner mr-1"></i> Checking availability...
+                </small>
+                <Message v-else-if="emailAvailable === true" severity="success" :closable="false">
+                  <i class="pi pi-check-circle mr-1"></i> Email is available
+                </Message>
+                <Message v-else-if="emailAvailable === false" severity="error" :closable="false">
+                  <i class="pi pi-times-circle mr-1"></i> Email is already registered
+                </Message>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions flex">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              icon="pi pi-times"
+              @click="toggleEditEmail"
+              :disabled="submittingEmail"
+              class="mr-2"
+            />
+            <Button
+              label="Save"
+              icon="pi pi-save"
+              @click="updateEmail"
+              :disabled="submittingEmail || checkingEmail || emailAvailable === false || !newEmail"
+              :loading="submittingEmail"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Password field -->
+      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
+        <div class="setting-header flex justify-between items-center mb-2">
+          <div class="setting-label text-gray-700 font-medium">Password</div>
+          <Button
+            v-if="!editingPassword"
+            icon="pi pi-pencil"
+            text
+            rounded
+            class="p-button-secondary"
             @click="toggleEditPassword"
             aria-label="Change password"
+            v-tooltip="'Change password'"
           />
+        </div>
+
+        <div v-if="!editingPassword" class="setting-value font-medium text-lg">••••••••••••</div>
+
+        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
+          <div class="form-field mb-3">
+            <label for="currentPassword" class="text-sm font-medium text-gray-600 block mb-1"
+              >Current Password</label
+            >
+            <Password
+              id="currentPassword"
+              v-model="currentPassword"
+              :disabled="submittingPassword"
+              toggleMask
+              :feedback="false"
+              inputClass="w-full"
+              class="w-full"
+              @input="formErrors.currentPassword = ''"
+              placeholder="Enter your current password"
+            />
+            <Message
+              v-if="formErrors.currentPassword"
+              severity="error"
+              :closable="false"
+              class="mt-2"
+            >
+              {{ formErrors.currentPassword }}
+            </Message>
+          </div>
+          <div class="form-field mb-3">
+            <label for="newPassword" class="text-sm font-medium text-gray-600 block mb-1"
+              >New Password</label
+            >
+            <Password
+              id="newPassword"
+              v-model="newPassword"
+              :disabled="submittingPassword"
+              toggleMask
+              :feedback="true"
+              inputClass="w-full"
+              class="w-full"
+              @input="formErrors.newPassword = ''"
+              placeholder="Enter your new password"
+            />
+            <Message v-if="formErrors.newPassword" severity="error" :closable="false" class="mt-2">
+              {{ formErrors.newPassword }}
+            </Message>
+          </div>
+          <div class="form-field mb-3">
+            <label for="confirmPassword" class="text-sm font-medium text-gray-600 block mb-1"
+              >Confirm New Password</label
+            >
+            <Password
+              id="confirmPassword"
+              v-model="confirmPassword"
+              :disabled="submittingPassword"
+              toggleMask
+              :feedback="false"
+              inputClass="w-full"
+              class="w-full"
+              @input="formErrors.confirmPassword = ''"
+              placeholder="Confirm your new password"
+            />
+            <Message
+              v-if="formErrors.confirmPassword"
+              severity="error"
+              :closable="false"
+              class="mt-2"
+            >
+              {{ formErrors.confirmPassword }}
+            </Message>
+          </div>
+          <div class="form-actions flex">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              icon="pi pi-times"
+              @click="toggleEditPassword"
+              :disabled="submittingPassword"
+              class="mr-2"
+            />
+            <Button
+              label="Save"
+              icon="pi pi-save"
+              @click="updatePassword"
+              :disabled="submittingPassword || !currentPassword || !newPassword || !confirmPassword"
+              :loading="submittingPassword"
+            />
+          </div>
         </div>
       </div>
 
-      <div class="edit-form bg-gray-100 rounded-lg p-4 mb-4" v-if="editingPassword">
-        <p class="font-bold">Change Password</p>
-        <div class="form-field mb-3">
-          <label for="currentPassword">Current Password</label>
-          <Password
-            id="currentPassword"
-            v-model="currentPassword"
-            :disabled="submittingPassword"
-            toggleMask
-            :feedback="false"
-            inputClass="w-full"
-            class="w-full"
-            @input="formErrors.currentPassword = ''"
-          />
-          <Message v-if="formErrors.currentPassword" severity="error" :closable="false" class="p-0">
-            {{ formErrors.currentPassword }}
-          </Message>
+      <!-- Account dates -->
+      <div class="account-dates grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="date-item bg-gray-50 p-3 rounded-lg">
+          <div class="date-label text-sm text-gray-600 mb-1">
+            <i class="pi pi-calendar-plus mr-1"></i> Account Created
+          </div>
+          <div class="date-value font-medium">
+            {{ formatDate(authStore.user?.created_at) }}
+          </div>
         </div>
-        <div class="form-field mb-3">
-          <label for="newPassword">New Password</label>
-          <Password
-            id="newPassword"
-            v-model="newPassword"
-            :disabled="submittingPassword"
-            toggleMask
-            :feedback="true"
-            inputClass="w-full"
-            class="w-full"
-            @input="formErrors.newPassword = ''"
-          />
-          <Message v-if="formErrors.newPassword" severity="error" :closable="false" class="p-0">
-            {{ formErrors.newPassword }}
-          </Message>
-        </div>
-        <div class="form-field mb-3">
-          <label for="confirmPassword">Confirm New Password</label>
-          <Password
-            id="confirmPassword"
-            v-model="confirmPassword"
-            :disabled="submittingPassword"
-            toggleMask
-            :feedback="false"
-            inputClass="w-full"
-            class="w-full"
-            @input="formErrors.confirmPassword = ''"
-          />
-          <Message v-if="formErrors.confirmPassword" severity="error" :closable="false" class="p-0">
-            {{ formErrors.confirmPassword }}
-          </Message>
-        </div>
-        <div class="form-actions">
-          <Button
-            label="Cancel"
-            severity="secondary"
-            @click="toggleEditPassword"
-            :disabled="submittingPassword"
-            class="mr-2"
-          />
-          <Button
-            label="Save"
-            @click="updatePassword"
-            :disabled="submittingPassword || !currentPassword || !newPassword || !confirmPassword"
-            :loading="submittingPassword"
-          />
-        </div>
-      </div>
-
-      <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
-      >
-        <div class="detail-label font-medium text-gray-600">Account Created</div>
-        <div class="detail-value flex items-center gap-2 font-medium">
-          {{ formatDate(authStore.user?.created_at) }}
-        </div>
-      </div>
-      <div
-        class="profile-detail flex justify-between items-center mb-3 py-2 border-b border-gray-200"
-      >
-        <div class="detail-label font-medium text-gray-600">Last Login</div>
-        <div class="detail-value flex items-center gap-2 font-medium">
-          {{ formatDate(authStore.user?.last_login) }}
+        <div class="date-item bg-gray-50 p-3 rounded-lg">
+          <div class="date-label text-sm text-gray-600 mb-1">
+            <i class="pi pi-sign-in mr-1"></i> Last Login
+          </div>
+          <div class="date-value font-medium">
+            {{ formatDate(authStore.user?.last_login) }}
+          </div>
         </div>
       </div>
     </div>
 
-    <div class="profile-section border-b border-gray-200">
-      <h3 class="text-lg font-bold">Prediction Stats</h3>
-      <div class="stats-grid grid grid-cols-[repeat(auto-fill,_minmax(200px,_1fr))] gap-4 mt-4">
-        <Card
-          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+    <!-- Stats section -->
+    <div
+      class="prediction-stats-section mb-8 p-6 rounded-lg border border-gray-200 bg-white shadow-sm"
+      :class="{ 'opacity-0': !statsVisible, 'transition-opacity duration-500': true }"
+    >
+      <h3 class="text-xl font-bold mb-4 flex items-center">
+        <i class="pi pi-chart-bar mr-2 text-blue-500"></i>
+        Prediction Stats
+      </h3>
+
+      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+        <!-- Total Predictions -->
+        <div
+          class="stat-card flex flex-col bg-blue-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
         >
-          <template #content>
-            <div class="stat-value text-2xl font-bold text-blue-600">
-              {{ authStore.user?.predictions_made || 0 }}
-            </div>
-            <div class="stat-label text-gray-600 mt-1">Total Predictions</div>
-          </template>
-        </Card>
-        <Card
-          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+          <div class="stat-icon text-blue-500 mb-3">
+            <i class="pi pi-hashtag text-xl"></i>
+          </div>
+          <div class="stat-label text-gray-600 font-medium mb-2">Total Predictions</div>
+          <div class="stat-value text-3xl font-bold text-blue-600 mb-2">
+            {{ authStore.user?.predictions_made || 0 }}
+          </div>
+          <div class="stat-progress h-1 bg-blue-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-blue-500 transition-all duration-1500 ease-out"
+              :style="{ width: animateStats ? '100%' : '0%' }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Correct Predictions -->
+        <div
+          class="stat-card flex flex-col bg-green-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
         >
-          <template #content>
-            <div class="stat-value text-2xl font-bold text-blue-600">
-              {{ authStore.user?.correct_predictions || 0 }}
-            </div>
-            <div class="stat-label text-gray-600 mt-1">Correct Predictions</div>
-          </template>
-        </Card>
-        <Card
-          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+          <div class="stat-icon text-green-500 mb-3">
+            <i class="pi pi-check-circle text-xl"></i>
+          </div>
+          <div class="stat-label text-gray-600 font-medium mb-2">Correct Predictions</div>
+          <div class="stat-value text-3xl font-bold text-green-600 mb-2">
+            {{ authStore.user?.correct_predictions || 0 }}
+          </div>
+          <div class="stat-progress h-1 bg-green-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-green-500 transition-all duration-1500 ease-out"
+              :style="{ width: animateStats ? '100%' : '0%' }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Accuracy -->
+        <div
+          class="stat-card flex flex-col bg-purple-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
         >
-          <template #content>
-            <div class="stat-value text-2xl font-bold text-blue-600">
-              {{ predictionAccuracy }}
-            </div>
-            <div class="stat-label text-gray-600 mt-1">Overall Accuracy</div>
-          </template>
-        </Card>
-        <Card
-          class="stat-card text-center shadow-sm transition-transform duration-200 hover:-translate-y-1 hover:shadow-md"
+          <div class="stat-icon text-purple-500 mb-3">
+            <i class="pi pi-percentage text-xl"></i>
+          </div>
+          <div class="stat-label text-gray-600 font-medium mb-2">Overall Accuracy</div>
+          <div class="stat-value text-3xl font-bold text-purple-600 mb-2">
+            {{ formattedAccuracy }}
+          </div>
+          <div class="stat-progress-container h-1 bg-purple-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-purple-500 transition-all duration-1500 ease-out"
+              :style="{ width: animateStats ? `${predictionAccuracy}%` : '0%' }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Total Points -->
+        <div
+          class="stat-card flex flex-col bg-amber-50 rounded-lg p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-1"
         >
-          <template #content>
-            <div class="stat-value text-2xl font-bold text-blue-600">
-              {{ authStore.user?.total_points || 0 }}
-            </div>
-            <div class="stat-label text-gray-600 mt-1">Total Points</div>
-          </template>
-        </Card>
+          <div class="stat-icon text-amber-500 mb-3">
+            <i class="pi pi-star-fill text-xl"></i>
+          </div>
+          <div class="stat-label text-gray-600 font-medium mb-2">Total Points</div>
+          <div class="stat-value text-3xl font-bold text-amber-600 mb-2">
+            {{ authStore.user?.total_points || 0 }}
+          </div>
+          <div class="stat-progress h-1 bg-amber-200 rounded-full overflow-hidden">
+            <div
+              class="h-full bg-amber-500 transition-all duration-1500 ease-out"
+              :style="{ width: animateStats ? '100%' : '0%' }"
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="profile-actions max-w-[400px] mx-auto mt-6">
+    <!-- Account actions -->
+    <div class="account-actions flex flex-col">
       <Button
         label="Logout"
         severity="danger"
-        @click="handleLogout"
         icon="pi pi-sign-out"
-        class="w-full"
+        @click="handleLogout"
+        class="w-full max-w-sm mx-auto shadow-sm hover:shadow-md transition-all duration-200"
       />
     </div>
   </div>
