@@ -312,8 +312,8 @@ def get_leaderboard():
                            SUM(COALESCE(pr.points_earned, 0)) as total_points
                     FROM users u
                     JOIN predictions p ON u.id = p.user_id
-                    LEFT JOIN prediction_results pr ON p.id = pr.prediction_id
-                    WHERE p.contest_id = %s
+                    JOIN prediction_results pr ON p.id = pr.prediction_id
+                    WHERE p.contest_id = %s AND p.processed = TRUE
                     GROUP BY u.id, u.username
                     ORDER BY total_points DESC, correct_predictions DESC
                     LIMIT %s
