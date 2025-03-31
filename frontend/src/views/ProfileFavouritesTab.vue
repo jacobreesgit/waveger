@@ -21,40 +21,44 @@ const isLoadingAppleMusic = ref(false)
 const error = ref<string | null>(null)
 const selectedChartId = ref('')
 
-// Group favorites by chart
-const favouritesByChart = computed(() => {
-  const chartMap = new Map()
+// Get array of unique chart IDs from favorites
+const availableChartIds = computed(() => {
+  const chartIds = new Set<string>()
 
   favouritesStore.favourites.forEach((fav) => {
     fav.charts.forEach((chart) => {
-      if (!chartMap.has(chart.chart_id)) {
-        chartMap.set(chart.chart_id, {
-          chartId: chart.chart_id,
-          chartTitle: chart.chart_title,
-          favourites: [],
-        })
-      }
-
-      // Check if this song already exists in this chart group
-      const existing = chartMap
-        .get(chart.chart_id)
-        .favourites.find(
-          (f: { song_name: string; artist: string }) =>
-            f.song_name === fav.song_name && f.artist === fav.artist,
-        )
-
-      if (!existing) {
-        // Create a copy with chart details embedded
-        chartMap.get(chart.chart_id).favourites.push({
-          ...fav,
-          // Ensure the exact chart details are the top of the charts array
-          charts: [chart, ...fav.charts.filter((c) => c.id !== chart.id)],
-        })
-      }
+      chartIds.add(chart.chart_id)
     })
   })
 
-  return Array.from(chartMap.values()).sort((a, b) => a.chartTitle.localeCompare(b.chartTitle))
+  return Array.from(chartIds)
+})
+
+// Get favorites for the currently selected chart
+const getSelectedChartFavourites = computed(() => {
+  const chartId = chartsStore.selectedChartId
+  if (!chartId) return []
+
+  return favouritesStore.favourites.filter((fav) =>
+    fav.charts.some((chart) => chart.chart_id === chartId),
+  )
+})
+
+// Get the title of the currently selected chart
+const getSelectedChartTitle = computed(() => {
+  const chartId = chartsStore.selectedChartId
+  if (!chartId) return ''
+
+  // Look through all favorites to find a matching chart title
+  for (const fav of favouritesStore.favourites) {
+    const matchingChart = fav.charts.find((chart) => chart.chart_id === chartId)
+    if (matchingChart) {
+      return matchingChart.chart_title
+    }
+  }
+
+  // Fallback to default chart name from charts store if available
+  return chartsStore.currentChart?.title || ''
 })
 
 // Responsive grid layout calculations
@@ -143,33 +147,6 @@ onMounted(async () => {
   }
 })
 
-// Get favorites for the currently selected chart
-const getSelectedChartFavourites = computed(() => {
-  const chartId = chartsStore.selectedChartId
-  if (!chartId) return []
-
-  return favouritesStore.favourites.filter((fav) =>
-    fav.charts.some((chart) => chart.chart_id === chartId),
-  )
-})
-
-// Get the title of the currently selected chart
-const getSelectedChartTitle = computed(() => {
-  const chartId = chartsStore.selectedChartId
-  if (!chartId) return ''
-
-  // Look through all favorites to find a matching chart title
-  for (const fav of favouritesStore.favourites) {
-    const matchingChart = fav.charts.find((chart) => chart.chart_id === chartId)
-    if (matchingChart) {
-      return matchingChart.chart_title
-    }
-  }
-
-  // Fallback to default chart name from charts store if available
-  return chartsStore.currentChart?.title || ''
-})
-
 // Watch for changes in favorites collection
 watch(
   () => favouritesStore.favourites,
@@ -233,7 +210,11 @@ watch(
     <!-- Favourites content with Chart Selector -->
     <div v-else class="flex flex-col gap-6">
       <div class="chart-view__chart-controls flex w-full gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
-        <ChartSelector />
+        <ChartSelector
+          :only-favourites="true"
+          :available-chart-ids="availableChartIds"
+          :preserve-current-path="true"
+        />
       </div>
 
       <div

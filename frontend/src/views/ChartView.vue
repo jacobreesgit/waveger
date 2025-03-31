@@ -236,8 +236,9 @@ watch(
     </div>
 
     <div
-      v-if="store.currentChart && !isLoading && !store.error"
+      v-if="store.currentChart"
       class="chart-view__chart-header p-6 flex flex-col items-center gap-2"
+      :class="{ 'opacity-25': isLoading }"
     >
       <h1 class="text-3xl font-bold">{{ store.currentChart.title }}</h1>
       <p class="chart-view__chart-header__chart-info text-sm text-center">

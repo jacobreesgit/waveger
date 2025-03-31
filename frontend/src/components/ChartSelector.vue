@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useRoute, useRouter } from 'vue-router'
 import { parseDateFromURL, formatDateForURL } from '@/utils/dateUtils'
 import { normalizeChartId } from '@/utils/chartUtils'
 import Select from 'primevue/select'
+
+const props = defineProps<{
+  onlyFavourites?: boolean
+  availableChartIds?: string[]
+  preserveCurrentPath?: boolean
+}>()
 
 const store = useChartsStore()
 const route = useRoute()
@@ -29,6 +35,21 @@ const chartOptions = [
   { id: 'billboard-u-s-afrobeats-songs', title: 'Billboard U.S. Afrobeats Songs' },
 ]
 
+// Filter chart options if onlyFavourites is true and availableChartIds is provided
+const filteredChartOptions = computed(() => {
+  if (!props.onlyFavourites || !props.availableChartIds || props.availableChartIds.length === 0) {
+    return chartOptions
+  }
+
+  // Normalize the available chart IDs for consistent comparison
+  const normalizedAvailableIds = props.availableChartIds.map((id) => normalizeChartId(id))
+
+  // Filter the options to only include those in the available IDs
+  return chartOptions.filter((option) =>
+    normalizedAvailableIds.includes(normalizeChartId(option.id)),
+  )
+})
+
 const updateRoute = async () => {
   const chartId = normalizeChartId(selectedChartId.value)
   console.log(`Chart changed to: ${chartId}`)
@@ -45,9 +66,14 @@ const updateRoute = async () => {
     week: formattedDate,
     range: '1-10',
   })
+
+  // Use current path if preserveCurrentPath is true
+  const targetPath = props.preserveCurrentPath ? route.path : '/charts'
+
   await router.push({
-    path: '/charts',
+    path: targetPath,
     query: {
+      ...route.query,
       date: datePath,
       id: chartId,
     },
@@ -115,8 +141,23 @@ onMounted(() => {
   } else {
     // Make sure store ID matches local ID (use default 'hot-100')
     const normalizedStoreId = normalizeChartId(store.selectedChartId)
-    selectedChartId.value = normalizedStoreId
-    store.selectedChartId = normalizedStoreId
+
+    // If in favorites-only mode, use the first available chart if the current one isn't available
+    if (props.onlyFavourites && props.availableChartIds && props.availableChartIds.length > 0) {
+      const normalizedAvailableIds = props.availableChartIds.map((id) => normalizeChartId(id))
+
+      if (!normalizedAvailableIds.includes(normalizedStoreId)) {
+        const firstAvailableId = normalizedAvailableIds[0]
+        selectedChartId.value = firstAvailableId
+        store.selectedChartId = firstAvailableId
+      } else {
+        selectedChartId.value = normalizedStoreId
+        store.selectedChartId = normalizedStoreId
+      }
+    } else {
+      selectedChartId.value = normalizedStoreId
+      store.selectedChartId = normalizedStoreId
+    }
   }
 })
 </script>
@@ -125,7 +166,7 @@ onMounted(() => {
   <div class="chart-selector grow">
     <Select
       v-model="selectedChartId"
-      :options="chartOptions"
+      :options="filteredChartOptions"
       optionLabel="title"
       optionValue="id"
       placeholder="Select a chart"
