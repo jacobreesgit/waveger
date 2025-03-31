@@ -17,7 +17,6 @@ import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
-import Panel from 'primevue/panel'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -122,11 +121,8 @@ const avatarTextColor = computed(() => {
   const b = parseInt(mainColor.slice(5, 7), 16) / 255
 
   // WCAG luminance formula (gives proper weight to each color)
-  // This better handles problematic colors like magenta
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
 
-  // Lower threshold to catch medium-brightness colors like magenta
-  // Standard is 0.5, but 0.45 will make more colors use white text
   return luminance > 0.45 ? '#000000' : '#ffffff'
 })
 
@@ -365,52 +361,41 @@ const updatePassword = async () => {
 
 <template>
   <div class="profile-account-tab">
-    <Message
-      v-if="successMessage"
-      class="profile-account-tab__success-message mb-6 w-full"
-      severity="success"
-      :closable="false"
-    >
+    <Message v-if="successMessage" class="w-full mb-6" severity="success" :closable="false">
       {{ successMessage }}
     </Message>
 
-    <Message
-      v-if="formErrors.general"
-      class="profile-account-tab__error-message mb-6 w-full"
-      severity="error"
-      :closable="false"
-    >
+    <Message v-if="formErrors.general" class="w-full mb-6" severity="error" :closable="false">
       {{ formErrors.general }}
     </Message>
 
     <!-- User profile header -->
     <div
-      class="profile-header mb-6 p-6 rounded-lg border border-gray-200 bg-white flex flex-col md:flex-row items-center gap-6"
+      class="flex flex-col md:flex-row items-center gap-6 p-8 mb-6 bg-white border border-gray-200 rounded-lg"
     >
       <div
-        class="avatar-container relative w-24 h-24 rounded-full flex items-center justify-center text-2xl font-bold overflow-hidden"
+        class="relative w-24 h-24 flex items-center justify-center rounded-full overflow-hidden"
         :style="{ background: avatarGradient }"
       >
         <Avatar
           :label="userInitials"
           size="xlarge"
-          class="profile-avatar"
           :style="{ background: 'transparent', color: avatarTextColor }"
         />
       </div>
-      <div class="profile-info flex-grow">
+      <div class="flex-grow">
         <h2 class="text-3xl font-bold mb-1">{{ authStore.user?.username }}</h2>
         <p class="text-gray-600 mb-3">{{ authStore.user?.email }}</p>
-        <div class="profile-meta flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <div class="meta-item flex items-center">
+        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+          <div class="flex items-center">
             <i class="pi pi-calendar mr-2 text-blue-500"></i>
             <span>Member for {{ accountAge }}</span>
           </div>
-          <div class="meta-item flex items-center">
+          <div class="flex items-center">
             <i class="pi pi-clock mr-2 text-blue-500"></i>
             <span>Last login: {{ formatDate(authStore.user?.last_login) }}</span>
           </div>
-          <div class="meta-item flex items-center">
+          <div class="flex items-center">
             <i class="pi pi-chart-line mr-2 text-blue-500"></i>
             <span>{{ authStore.user?.predictions_made || 0 }} predictions made</span>
           </div>
@@ -419,18 +404,18 @@ const updatePassword = async () => {
     </div>
 
     <!-- Account settings section -->
-    <div class="account-settings mb-6 p-6 rounded-lg border border-gray-200 bg-white">
+    <div class="p-8 mb-6 bg-white border border-gray-200 rounded-lg">
       <Divider align="left">
-        <div class="inline-flex align-items-center items-center">
+        <div class="inline-flex items-center">
           <i class="pi pi-user-edit mr-2 text-blue-500"></i>
           <span class="text-xl font-bold">Account Settings</span>
         </div>
       </Divider>
 
       <!-- Username field -->
-      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
-        <div class="setting-header flex justify-between items-center mb-2">
-          <div class="setting-label text-gray-700 font-medium">Username</div>
+      <div class="mb-6 pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-sm font-medium text-gray-600">Username</div>
           <Button
             v-if="!editingUsername"
             icon="pi pi-pencil"
@@ -442,13 +427,13 @@ const updatePassword = async () => {
           />
         </div>
 
-        <div v-if="!editingUsername" class="setting-value font-medium text-lg">
+        <div v-if="!editingUsername" class="font-medium">
           {{ authStore.user?.username }}
         </div>
 
-        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
-          <div class="form-field mb-3">
-            <label for="newUsername" class="text-sm font-medium text-gray-600 block mb-1"
+        <div v-else class="p-4 mt-2 bg-gray-50 rounded-lg">
+          <div class="mb-3">
+            <label for="newUsername" class="block mb-1 text-sm font-medium text-gray-600"
               >New Username</label
             >
             <InputText
@@ -467,7 +452,7 @@ const updatePassword = async () => {
                 v-else-if="newUsername && newUsername !== authStore.user?.username"
                 class="availability-status"
               >
-                <small v-if="checkingUsername" class="checking-status text-gray-600">
+                <small v-if="checkingUsername" class="text-gray-600">
                   <i class="pi pi-spin pi-spinner mr-1"></i> Checking availability...
                 </small>
                 <Message
@@ -483,7 +468,7 @@ const updatePassword = async () => {
               </div>
             </div>
           </div>
-          <div class="form-actions flex">
+          <div class="flex">
             <Button
               label="Cancel"
               severity="secondary"
@@ -509,9 +494,9 @@ const updatePassword = async () => {
       </div>
 
       <!-- Email field -->
-      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
-        <div class="setting-header flex justify-between items-center mb-2">
-          <div class="setting-label text-gray-700 font-medium">Email Address</div>
+      <div class="mb-6 pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-sm font-medium text-gray-600">Email Address</div>
           <Button
             v-if="!editingEmail"
             icon="pi pi-pencil"
@@ -523,13 +508,13 @@ const updatePassword = async () => {
           />
         </div>
 
-        <div v-if="!editingEmail" class="setting-value font-medium text-lg">
+        <div v-if="!editingEmail" class="font-medium">
           {{ authStore.user?.email }}
         </div>
 
-        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
-          <div class="form-field mb-3">
-            <label for="newEmail" class="text-sm font-medium text-gray-600 block mb-1"
+        <div v-else class="p-4 mt-2 bg-gray-50 rounded-lg">
+          <div class="mb-3">
+            <label for="newEmail" class="block mb-1 text-sm font-medium text-gray-600"
               >New Email Address</label
             >
             <InputText
@@ -549,7 +534,7 @@ const updatePassword = async () => {
                 v-else-if="newEmail && newEmail !== authStore.user?.email"
                 class="availability-status"
               >
-                <small v-if="checkingEmail" class="checking-status text-gray-600">
+                <small v-if="checkingEmail" class="text-gray-600">
                   <i class="pi pi-spin pi-spinner mr-1"></i> Checking availability...
                 </small>
                 <Message v-else-if="emailAvailable === true" severity="success" :closable="false">
@@ -561,7 +546,7 @@ const updatePassword = async () => {
               </div>
             </div>
           </div>
-          <div class="form-actions flex">
+          <div class="flex">
             <Button
               label="Cancel"
               severity="secondary"
@@ -582,9 +567,9 @@ const updatePassword = async () => {
       </div>
 
       <!-- Password field -->
-      <div class="setting-item mb-4 pb-4 border-b border-gray-100">
-        <div class="setting-header flex justify-between items-center mb-2">
-          <div class="setting-label text-gray-700 font-medium">Password</div>
+      <div class="mb-6 pb-4 border-b border-gray-100">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-sm font-medium text-gray-600">Password</div>
           <Button
             v-if="!editingPassword"
             icon="pi pi-pencil"
@@ -596,11 +581,11 @@ const updatePassword = async () => {
           />
         </div>
 
-        <div v-if="!editingPassword" class="setting-value font-medium text-lg">••••••••••••</div>
+        <div v-if="!editingPassword" class="font-medium">••••••••••••</div>
 
-        <div v-else class="edit-form bg-gray-50 rounded-lg p-4 mt-2">
-          <div class="form-field mb-3">
-            <label for="currentPassword" class="text-sm font-medium text-gray-600 block mb-1"
+        <div v-else class="p-4 mt-2 bg-gray-50 rounded-lg">
+          <div class="mb-3">
+            <label for="currentPassword" class="block mb-1 text-sm font-medium text-gray-600"
               >Current Password</label
             >
             <Password
@@ -623,8 +608,8 @@ const updatePassword = async () => {
               {{ formErrors.currentPassword }}
             </Message>
           </div>
-          <div class="form-field mb-3">
-            <label for="newPassword" class="text-sm font-medium text-gray-600 block mb-1"
+          <div class="mb-3">
+            <label for="newPassword" class="block mb-1 text-sm font-medium text-gray-600"
               >New Password</label
             >
             <Password
@@ -642,8 +627,8 @@ const updatePassword = async () => {
               {{ formErrors.newPassword }}
             </Message>
           </div>
-          <div class="form-field mb-3">
-            <label for="confirmPassword" class="text-sm font-medium text-gray-600 block mb-1"
+          <div class="mb-3">
+            <label for="confirmPassword" class="block mb-1 text-sm font-medium text-gray-600"
               >Confirm New Password</label
             >
             <Password
@@ -666,7 +651,7 @@ const updatePassword = async () => {
               {{ formErrors.confirmPassword }}
             </Message>
           </div>
-          <div class="form-actions flex">
+          <div class="flex">
             <Button
               label="Cancel"
               severity="secondary"
@@ -687,20 +672,20 @@ const updatePassword = async () => {
       </div>
 
       <!-- Account dates -->
-      <div class="account-dates grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="date-item bg-gray-50 p-3 rounded-lg">
-          <div class="date-label text-sm text-gray-600 mb-1">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-lg bg-gray-50">
+          <div class="mb-1 text-sm text-gray-600">
             <i class="pi pi-calendar-plus mr-1"></i> Account Created
           </div>
-          <div class="date-value font-medium">
+          <div class="font-medium">
             {{ formatDate(authStore.user?.created_at) }}
           </div>
         </div>
-        <div class="date-item bg-gray-50 p-3 rounded-lg">
-          <div class="date-label text-sm text-gray-600 mb-1">
+        <div class="p-4 rounded-lg bg-gray-50">
+          <div class="mb-1 text-sm text-gray-600">
             <i class="pi pi-sign-in mr-1"></i> Last Login
           </div>
-          <div class="date-value font-medium">
+          <div class="font-medium">
             {{ formatDate(authStore.user?.last_login) }}
           </div>
         </div>
@@ -709,52 +694,52 @@ const updatePassword = async () => {
 
     <!-- Stats section -->
     <div
-      class="prediction-stats-section mb-6 p-6 rounded-lg border border-gray-200 bg-white"
-      :class="{ 'opacity-0': !statsVisible, 'transition-opacity duration-300': true }"
+      class="p-8 mb-6 bg-white border border-gray-200 rounded-lg transition-opacity duration-300"
+      :class="{ 'opacity-0': !statsVisible }"
     >
-      <Divider align="left" class="mt-6">
-        <div class="inline-flex align-items-center">
+      <Divider align="left">
+        <div class="inline-flex items-center">
           <i class="pi pi-chart-bar mr-2 text-blue-500"></i>
           <span class="text-xl font-bold">Prediction Stats</span>
         </div>
       </Divider>
 
-      <div class="stats-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-3">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         <!-- Total Predictions -->
-        <Panel
-          header="Total Predictions"
-          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
+        <div
+          class="p-4 border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
         >
-          <template #icons>
-            <i class="pi pi-hashtag text-blue-500"></i>
-          </template>
-          <div class="stat-value text-3xl font-bold text-blue-600">
+          <div class="flex items-center mb-2">
+            <i class="pi pi-hashtag text-blue-500 mr-2"></i>
+            <span class="text-sm font-medium text-gray-600">Total Predictions</span>
+          </div>
+          <div class="text-2xl font-bold text-blue-600">
             {{ authStore.user?.predictions_made || 0 }}
           </div>
-        </Panel>
+        </div>
 
         <!-- Correct Predictions -->
-        <Panel
-          header="Correct Predictions"
-          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
+        <div
+          class="p-4 border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
         >
-          <template #icons>
-            <i class="pi pi-check-circle text-green-500"></i>
-          </template>
-          <div class="stat-value text-3xl font-bold text-green-600">
+          <div class="flex items-center mb-2">
+            <i class="pi pi-check-circle text-green-500 mr-2"></i>
+            <span class="text-sm font-medium text-gray-600">Correct Predictions</span>
+          </div>
+          <div class="text-2xl font-bold text-green-600">
             {{ authStore.user?.correct_predictions || 0 }}
           </div>
-        </Panel>
+        </div>
 
         <!-- Accuracy -->
-        <Panel
-          header="Overall Accuracy"
-          class="stat-card bg-purple-50 rounded-lg transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
+        <div
+          class="p-4 border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
         >
-          <template #icons>
-            <i class="pi pi-percentage text-purple-500"></i>
-          </template>
-          <div class="stat-value text-3xl font-bold text-purple-600 mb-2">
+          <div class="flex items-center mb-2">
+            <i class="pi pi-percentage text-purple-500 mr-2"></i>
+            <span class="text-sm font-medium text-gray-600">Overall Accuracy</span>
+          </div>
+          <div class="text-2xl font-bold text-purple-600 mb-2">
             {{ formattedAccuracy }}
           </div>
           <ProgressBar
@@ -762,31 +747,31 @@ const updatePassword = async () => {
             class="h-2"
             :style="{ transition: 'all 0.8s ease-in-out', '--primary-color': '#8B5CF6' }"
           />
-        </Panel>
+        </div>
 
         <!-- Total Points -->
-        <Panel
-          header="Total Points"
-          class="stat-card border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
+        <div
+          class="p-4 border border-gray-200 rounded-lg bg-white transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
         >
-          <template #icons>
-            <i class="pi pi-star-fill text-amber-500"></i>
-          </template>
-          <div class="stat-value text-3xl font-bold text-amber-600">
+          <div class="flex items-center mb-2">
+            <i class="pi pi-star-fill text-amber-500 mr-2"></i>
+            <span class="text-sm font-medium text-gray-600">Total Points</span>
+          </div>
+          <div class="text-2xl font-bold text-amber-600">
             {{ authStore.user?.total_points || 0 }}
           </div>
-        </Panel>
+        </div>
       </div>
     </div>
 
     <!-- Account actions -->
-    <div class="account-actions flex flex-col">
+    <div class="flex flex-col">
       <Button
         label="Logout"
         severity="danger"
         icon="pi pi-sign-out"
         @click="handleLogout"
-        class="w-full max-w-sm mx-auto shadow-sm hover:shadow-lg transition-all duration-200"
+        class="w-full max-w-sm mx-auto shadow-sm transition-all duration-200 hover:shadow-md"
       />
     </div>
   </div>
