@@ -17,7 +17,6 @@ const timezoneStore = useTimezoneStore()
 
 const period = ref<'all' | 'weekly'>('all')
 const isLoading = computed(() => predictionStore.loading.leaderboard)
-const error = computed(() => predictionStore.error.leaderboard)
 const rows = ref(10)
 const first = ref(0)
 
@@ -34,7 +33,7 @@ const loadLeaderboard = async () => {
     await predictionStore.fetchLeaderboard({
       period: period.value,
       contest_id: contestId,
-      limit: 100, // Fetch enough to support pagination client-side
+      limit: 100,
     })
   } catch (error) {
     console.error('Error loading leaderboard:', error)
@@ -65,7 +64,7 @@ const formatDate = (dateString: string | undefined): string => {
 
 watch(period, () => {
   loadLeaderboard()
-  first.value = 0 // Reset to first page when changing period
+  first.value = 0
 })
 
 onMounted(async () => {
