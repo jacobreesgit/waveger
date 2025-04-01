@@ -239,31 +239,31 @@ watch(
             :preserve-current-path="true"
           />
         </div>
-      </div>
 
-      <!-- No favourites for selected chart -->
-      <div
-        v-if="getSelectedChartFavourites.length === 0"
-        class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg"
-      >
-        <Message severity="info" :closable="false">
-          No favorites found for {{ getSelectedChartTitle || 'this chart' }}.
-        </Message>
-      </div>
+        <!-- No favourites for selected chart -->
+        <div
+          v-if="getSelectedChartFavourites.length === 0"
+          class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg"
+        >
+          <Message severity="info" :closable="false">
+            No favorites found for {{ getSelectedChartTitle || 'this chart' }}.
+          </Message>
+        </div>
 
-      <div class="mt-4">
-        <ChartCardHolder
-          :items="getSelectedChartFavourites"
-          :loading="false"
-          :error="null"
-          :song-data="songData"
-          :selected-chart-id="chartsStore.selectedChartId"
-          :show-skeletons="isLoadingAppleMusic"
-          :skeleton-count="itemsPerPage"
-          :is-for-favourites="true"
-          empty-message="No favourites for this chart"
-          class="w-full"
-        />
+        <div class="mt-4">
+          <ChartCardHolder
+            :items="getSelectedChartFavourites"
+            :loading="false"
+            :error="null"
+            :song-data="songData"
+            :selected-chart-id="chartsStore.selectedChartId"
+            :show-skeletons="isLoadingAppleMusic"
+            :skeleton-count="itemsPerPage"
+            :is-for-favourites="true"
+            empty-message="No favourites for this chart"
+            class="w-full"
+          />
+        </div>
       </div>
     </div>
   </div>
