@@ -9,6 +9,7 @@ import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
+import Divider from 'primevue/divider'
 
 // Stores
 const favouritesStore = useFavouritesStore()
@@ -20,6 +21,8 @@ const songData = ref(new Map())
 const isLoadingAppleMusic = ref(false)
 const error = ref<string | null>(null)
 const selectedChartId = ref('')
+const statsVisible = ref(false)
+const animateStats = ref(false)
 
 // Get array of unique chart IDs from favorites
 const availableChartIds = computed(() => {
@@ -141,6 +144,16 @@ onMounted(async () => {
       await favouritesStore.loadFavourites()
     }
     await loadAppleMusicData()
+
+    // Short delay to ensure DOM is ready for animations
+    setTimeout(() => {
+      statsVisible.value = true
+    }, 50)
+
+    // Slightly longer delay for animation
+    setTimeout(() => {
+      animateStats.value = true
+    }, 150)
   } catch (e) {
     console.error('Error loading favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
@@ -189,26 +202,46 @@ watch(
     <!-- No favourites state -->
     <div
       v-else-if="favouritesStore.favourites.length === 0"
-      class="w-full text-center p-8 flex flex-col items-center gap-4"
+      class="p-8 mb-6 bg-white border border-gray-200 rounded-lg text-center flex flex-col items-center gap-4"
     >
+      <Divider align="center">
+        <div class="inline-flex items-center">
+          <i class="pi pi-heart-fill mr-2 text-red-500"></i>
+          <span class="text-xl font-bold">Your Favourites</span>
+        </div>
+      </Divider>
+
       <Message severity="info" :closable="false">You haven't added any favourites yet.</Message>
       <div class="mt-4">
         <router-link to="/charts">
-          <Button label="Browse Charts" />
+          <Button label="Browse Charts" icon="pi pi-chart-bar" />
         </router-link>
       </div>
     </div>
 
     <!-- Favourites content with Chart Selector -->
     <div v-else class="flex flex-col gap-6">
-      <div class="chart-view__chart-controls flex w-full gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
-        <ChartSelector
-          :only-favourites="true"
-          :available-chart-ids="availableChartIds"
-          :preserve-current-path="true"
-        />
+      <!-- Chart selection section -->
+      <div class="p-6 bg-white border border-gray-200 rounded-lg">
+        <Divider align="left">
+          <div class="inline-flex items-center">
+            <i class="pi pi-filter mr-2 text-blue-500"></i>
+            <span class="text-xl font-bold">Filter By Chart</span>
+          </div>
+        </Divider>
+
+        <div
+          class="chart-view__chart-controls flex w-full gap-2 sm:gap-4 flex-wrap sm:flex-nowrap mt-4"
+        >
+          <ChartSelector
+            :only-favourites="true"
+            :available-chart-ids="availableChartIds"
+            :preserve-current-path="true"
+          />
+        </div>
       </div>
 
+      <!-- No favourites for selected chart -->
       <div
         v-if="getSelectedChartFavourites.length === 0"
         class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg"
@@ -218,25 +251,19 @@ watch(
         </Message>
       </div>
 
-      <ChartCardHolder
-        v-else
-        :items="getSelectedChartFavourites"
-        :loading="false"
-        :error="null"
-        :song-data="songData"
-        :selected-chart-id="chartsStore.selectedChartId"
-        :show-skeletons="isLoadingAppleMusic"
-        :skeleton-count="itemsPerPage"
-        :is-for-favourites="true"
-        empty-message="No favourites for this chart"
-        class="w-full"
-      />
-
-      <div
-        v-if="getSelectedChartFavourites.length === 0"
-        class="text-center text-gray-500 mt-4 p-4"
-      >
-        No more songs to load
+      <div class="mt-4">
+        <ChartCardHolder
+          :items="getSelectedChartFavourites"
+          :loading="false"
+          :error="null"
+          :song-data="songData"
+          :selected-chart-id="chartsStore.selectedChartId"
+          :show-skeletons="isLoadingAppleMusic"
+          :skeleton-count="itemsPerPage"
+          :is-for-favourites="true"
+          empty-message="No favourites for this chart"
+          class="w-full"
+        />
       </div>
     </div>
   </div>
