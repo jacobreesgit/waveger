@@ -170,6 +170,14 @@ watch(activeTabValue, async (newTab) => {
     <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6">
       <h1 class="text-3xl font-bold">Your Account</h1>
 
+      <Tabs v-model:value="activeTabValue" @update:value="onTabChange">
+        <TabList>
+          <Tab value="profile">Profile</Tab>
+          <Tab value="favourites">Favourites</Tab>
+          <Tab value="predictions">Predictions</Tab>
+        </TabList>
+      </Tabs>
+
       <!-- Common User Profile Header -->
       <div
         class="flex flex-col md:flex-row items-center gap-6 p-8 mb-6 bg-white border border-gray-200 rounded-lg"
@@ -236,14 +244,6 @@ watch(activeTabValue, async (newTab) => {
           </div>
         </div>
       </div>
-
-      <Tabs v-model:value="activeTabValue" @update:value="onTabChange">
-        <TabList>
-          <Tab value="profile">Profile</Tab>
-          <Tab value="favourites">Favourites</Tab>
-          <Tab value="predictions">Predictions</Tab>
-        </TabList>
-      </Tabs>
 
       <div class="tab-content">
         <router-view />
