@@ -167,7 +167,10 @@ const handleLogin = async () => {
         </div>
 
         <div class="flex items-center justify-between">
-          <div class="login-view__form__form-field__actions__remember-me flex items-center gap-2">
+          <div
+            class="login-view__form__form-field__actions__remember-me flex items-center gap-2 cursor-pointer"
+            @click="rememberMe = !rememberMe"
+          >
             <Checkbox
               class="login-view__form__form-field__actions__remember-me__checkbox"
               id="rememberMe"
@@ -176,7 +179,7 @@ const handleLogin = async () => {
               :disabled="isSubmitting"
             />
             <label
-              class="login-view__form__form-field__actions__remember-me__label text-sm text-gray-600"
+              class="login-view__form__form-field__actions__remember-me__label text-sm text-gray-600 cursor-pointer"
               for="rememberMe"
               >Remember me</label
             >
