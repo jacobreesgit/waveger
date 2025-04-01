@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useRouter } from 'vue-router'
+import { useTimezoneStore } from '@/stores/timezone'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
-import Badge from 'primevue/badge'
+import Message from 'primevue/message'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import type { Prediction } from '@/types/predictions'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
+const timezoneStore = useTimezoneStore()
 
 // Prediction-related states
 const predictionFilter = ref<'all' | 'correct' | 'incorrect' | 'pending'>('all')
@@ -101,18 +102,40 @@ const getActualResultText = (prediction: Prediction): string => {
 
   return ''
 }
+
+// Format date in a consistent way using the timezone store
+const formatDate = (dateString: string): string => {
+  return timezoneStore.formatDateOnly(dateString)
+}
+
+// Load user predictions on component mount
+onMounted(async () => {
+  try {
+    if (!predictionStore.initialized || predictionStore.userPredictions.length === 0) {
+      isPredictionsLoading.value = true
+      await predictionStore.fetchUserPredictions()
+    }
+  } catch (error) {
+    console.error('Error loading predictions:', error)
+  } finally {
+    isPredictionsLoading.value = false
+  }
+})
 </script>
 
 <template>
-  <div>
-    <div class="predictions-header">
-      <h2 class="text-2xl font-bold">Your Prediction History</h2>
+  <div class="profile-predictions-tab">
+    <!-- Filter section -->
+    <div class="filter-section mb-6">
+      <div class="flex items-center mb-4">
+        <i class="pi pi-filter text-blue-500 mr-2"></i>
+        <h3 class="text-lg font-semibold">Filter Predictions</h3>
+      </div>
 
-      <div class="prediction-filters">
-        <div class="filter-group">
-          <label for="result-filter">Result:</label>
+      <div class="filter-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="filter-item">
+          <label class="block text-sm mb-2">Result Status</label>
           <Select
-            id="result-filter"
             v-model="predictionFilter"
             :options="[
               { label: 'All Results', value: 'all' },
@@ -126,10 +149,9 @@ const getActualResultText = (prediction: Prediction): string => {
           />
         </div>
 
-        <div class="filter-group">
-          <label for="type-filter">Type:</label>
+        <div class="filter-item">
+          <label class="block text-sm mb-2">Prediction Type</label>
           <Select
-            id="type-filter"
             v-model="predictionTypeFilter"
             :options="[
               { label: 'All Types', value: 'all' },
@@ -143,10 +165,9 @@ const getActualResultText = (prediction: Prediction): string => {
           />
         </div>
 
-        <div class="filter-group">
-          <label for="chart-filter">Chart:</label>
+        <div class="filter-item">
+          <label class="block text-sm mb-2">Chart Type</label>
           <Select
-            id="chart-filter"
             v-model="chartTypeFilter"
             :options="[
               { label: 'All Charts', value: 'all' },
@@ -158,99 +179,106 @@ const getActualResultText = (prediction: Prediction): string => {
             class="w-full"
           />
         </div>
+      </div>
 
-        <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-2" />
+      <div class="flex justify-center mt-4">
+        <Button
+          icon="pi pi-refresh"
+          label="Reset Filters"
+          @click="resetPredictionFilters"
+          class="p-button-outlined"
+        />
       </div>
     </div>
 
+    <!-- Loading state -->
     <LoadingSpinner
       v-if="isPredictionsLoading"
-      class="loading-spinner"
-      size="medium"
       label="Loading your predictions..."
       centerInContainer
+      size="medium"
     />
 
     <!-- No predictions state -->
-    <div v-else-if="predictionStore.userPredictions.length === 0" class="empty-container">
-      <p>You haven't made any predictions yet.</p>
-      <Button label="Make a Prediction" @click="goToPredictionsView" class="mt-3" />
+    <div v-else-if="predictionStore.userPredictions.length === 0" class="text-center py-6">
+      <p class="mb-4 text-gray-600">You haven't made any predictions yet.</p>
+      <Button label="Make a Prediction" icon="pi pi-plus" @click="goToPredictionsView" />
     </div>
 
     <!-- No filtered predictions state -->
-    <div v-else-if="filteredPredictions.length === 0" class="empty-container">
-      <p>No predictions match your filter criteria.</p>
-      <Button label="Reset Filters" @click="resetPredictionFilters" class="mt-3" />
+    <div v-else-if="filteredPredictions.length === 0" class="text-center py-6">
+      <p class="mb-4 text-gray-600">No predictions match your filter criteria.</p>
+      <Button label="Reset Filters" icon="pi pi-refresh" @click="resetPredictionFilters" />
     </div>
 
     <!-- Predictions list -->
     <div v-else class="predictions-list">
-      <Card
-        v-for="prediction in filteredPredictions"
-        :key="prediction.id"
-        :class="['prediction-card', getPredictionStatus(prediction)]"
-      >
-        <template #header>
-          <div class="prediction-header">
-            <Badge
-              :value="prediction.prediction_type.replace('_', ' ')"
-              :severity="
-                prediction.prediction_type === 'entry'
-                  ? 'success'
-                  : prediction.prediction_type === 'position_change'
-                    ? 'info'
-                    : 'warning'
-              "
-            />
-            <Badge :value="prediction.chart_type" severity="secondary" />
-            <div class="prediction-date">
-              {{ new Date(prediction.prediction_date).toLocaleDateString() }}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-for="prediction in filteredPredictions"
+          :key="prediction.id"
+          class="prediction-item border rounded-md p-4 bg-white"
+          :class="{
+            'border-green-300 bg-green-50': getPredictionStatus(prediction) === 'correct',
+            'border-red-300 bg-red-50': getPredictionStatus(prediction) === 'incorrect',
+            'border-blue-300 bg-blue-50': getPredictionStatus(prediction) === 'pending',
+          }"
+        >
+          <!-- Header with badges -->
+          <div class="flex justify-between items-center mb-3">
+            <div class="flex gap-2">
+              <span
+                class="text-xs px-2 py-1 rounded-full"
+                :class="{
+                  'bg-green-100 text-green-800': prediction.prediction_type === 'entry',
+                  'bg-blue-100 text-blue-800': prediction.prediction_type === 'position_change',
+                  'bg-yellow-100 text-yellow-800': prediction.prediction_type === 'exit',
+                }"
+              >
+                {{ prediction.prediction_type.replace('_', ' ') }}
+              </span>
+              <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                {{ prediction.chart_type }}
+              </span>
+            </div>
+            <span class="text-xs text-gray-500">
+              {{ formatDate(prediction.prediction_date) }}
+            </span>
+          </div>
+
+          <!-- Song details -->
+          <div class="mb-3">
+            <h4 class="text-base font-bold truncate">{{ prediction.target_name }}</h4>
+            <p class="text-sm text-gray-600 truncate">{{ prediction.artist }}</p>
+          </div>
+
+          <!-- Prediction details -->
+          <div class="text-sm font-medium mb-3">{{ getPositionText(prediction) }}</div>
+
+          <!-- Results -->
+          <div
+            class="mt-2 p-2 rounded text-sm"
+            :class="{
+              'bg-green-100': prediction.is_correct === true,
+              'bg-red-100': prediction.is_correct === false,
+              'bg-gray-100': prediction.is_correct === null || prediction.is_correct === undefined,
+            }"
+          >
+            <div class="flex justify-between">
+              <span class="font-medium">
+                {{
+                  prediction.is_correct === true
+                    ? 'Correct!'
+                    : prediction.is_correct === false
+                      ? 'Incorrect'
+                      : 'Pending'
+                }}
+              </span>
+              <span v-if="prediction.points" class="font-bold"> {{ prediction.points }} pts </span>
             </div>
           </div>
-        </template>
-
-        <template #title>
-          <div class="prediction-title">
-            {{ prediction.target_name }}
-            <div class="prediction-artist">{{ prediction.artist }}</div>
-          </div>
-        </template>
-
-        <template #content>
-          <div class="prediction-details">
-            <div class="prediction-value">{{ getPositionText(prediction) }}</div>
-
-            <!-- Result section if available -->
-            <div
-              v-if="prediction.is_correct !== undefined && prediction.is_correct !== null"
-              class="prediction-result"
-            >
-              <Badge
-                :value="prediction.is_correct ? 'Correct!' : 'Incorrect'"
-                :severity="prediction.is_correct ? 'success' : 'danger'"
-              />
-
-              <div v-if="prediction.points" class="points-earned mt-2">
-                <span class="points-label">Points:</span>
-                <span class="points-value">{{ prediction.points }}</span>
-              </div>
-
-              <div class="actual-result mt-2">
-                <span class="actual-label">Result:</span>
-                <span class="actual-value">{{ getActualResultText(prediction) }}</span>
-              </div>
-            </div>
-
-            <!-- Pending state -->
-            <div v-else class="prediction-pending">
-              <Badge value="Pending" severity="info" />
-              <p class="pending-message mt-2">
-                This prediction is awaiting chart release to be processed.
-              </p>
-            </div>
-          </div>
-        </template>
-      </Card>
+        </div>
+      </div>
     </div>
   </div>
 </template>
