@@ -10,8 +10,8 @@ import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import type { PredictionSubmission, SearchResult } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
-import Message from 'primevue/message'
 import Divider from 'primevue/divider'
+import Message from 'primevue/message'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -528,17 +528,14 @@ const chartTypeOptions = [
 
     <div v-if="hasActiveContest" class="contest-info mb-6">
       <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-700">
-        <div class="font-medium text-blue-700">Current Prediction Window:</div>
+        <div class="font-medium mb-1 text-blue-700">Current Prediction Window:</div>
         Make your predictions for the Billboard chart that will be released on
         <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong
         >.
         <div class="mt-1">
           Predictions close on
           <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong
-          >.
-          <span class="text-blue-800 font-medium"
-            >You have <strong>{{ remainingPredictions }}</strong> predictions remaining.</span
-          >
+          >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
         </div>
       </div>
     </div>
@@ -574,16 +571,18 @@ const chartTypeOptions = [
 
     <!-- Prediction Form -->
     <form v-else-if="hasActiveContest" @submit.prevent="submitPrediction" class="form-container">
-      <div v-if="showSuccess" class="mb-6">
-        <div class="p-4 bg-green-50 border border-green-100 rounded-lg text-green-700">
-          {{ successMessage }}
-        </div>
+      <div
+        v-if="showSuccess"
+        class="p-4 bg-green-50 border border-green-100 rounded-lg text-green-700 mb-6"
+      >
+        {{ successMessage }}
       </div>
 
-      <div v-if="formErrors.general" class="mb-6">
-        <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700">
-          {{ formErrors.general }}
-        </div>
+      <div
+        v-if="formErrors.general"
+        class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700 mb-6"
+      >
+        {{ formErrors.general }}
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -597,14 +596,14 @@ const chartTypeOptions = [
               id="chart-type"
               v-model="chartType"
               :disabled="isSubmitting"
-              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10 focus:outline-none focus:border-gray-400"
+              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10"
             >
               <option v-for="option in chartTypeOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-              <i class="pi pi-chevron-down text-gray-500"></i>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <i class="pi pi-chevron-down text-gray-400"></i>
             </div>
           </div>
         </div>
@@ -619,7 +618,7 @@ const chartTypeOptions = [
               id="prediction-type"
               v-model="predictionType"
               :disabled="isSubmitting"
-              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10 focus:outline-none focus:border-gray-400"
+              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10"
             >
               <option
                 v-for="option in predictionTypeOptions"
@@ -629,8 +628,8 @@ const chartTypeOptions = [
                 {{ option.label }}
               </option>
             </select>
-            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
-              <i class="pi pi-chevron-down text-gray-500"></i>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+              <i class="pi pi-chevron-down text-gray-400"></i>
             </div>
           </div>
           <div class="prediction-type-description text-sm text-gray-600 mt-2">
@@ -654,7 +653,7 @@ const chartTypeOptions = [
         <!-- Selected Song Display -->
         <div
           v-if="selectedSong"
-          class="selected-song p-4 border border-gray-200 rounded-lg bg-gray-50 flex justify-between"
+          class="selected-song p-4 border border-gray-200 rounded-lg bg-gray-50 flex justify-between items-start"
         >
           <div class="selected-song-content flex">
             <div
@@ -696,59 +695,67 @@ const chartTypeOptions = [
             </div>
           </div>
 
-          <Button
+          <button
             type="button"
             @click="clearSelection"
-            icon="pi pi-times"
-            class="p-button-rounded p-button-text p-button-sm"
+            class="text-gray-400 hover:text-gray-600"
             aria-label="Clear selection"
-          />
+          >
+            <i class="pi pi-times"></i>
+          </button>
         </div>
 
         <!-- Search Input -->
         <div v-else class="search-container">
           <!-- Search/Favorites Tabs -->
-          <div class="flex border-b border-gray-200 mb-4">
-            <button
-              type="button"
-              @click="activeTab = 'search'"
-              class="py-2 px-4 font-medium text-sm border-b-2 transition-colors duration-200"
-              :class="
-                activeTab === 'search'
-                  ? 'border-green-500 text-green-500'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              "
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              @click="activeTab = 'favourites'"
-              class="py-2 px-4 font-medium text-sm border-b-2 transition-colors duration-200"
-              :class="
-                activeTab === 'favourites'
-                  ? 'border-green-500 text-green-500'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              "
-            >
-              My Favorites
-            </button>
+          <!-- Search/Favorites Tabs -->
+          <div class="mb-4">
+            <div class="flex border-b border-gray-200">
+              <button
+                type="button"
+                @click="activeTab = 'search'"
+                class="py-2 px-4 mr-4 font-medium text-sm focus:outline-none"
+                :class="
+                  activeTab === 'search'
+                    ? 'text-green-500 border-b-2 border-green-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                "
+              >
+                Search
+              </button>
+              <button
+                type="button"
+                @click="activeTab = 'favourites'"
+                class="py-2 px-4 font-medium text-sm focus:outline-none"
+                :class="
+                  activeTab === 'favourites'
+                    ? 'text-green-500 border-b-2 border-green-500'
+                    : 'text-gray-500 hover:text-gray-700'
+                "
+              >
+                My Favorites
+              </button>
+            </div>
           </div>
 
           <!-- Search Content -->
           <div v-if="activeTab === 'search'" class="search-tab-content">
-            <div class="relative flex items-center mb-2">
-              <i class="pi pi-search absolute left-3 text-gray-500 z-10"></i>
-              <input
-                id="song-search"
-                v-model="searchQuery"
-                type="text"
-                :disabled="isSubmitting"
-                placeholder="Search current chart & Apple Music..."
-                class="search-input w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
-                @input="handleSearchInput"
-                @focus="searchResultsVisible = !!searchQuery.trim()"
-              />
+            <div class="flex items-center mb-2">
+              <div class="mr-2">
+                <i class="pi pi-search text-gray-400"></i>
+              </div>
+              <div class="flex-grow">
+                <input
+                  id="song-search"
+                  v-model="searchQuery"
+                  type="text"
+                  :disabled="isSubmitting"
+                  placeholder="Search current chart & Apple Music..."
+                  class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  @input="handleSearchInput"
+                  @focus="searchResultsVisible = !!searchQuery.trim()"
+                />
+              </div>
             </div>
 
             <!-- Search Results -->
@@ -820,17 +827,21 @@ const chartTypeOptions = [
 
           <!-- Favorites Content -->
           <div v-else-if="activeTab === 'favourites'" class="favourites-tab-content">
-            <div class="relative flex items-center mb-2">
-              <i class="pi pi-search absolute left-3 text-gray-500 z-10"></i>
-              <input
-                id="favorites-search"
-                v-model="searchQuery"
-                type="text"
-                :disabled="isSubmitting"
-                placeholder="Filter your favorites..."
-                class="search-input w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
-                @input="handleSearchInput"
-              />
+            <div class="flex items-center mb-2">
+              <div class="mr-2">
+                <i class="pi pi-search text-gray-400"></i>
+              </div>
+              <div class="flex-grow">
+                <input
+                  id="favorites-search"
+                  v-model="searchQuery"
+                  type="text"
+                  :disabled="isSubmitting"
+                  placeholder="Filter your favorites..."
+                  class="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  @input="handleSearchInput"
+                />
+              </div>
             </div>
 
             <div
@@ -922,7 +933,7 @@ const chartTypeOptions = [
           max="100"
           :disabled="isSubmitting"
           placeholder="Enter position (1-100)"
-          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+          class="w-full p-3 border border-gray-300 rounded-lg"
           @input="formErrors.position = ''"
         />
         <div v-if="formErrors.position" class="text-red-500 text-sm mt-2">
@@ -953,7 +964,7 @@ const chartTypeOptions = [
           type="number"
           :disabled="isSubmitting"
           placeholder="Enter position change"
-          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+          class="w-full p-3 border border-gray-300 rounded-lg"
           @input="formErrors.predictionChange = ''"
         />
         <div v-if="formErrors.predictionChange" class="text-red-500 text-sm mt-2">
@@ -966,19 +977,19 @@ const chartTypeOptions = [
       </div>
 
       <!-- Form Actions -->
-      <div class="form-actions flex justify-end gap-3 mt-8">
+      <div class="form-actions flex justify-end gap-3 mt-6">
         <button
           type="button"
           @click="resetForm"
           :disabled="isSubmitting"
-          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+          class="px-4 py-3 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center"
         >
           <i class="pi pi-refresh mr-2"></i> Reset
         </button>
         <button
           type="submit"
           :disabled="!canSubmit || isSubmitting"
-          class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-white bg-green-500 hover:bg-green-600 transition-colors disabled:opacity-50"
+          class="px-4 py-3 border border-transparent rounded-lg text-white bg-green-500 hover:bg-green-600 transition-colors disabled:opacity-50 flex items-center"
         >
           <i class="pi pi-check mr-2"></i> Submit Prediction
         </button>

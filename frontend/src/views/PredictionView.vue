@@ -11,10 +11,11 @@ import { formatDate, formatTimeOnly } from '@/utils/dateUtils'
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
-import Button from 'primevue/button'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
-import Tab from 'primevue/tab'
+
+// Change the active chart tab
+const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
+  activeTab.value = tab
+}
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -210,9 +211,16 @@ watch(activeTab, async () => {
     />
 
     <div v-else-if="error" class="text-center w-full mb-6">
-      <Message severity="error" :closable="false">{{ error }}</Message>
+      <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700">
+        {{ error }}
+      </div>
       <div class="flex justify-center mt-4">
-        <Button label="Retry" icon="pi pi-refresh" @click="predictionStore.initialize" />
+        <button
+          class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center"
+          @click="predictionStore.initialize"
+        >
+          <i class="pi pi-refresh mr-2"></i> Retry
+        </button>
       </div>
     </div>
 
@@ -220,7 +228,12 @@ watch(activeTab, async () => {
     <div v-else-if="!isAuthenticated()" class="text-center w-full mb-6">
       <h2 class="text-2xl font-bold mb-4">Authentication Required</h2>
       <p class="mb-4 text-gray-600">You need to log in to make Billboard chart predictions.</p>
-      <Button label="Log In" icon="pi pi-sign-in" @click="navigateToAuth" class="mr-2" />
+      <button
+        class="px-4 py-2 border border-transparent rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center mx-auto"
+        @click="navigateToAuth"
+      >
+        <i class="pi pi-sign-in mr-2"></i> Log In
+      </button>
     </div>
 
     <!-- Main prediction content -->
@@ -228,70 +241,74 @@ watch(activeTab, async () => {
       <!-- Contest info bar -->
       <div class="contest-info-container mb-6">
         <!-- No active contest -->
-        <Message
+        <div
           v-if="!hasActiveContest"
-          severity="info"
-          :closable="false"
-          class="w-full contest-message"
+          class="p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-700"
         >
-          <div>
-            <div class="message-title font-bold mb-1">No Active Contest</div>
-            <p>
-              New prediction contests open every Tuesday at 2:00 PM UTC ({{
-                formatTransitionTime()
-              }}
-              in your local time)
-            </p>
-          </div>
-        </Message>
+          <div class="font-medium mb-1">No Active Contest</div>
+          <p>
+            New prediction contests open every Tuesday at 2:00 PM UTC ({{ formatTransitionTime() }}
+            in your local time)
+          </p>
+        </div>
 
         <!-- Deadline passed notification -->
-        <Message
+        <div
           v-else-if="isDeadlinePassed"
-          severity="warn"
-          :closable="false"
-          class="w-full contest-message"
+          class="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-yellow-700"
         >
-          <div>
-            <div class="message-title font-bold mb-1">Submission Deadline Has Passed</div>
-            <p>
-              The prediction window for this contest has closed. While the contest is still active,
-              no new predictions can be submitted at this time.
-            </p>
-            <p v-if="predictionStore.currentContest?.chart_release_date">
-              Results will be processed when the Billboard chart is released on
-              <strong>{{ formatDate(predictionStore.currentContest.chart_release_date) }}</strong
-              >.
-            </p>
-          </div>
-        </Message>
+          <div class="font-medium mb-1">Submission Deadline Has Passed</div>
+          <p>
+            The prediction window for this contest has closed. While the contest is still active, no
+            new predictions can be submitted at this time.
+          </p>
+          <p v-if="predictionStore.currentContest?.chart_release_date">
+            Results will be processed when the Billboard chart is released on
+            <strong>{{ formatDate(predictionStore.currentContest.chart_release_date) }}</strong
+            >.
+          </p>
+        </div>
 
         <!-- Active contest info -->
-        <Message
+        <div
           v-else-if="hasActiveContest"
-          severity="success"
-          :closable="false"
-          class="w-full contest-message"
+          class="p-4 bg-green-50 border border-green-100 rounded-lg text-green-700"
         >
-          <div>
-            <div class="message-title font-bold mb-1">Active Prediction Contest</div>
-            <p v-if="predictionStore.currentContest?.end_date">
-              Submissions are open until
-              <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
-              >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
-            </p>
-          </div>
-        </Message>
+          <div class="font-medium mb-1">Active Prediction Contest</div>
+          <p v-if="predictionStore.currentContest?.end_date">
+            Submissions are open until
+            <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
+            >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
+          </p>
+        </div>
       </div>
 
       <!-- Chart type tabs -->
       <div class="chart-tabs w-full mb-6">
-        <Tabs v-model:value="activeTab" class="w-full">
-          <TabList>
-            <Tab value="Billboard Hot 100">Billboard Hot 100</Tab>
-            <Tab value="Billboard 200">Billboard 200</Tab>
-          </TabList>
-        </Tabs>
+        <div class="flex border-b border-gray-200">
+          <button
+            @click="changeTab('Billboard Hot 100')"
+            class="py-2 px-4 mr-4 font-medium text-sm focus:outline-none"
+            :class="
+              activeTab === 'Billboard Hot 100'
+                ? 'text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700'
+            "
+          >
+            Billboard Hot 100
+          </button>
+          <button
+            @click="changeTab('Billboard 200')"
+            class="py-2 px-4 font-medium text-sm focus:outline-none"
+            :class="
+              activeTab === 'Billboard 200'
+                ? 'text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-500 hover:text-gray-700'
+            "
+          >
+            Billboard 200
+          </button>
+        </div>
 
         <div class="prediction-sections mt-6" :class="{ 'deadline-passed': isDeadlinePassed }">
           <!-- Prediction form -->
