@@ -11,6 +11,10 @@ import { formatDate, formatTimeOnly } from '@/utils/dateUtils'
 import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
+import Button from 'primevue/button'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -91,7 +95,7 @@ const isDeadlinePassed = computed(() => {
   return daysUntilDeadline.value !== null && daysUntilDeadline.value < 0
 })
 
-// Get prediction results for display
+// Get prediction status for display
 const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
   if (prediction.is_correct === null || prediction.is_correct === undefined) {
     return 'pending'
@@ -105,9 +109,35 @@ const navigateToAuth = () => {
   redirectToLogin(router, '/predictions')
 }
 
-// Change the active chart tab
-const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
-  activeTab.value = tab
+// Get position change or position text based on prediction type
+const getPositionText = (prediction: Prediction): string => {
+  if (prediction.prediction_type === 'entry') {
+    return `Position: #${prediction.position}`
+  } else if (prediction.prediction_type === 'position_change') {
+    const changeValue = prediction.position
+    const prefix = changeValue > 0 ? '+' : ''
+    return `Change: ${prefix}${changeValue}`
+  }
+  return ''
+}
+
+// Get actual position or change text based on prediction type and results
+const getActualResultText = (prediction: Prediction): string => {
+  if (!prediction.is_correct && prediction.is_correct !== false) {
+    return 'Pending'
+  }
+
+  // Note: In a real implementation, we'd need to access the actual position or change
+  // from the prediction_results table. For now, we'll simulate with placeholder text.
+  if (prediction.prediction_type === 'entry') {
+    return prediction.is_correct ? 'Entered chart' : 'Did not enter'
+  } else if (prediction.prediction_type === 'position_change') {
+    return prediction.is_correct ? 'Changed as predicted' : 'Different change'
+  } else if (prediction.prediction_type === 'exit') {
+    return prediction.is_correct ? 'Exited chart' : 'Still on chart'
+  }
+
+  return ''
 }
 
 // Initialize component
@@ -168,36 +198,44 @@ watch(activeTab, async () => {
 </script>
 
 <template>
-  <div class="prediction-view">
-    <h1 class="text-3xl font-bold">Predictions</h1>
+  <div class="prediction-view flex flex-col max-w-[1200px]">
+    <h1 class="text-3xl font-bold mb-6">Predictions</h1>
 
     <LoadingSpinner
       v-if="isLoading"
       class="loading-spinner"
       label="Loading prediction data..."
       centerInContainer
+      size="medium"
     />
 
-    <div v-else-if="error" class="error-container">
-      <p>{{ error }}</p>
-      <button @click="predictionStore.initialize" class="retry-button">Retry</button>
+    <div v-else-if="error" class="text-center w-full mb-6">
+      <Message severity="error" :closable="false">{{ error }}</Message>
+      <div class="flex justify-center mt-4">
+        <Button label="Retry" icon="pi pi-refresh" @click="predictionStore.initialize" />
+      </div>
     </div>
 
     <!-- Authentication check -->
-    <div v-else-if="!isAuthenticated()" class="auth-required">
-      <h2 class="text-2xl font-bold">Authentication Required</h2>
-      <p>You need to log in to make Billboard chart predictions.</p>
-      <button @click="navigateToAuth" class="auth-button">Log In</button>
+    <div v-else-if="!isAuthenticated()" class="text-center w-full mb-6">
+      <h2 class="text-2xl font-bold mb-4">Authentication Required</h2>
+      <p class="mb-4 text-gray-600">You need to log in to make Billboard chart predictions.</p>
+      <Button label="Log In" icon="pi pi-sign-in" @click="navigateToAuth" class="mr-2" />
     </div>
 
     <!-- Main prediction content -->
-    <div v-else class="prediction-content">
+    <div v-else class="flex flex-col gap-6">
       <!-- Contest info bar -->
-      <div class="contest-info-container">
+      <div class="contest-info-container mb-6">
         <!-- No active contest -->
-        <Message v-if="!hasActiveContest" severity="info" :closable="false" class="contest-message">
+        <Message
+          v-if="!hasActiveContest"
+          severity="info"
+          :closable="false"
+          class="w-full contest-message"
+        >
           <div>
-            <div class="message-title">No Active Contest</div>
+            <div class="message-title font-bold mb-1">No Active Contest</div>
             <p>
               New prediction contests open every Tuesday at 2:00 PM UTC ({{
                 formatTransitionTime()
@@ -212,10 +250,10 @@ watch(activeTab, async () => {
           v-else-if="isDeadlinePassed"
           severity="warn"
           :closable="false"
-          class="contest-message"
+          class="w-full contest-message"
         >
           <div>
-            <div class="message-title">Submission Deadline Has Passed</div>
+            <div class="message-title font-bold mb-1">Submission Deadline Has Passed</div>
             <p>
               The prediction window for this contest has closed. While the contest is still active,
               no new predictions can be submitted at this time.
@@ -233,10 +271,10 @@ watch(activeTab, async () => {
           v-else-if="hasActiveContest"
           severity="success"
           :closable="false"
-          class="contest-message"
+          class="w-full contest-message"
         >
           <div>
-            <div class="message-title">Active Prediction Contest</div>
+            <div class="message-title font-bold mb-1">Active Prediction Contest</div>
             <p v-if="predictionStore.currentContest?.end_date">
               Submissions are open until
               <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
@@ -247,128 +285,112 @@ watch(activeTab, async () => {
       </div>
 
       <!-- Chart type tabs -->
-      <div class="chart-tabs">
-        <button
-          @click="changeTab('Billboard Hot 100')"
-          :class="['tab-button', { active: activeTab === 'Billboard Hot 100' }]"
-        >
-          Billboard Hot 100
-        </button>
-        <button
-          @click="changeTab('Billboard 200')"
-          :class="['tab-button', { active: activeTab === 'Billboard 200' }]"
-        >
-          Billboard 200
-        </button>
-      </div>
+      <div class="chart-tabs w-full mb-6">
+        <Tabs v-model:value="activeTab" class="w-full">
+          <TabList>
+            <Tab value="Billboard Hot 100">Billboard Hot 100</Tab>
+            <Tab value="Billboard 200">Billboard 200</Tab>
+          </TabList>
+        </Tabs>
 
-      <div class="prediction-sections" :class="{ 'deadline-passed': isDeadlinePassed }">
-        <!-- Prediction form -->
-        <div class="prediction-form-section" v-if="!isDeadlinePassed">
-          <PredictionForm />
-        </div>
-
-        <!-- User predictions -->
-        <div class="user-predictions-section">
-          <h2 class="text-2xl font-bold" :class="{ isDeadlinePassed }">
-            Your {{ activeTab }} Predictions
-          </h2>
-
-          <LoadingSpinner
-            v-if="predictionStore.loading.predictions"
-            class="loading-spinner"
-            label="Loading your predictions..."
-            size="small"
-            centerInContainer
-          />
-
-          <div v-else-if="userPredictions.length === 0" class="no-predictions">
-            <p v-if="isDeadlinePassed">
-              You didn't make any {{ activeTab }} predictions for this contest before the deadline
-              passed.
-            </p>
-            <p v-else>You haven't made any {{ activeTab }} predictions for this contest yet.</p>
+        <div class="prediction-sections mt-6" :class="{ 'deadline-passed': isDeadlinePassed }">
+          <!-- Prediction form -->
+          <div class="prediction-form-section mb-6" v-if="!isDeadlinePassed">
+            <PredictionForm />
           </div>
 
-          <div v-else class="predictions-list">
-            <div
-              v-for="prediction in userPredictions"
-              :key="prediction.id"
-              class="prediction-card"
-              :class="getPredictionStatus(prediction)"
-            >
-              <div class="prediction-type-badge">{{ prediction.prediction_type }}</div>
+          <!-- User predictions -->
+          <div
+            class="user-predictions-section"
+            v-if="userPredictions.length > 0 || predictionStore.loading.predictions"
+          >
+            <h2 class="text-2xl font-bold mb-4">Your {{ activeTab }} Predictions</h2>
 
-              <div class="prediction-header">
-                <h3 class="text-lg font-bold">{{ prediction.target_name }}</h3>
-                <div class="prediction-artist">{{ prediction.artist }}</div>
-              </div>
+            <LoadingSpinner
+              v-if="predictionStore.loading.predictions"
+              class="loading-spinner"
+              label="Loading your predictions..."
+              size="small"
+              centerInContainer
+            />
 
-              <div class="prediction-details">
-                <div v-if="prediction.prediction_type === 'entry'" class="prediction-position">
-                  Predicted Position: <strong>#{{ prediction.position }}</strong>
-                </div>
+            <div v-else-if="userPredictions.length === 0" class="text-center w-full">
+              <Message severity="info" :closable="false">
+                <p v-if="isDeadlinePassed">
+                  You didn't make any {{ activeTab }} predictions for this contest before the
+                  deadline passed.
+                </p>
+                <p v-else>You haven't made any {{ activeTab }} predictions for this contest yet.</p>
+              </Message>
+            </div>
 
-                <div
-                  v-else-if="prediction.prediction_type === 'position_change'"
-                  class="prediction-change"
-                >
-                  Predicted Change:
-                  <strong
-                    :class="{
-                      'positive-change': prediction.position > 0,
-                      'negative-change': prediction.position < 0,
-                    }"
-                  >
-                    {{ prediction.position > 0 ? '+' : '' }}{{ prediction.position }}
-                  </strong>
-                </div>
-
-                <div class="prediction-date">
-                  Made on: {{ new Date(prediction.prediction_date).toLocaleDateString() }}
-                </div>
-
-                <!-- Results section (if available) -->
-                <div v-if="prediction.is_correct !== null" class="prediction-result">
-                  <div
-                    class="result-badge"
-                    :class="{
-                      correct: prediction.is_correct,
-                      incorrect: !prediction.is_correct,
-                    }"
-                  >
-                    {{ prediction.is_correct ? 'Correct!' : 'Incorrect' }}
-                  </div>
-
-                  <div v-if="prediction.points" class="points-earned">
-                    Points earned: <strong>{{ prediction.points }}</strong>
-                  </div>
-
-                  <!-- Note: These fields are currently not in the type definition but may exist in API responses -->
-                  <div v-if="(prediction as any).actual_position" class="actual-position">
-                    Actual position: <strong>#{{ (prediction as any).actual_position }}</strong>
-                  </div>
-
-                  <div v-if="(prediction as any).actual_change" class="actual-change">
-                    Actual change:
-                    <strong
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+              <div
+                v-for="prediction in userPredictions"
+                :key="prediction.id"
+                class="prediction-card border border-gray-200 rounded-md p-4 bg-white shadow-sm transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-md"
+                :class="{
+                  'border-green-300 bg-green-50': getPredictionStatus(prediction) === 'correct',
+                  'border-red-300 bg-red-50': getPredictionStatus(prediction) === 'incorrect',
+                  'border-blue-300 bg-blue-50': getPredictionStatus(prediction) === 'pending',
+                }"
+              >
+                <!-- Header with badges -->
+                <div class="flex justify-between items-center mb-3">
+                  <div class="flex gap-2">
+                    <span
+                      class="text-xs px-2 py-1 rounded-full font-medium"
                       :class="{
-                        'positive-change': (prediction as any).actual_change > 0,
-                        'negative-change': (prediction as any).actual_change < 0,
+                        'bg-green-100 text-green-800': prediction.prediction_type === 'entry',
+                        'bg-blue-100 text-blue-800':
+                          prediction.prediction_type === 'position_change',
+                        'bg-yellow-100 text-yellow-800': prediction.prediction_type === 'exit',
                       }"
                     >
-                      {{ (prediction as any).actual_change > 0 ? '+' : ''
-                      }}{{ (prediction as any).actual_change }}
-                    </strong>
+                      {{ prediction.prediction_type.replace('_', ' ') }}
+                    </span>
                   </div>
+                  <span class="text-xs text-gray-500">
+                    {{ formatDate(prediction.prediction_date) }}
+                  </span>
                 </div>
 
-                <!-- Pending state -->
-                <div v-else class="prediction-pending">
-                  <div class="pending-badge">Pending</div>
-                  <p class="pending-message">
-                    This prediction is awaiting chart release to be processed.
-                  </p>
+                <!-- Song details -->
+                <div class="mb-3">
+                  <h4 class="text-base font-bold truncate">{{ prediction.target_name }}</h4>
+                  <p class="text-sm text-gray-600 truncate">{{ prediction.artist }}</p>
+                </div>
+
+                <!-- Prediction details -->
+                <div class="text-sm font-medium mb-3">{{ getPositionText(prediction) }}</div>
+
+                <!-- Results -->
+                <div
+                  class="mt-2 p-3 rounded-md text-sm"
+                  :class="{
+                    'bg-green-100': prediction.is_correct === true,
+                    'bg-red-100': prediction.is_correct === false,
+                    'bg-gray-100':
+                      prediction.is_correct === null || prediction.is_correct === undefined,
+                  }"
+                >
+                  <div class="flex justify-between items-center">
+                    <span class="font-medium">
+                      {{
+                        prediction.is_correct === true
+                          ? 'Correct!'
+                          : prediction.is_correct === false
+                            ? 'Incorrect'
+                            : 'Pending'
+                      }}
+                    </span>
+                    <span
+                      v-if="prediction.points"
+                      class="font-bold px-2 py-1 bg-white rounded-md shadow-sm"
+                    >
+                      +{{ prediction.points }} pts
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

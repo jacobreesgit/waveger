@@ -11,6 +11,13 @@ import type { PredictionSubmission, SearchResult } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
+import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
+import InputNumber from 'primevue/inputnumber'
+import Button from 'primevue/button'
+import Tabs from 'primevue/tabs'
+import TabList from 'primevue/tablist'
+import Tab from 'primevue/tab'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -506,112 +513,154 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
+
+// Prediction type options
+const predictionTypeOptions = [
+  { label: 'New Entry', value: 'entry' },
+  { label: 'Position Change', value: 'position_change' },
+  { label: 'Chart Exit', value: 'exit' },
+]
+
+// Chart type options
+const chartTypeOptions = [
+  { label: 'Billboard Hot 100', value: 'hot-100' },
+  { label: 'Billboard 200', value: 'billboard-200' },
+]
 </script>
 
 <template>
-  <div class="prediction-form">
-    <h2 class="text-2xl font-bold">Make a Chart Prediction</h2>
+  <div class="prediction-form w-full">
+    <h2 class="text-2xl font-bold mb-4">Make a Chart Prediction</h2>
 
-    <div v-if="hasActiveContest" class="contest-info">
-      <h3 class="text-lg font-bold">Current Prediction Window</h3>
-      <p>
+    <div v-if="hasActiveContest" class="contest-info mb-6">
+      <Message severity="info" :closable="false" class="w-full">
+        <span class="font-medium">Current Prediction Window:</span>
         Make your predictions for the Billboard chart that will be released on
-        <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong>
-      </p>
-      <p class="text-sm text-gray-600 mt-1">
-        Predictions close on
-        <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong
-        >. Results will be processed and points awarded at 2:00 PM GMT on chart release day.
-      </p>
-      <div class="remaining-count">
-        You have <strong>{{ remainingPredictions }}</strong> predictions remaining
-      </div>
+        <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong
+        >.
+        <div class="text-sm mt-1">
+          Predictions close on
+          <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong
+          >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
+        </div>
+      </Message>
     </div>
 
-    <div v-else class="no-contest">
+    <div v-else class="no-contest mb-6">
       <LoadingSpinner
         v-if="predictionStore.loading.contest"
         label="Loading contest information..."
         size="medium"
         class="loading-spinner"
       />
-      <Message severity="warn" :closable="false">
+      <Message v-else severity="warn" :closable="false" class="w-full">
         There is no active prediction contest at this time.<br />
-        Check back soon for the next prediction window!</Message
-      >
+        Check back soon for the next prediction window!
+      </Message>
     </div>
 
     <!-- Authentication Check -->
-    <div v-if="!isLoggedIn" class="auth-required">
-      <Message severity="error" :closable="false">
-        You must be logged in to make predictions.</Message
-      >
-      <button @click="goToLogin" class="login-button">Login</button>
+    <div v-if="!isLoggedIn" class="auth-required mb-6">
+      <Message severity="error" :closable="false" class="w-full">
+        You must be logged in to make predictions.
+      </Message>
+      <div class="flex justify-center mt-4">
+        <Button label="Login" icon="pi pi-sign-in" @click="goToLogin" />
+      </div>
     </div>
 
     <!-- Prediction Form -->
     <form v-else-if="hasActiveContest" @submit.prevent="submitPrediction" class="form-container">
-      <Message v-if="showSuccess" severity="success" :closable="false">
+      <Message v-if="showSuccess" severity="success" :closable="false" class="w-full mb-6">
         {{ successMessage }}
       </Message>
 
-      <!-- Chart Type Selection -->
-      <div class="form-group">
-        <label for="chart-type">Chart Type</label>
-        <select id="chart-type" v-model="chartType" :disabled="isSubmitting" class="form-select">
-          <option value="hot-100">Billboard Hot 100</option>
-          <option value="billboard-200">Billboard 200</option>
-        </select>
-      </div>
+      <Message v-if="formErrors.general" severity="error" :closable="false" class="w-full mb-6">
+        {{ formErrors.general }}
+      </Message>
 
-      <!-- Prediction Type Selection -->
-      <div class="form-group">
-        <label for="prediction-type">Prediction Type</label>
-        <select
-          id="prediction-type"
-          v-model="predictionType"
-          :disabled="isSubmitting"
-          class="form-select"
-        >
-          <option value="entry">New Entry</option>
-          <option value="position_change">Position Change</option>
-          <option value="exit">Chart Exit</option>
-        </select>
-        <div class="prediction-type-description">
-          <div v-if="predictionType === 'entry'">
-            Predict a song that will <strong>enter the chart</strong> next week and its position
-          </div>
-          <div v-else-if="predictionType === 'position_change'">
-            Predict how much a song's position will <strong>change</strong> next week
-          </div>
-          <div v-else-if="predictionType === 'exit'">
-            Predict a song that will <strong>exit the chart</strong> next week
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <!-- Chart Type Selection -->
+        <div class="form-field">
+          <label for="chart-type" class="block text-sm font-medium text-gray-600 mb-2"
+            >Chart Type</label
+          >
+          <Dropdown
+            id="chart-type"
+            v-model="chartType"
+            :options="chartTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            :disabled="isSubmitting"
+            class="w-full"
+            placeholder="Select chart type"
+          />
+        </div>
+
+        <!-- Prediction Type Selection -->
+        <div class="form-field">
+          <label for="prediction-type" class="block text-sm font-medium text-gray-600 mb-2"
+            >Prediction Type</label
+          >
+          <Dropdown
+            id="prediction-type"
+            v-model="predictionType"
+            :options="predictionTypeOptions"
+            optionLabel="label"
+            optionValue="value"
+            :disabled="isSubmitting"
+            class="w-full"
+            placeholder="Select prediction type"
+          />
+          <div class="prediction-type-description text-sm text-gray-600 mt-2">
+            <div v-if="predictionType === 'entry'">
+              Predict a song that will <strong>enter the chart</strong> next week and its position
+            </div>
+            <div v-else-if="predictionType === 'position_change'">
+              Predict how much a song's position will <strong>change</strong> next week
+            </div>
+            <div v-else-if="predictionType === 'exit'">
+              Predict a song that will <strong>exit the chart</strong> next week
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Song Selection - Enhanced with Autocomplete -->
-      <div class="form-group">
-        <label for="song-search">Song</label>
+      <!-- Song Selection -->
+      <div class="form-field mb-6">
+        <label for="song-search" class="block text-sm font-medium text-gray-600 mb-2">Song</label>
 
         <!-- Selected Song Display -->
-        <div v-if="selectedSong" class="selected-song">
-          <div class="selected-song-content">
-            <img
+        <div
+          v-if="selectedSong"
+          class="selected-song p-4 border border-gray-200 rounded-lg bg-gray-50 flex justify-between"
+        >
+          <div class="selected-song-content flex">
+            <div
               v-if="selectedSong.imageUrl"
-              :src="selectedSong.imageUrl"
-              :alt="selectedSong.name"
-              class="selected-song-image"
-            />
-            <div v-else class="selected-song-image-placeholder"></div>
+              class="selected-song-image w-16 h-16 rounded mr-4 overflow-hidden flex-shrink-0"
+            >
+              <img
+                :src="selectedSong.imageUrl"
+                :alt="selectedSong.name"
+                class="w-full h-full object-cover"
+              />
+            </div>
+            <div
+              v-else
+              class="selected-song-image-placeholder w-16 h-16 rounded mr-4 bg-gray-200 flex-shrink-0"
+            ></div>
 
             <div class="selected-song-details">
-              <div class="selected-song-name">{{ selectedSong.name }}</div>
-              <div class="selected-song-artist">{{ selectedSong.artist }}</div>
-              <div v-if="selectedSong.chartPosition" class="selected-song-position">
+              <div class="selected-song-name font-bold">{{ selectedSong.name }}</div>
+              <div class="selected-song-artist text-gray-600">{{ selectedSong.artist }}</div>
+              <div
+                v-if="selectedSong.chartPosition"
+                class="selected-song-position text-sm text-gray-600 mt-1"
+              >
                 Current position: #{{ selectedSong.chartPosition }}
               </div>
-              <div class="selected-song-source">
+              <div class="selected-song-source text-xs text-gray-500 mt-1">
                 Source:
                 {{
                   selectedSong.source === 'chart'
@@ -626,107 +675,127 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <button type="button" @click="clearSelection" class="clear-selection-btn">
-            <span aria-hidden="true">×</span>
-            <span class="sr-only">Clear selection</span>
-          </button>
+          <Button
+            type="button"
+            @click="clearSelection"
+            icon="pi pi-times"
+            class="p-button-rounded p-button-text p-button-sm"
+            aria-label="Clear selection"
+          />
         </div>
 
         <!-- Search Input -->
         <div v-else class="search-container">
           <!-- Search/Favorites Tabs -->
-          <div class="search-tabs main-tabs">
-            <button
-              type="button"
-              @click="activeTab = 'search'"
-              :class="['tab-button', { active: activeTab === 'search' }]"
-            >
-              Search
-            </button>
-            <button
-              type="button"
-              @click="activeTab = 'favourites'"
-              :class="['tab-button', { active: activeTab === 'favourites' }]"
-            >
-              My Favorites
-            </button>
-          </div>
+          <Tabs v-model:value="activeTab" class="mb-4">
+            <TabList>
+              <Tab value="search">Search</Tab>
+              <Tab value="favourites">My Favorites</Tab>
+            </TabList>
+          </Tabs>
 
-          <!-- Search Tab Content -->
+          <!-- Search Content -->
           <div v-if="activeTab === 'search'" class="search-tab-content">
-            <input
-              id="song-search"
-              v-model="searchQuery"
-              type="text"
-              :disabled="isSubmitting"
-              placeholder="Search current chart & Apple Music..."
-              class="search-input"
-              @input="handleSearchInput"
-              @focus="searchResultsVisible = !!searchQuery.trim()"
-            />
+            <div class="p-input-icon-left w-full">
+              <i class="pi pi-search" />
+              <InputText
+                id="song-search"
+                v-model="searchQuery"
+                type="text"
+                :disabled="isSubmitting"
+                placeholder="Search current chart & Apple Music..."
+                class="search-input w-full"
+                @input="handleSearchInput"
+                @focus="searchResultsVisible = !!searchQuery.trim()"
+              />
+            </div>
 
             <!-- Search Results -->
-            <div v-if="searchResultsVisible" class="search-results">
-              <div v-if="isSearching" class="search-loading">
+            <div
+              v-if="searchResultsVisible"
+              class="search-results mt-2 border border-gray-200 rounded-md bg-white shadow-md max-h-60 overflow-y-auto"
+            >
+              <div v-if="isSearching" class="search-loading p-4 text-center">
                 <LoadingSpinner class="loading-spinner" size="small" label="Searching..." inline />
               </div>
 
-              <div v-else-if="searchResults.length === 0" class="no-results">
-                <p>No results found</p>
-                <button type="button" @click="createCustomEntry" class="create-custom-btn">
-                  Create custom entry
-                </button>
+              <div v-else-if="searchResults.length === 0" class="no-results p-4 text-center">
+                <p class="text-gray-600 mb-2">No results found</p>
+                <Button
+                  type="button"
+                  @click="createCustomEntry"
+                  label="Create custom entry"
+                  icon="pi pi-plus"
+                  class="p-button-sm p-button-outlined"
+                />
               </div>
 
               <div v-else class="results-list">
                 <div
                   v-for="(result, index) in searchResults"
                   :key="index"
-                  class="result-item"
+                  class="result-item p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex items-center"
                   @click="selectSong(result)"
                 >
-                  <img
+                  <div
                     v-if="result.imageUrl"
-                    :src="result.imageUrl"
-                    :alt="result.name"
-                    class="result-image"
-                  />
-                  <div v-else class="result-image-placeholder"></div>
+                    class="result-image w-10 h-10 rounded mr-3 overflow-hidden flex-shrink-0"
+                  >
+                    <img
+                      :src="result.imageUrl"
+                      :alt="result.name"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div
+                    v-else
+                    class="result-image-placeholder w-10 h-10 rounded mr-3 bg-gray-200 flex-shrink-0"
+                  ></div>
 
-                  <div class="result-details">
-                    <div class="result-name">{{ result.name }}</div>
-                    <div class="result-artist">{{ result.artist }}</div>
-                    <div v-if="result.chartPosition" class="result-position">
+                  <div class="result-details flex-grow">
+                    <div class="result-name font-medium truncate">{{ result.name }}</div>
+                    <div class="result-artist text-sm text-gray-600 truncate">
+                      {{ result.artist }}
+                    </div>
+                    <div v-if="result.chartPosition" class="result-position text-xs text-gray-500">
                       Current position: #{{ result.chartPosition }}
                     </div>
-                    <div class="result-source">
-                      {{ result.source === 'chart' ? 'Current Chart' : 'Apple Music' }}
-                    </div>
+                  </div>
+                  <div class="result-source text-xs text-gray-500 ml-2">
+                    {{ result.source === 'chart' ? 'Chart' : 'Apple Music' }}
                   </div>
                 </div>
 
                 <!-- Custom Entry Option -->
-                <button type="button" @click="createCustomEntry" class="create-custom-option">
-                  Create custom entry for "{{ searchQuery }}"
-                </button>
+                <div
+                  class="create-custom-option p-3 text-center text-blue-600 hover:bg-gray-50 cursor-pointer border-t border-gray-100"
+                  @click="createCustomEntry"
+                >
+                  <i class="pi pi-plus mr-1"></i> Create custom entry for "{{ searchQuery }}"
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Favorites Tab Content -->
+          <!-- Favorites Content -->
           <div v-else-if="activeTab === 'favourites'" class="favourites-tab-content">
-            <input
-              id="favorites-search"
-              v-model="searchQuery"
-              type="text"
-              :disabled="isSubmitting"
-              placeholder="Filter your favorites..."
-              class="search-input"
-              @input="handleSearchInput"
-            />
+            <div class="p-input-icon-left w-full">
+              <i class="pi pi-search" />
+              <InputText
+                id="favorites-search"
+                v-model="searchQuery"
+                type="text"
+                :disabled="isSubmitting"
+                placeholder="Filter your favorites..."
+                class="search-input w-full"
+                @input="handleSearchInput"
+              />
+            </div>
 
-            <div class="favourites-list">
-              <div v-if="isSearching" class="search-loading">
+            <div
+              class="favourites-list mt-2 border border-gray-200 rounded-md bg-white shadow-md max-h-60 overflow-y-auto"
+            >
+              <div v-if="isSearching" class="search-loading p-4 text-center">
                 <LoadingSpinner
                   class="loading-spinner"
                   size="small"
@@ -735,7 +804,7 @@ onUnmounted(() => {
                 />
               </div>
 
-              <div v-else-if="favouritesStore.loading" class="search-loading">
+              <div v-else-if="favouritesStore.loading" class="search-loading p-4 text-center">
                 <LoadingSpinner
                   class="loading-spinner"
                   size="small"
@@ -744,9 +813,9 @@ onUnmounted(() => {
                 />
               </div>
 
-              <div v-else-if="filteredFavorites.length === 0" class="no-results">
-                <p v-if="searchQuery">No favorites match your search</p>
-                <p v-else>You don't have any favorites yet</p>
+              <div v-else-if="filteredFavorites.length === 0" class="no-results p-4 text-center">
+                <p v-if="searchQuery" class="text-gray-600">No favorites match your search</p>
+                <p v-else class="text-gray-600">You don't have any favorites yet</p>
               </div>
 
               <div v-else class="results-list">
@@ -755,21 +824,33 @@ onUnmounted(() => {
                     ? searchResults
                     : filteredFavorites"
                   :key="index"
-                  class="result-item"
+                  class="result-item p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 flex items-center"
                   @click="selectSong(favorite)"
                 >
-                  <img
+                  <div
                     v-if="favorite.imageUrl"
-                    :src="favorite.imageUrl"
-                    :alt="favorite.name"
-                    class="result-image"
-                  />
-                  <div v-else class="result-image-placeholder"></div>
+                    class="result-image w-10 h-10 rounded mr-3 overflow-hidden flex-shrink-0"
+                  >
+                    <img
+                      :src="favorite.imageUrl"
+                      :alt="favorite.name"
+                      class="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div
+                    v-else
+                    class="result-image-placeholder w-10 h-10 rounded mr-3 bg-gray-200 flex-shrink-0"
+                  ></div>
 
-                  <div class="result-details">
-                    <div class="result-name">{{ favorite.name }}</div>
-                    <div class="result-artist">{{ favorite.artist }}</div>
-                    <div v-if="favorite.chartPosition" class="result-position">
+                  <div class="result-details flex-grow">
+                    <div class="result-name font-medium truncate">{{ favorite.name }}</div>
+                    <div class="result-artist text-sm text-gray-600 truncate">
+                      {{ favorite.artist }}
+                    </div>
+                    <div
+                      v-if="favorite.chartPosition"
+                      class="result-position text-xs text-gray-500"
+                    >
                       Current position: #{{ favorite.chartPosition }}
                     </div>
                   </div>
@@ -779,69 +860,91 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <Message v-if="formErrors.songName" severity="error" :closable="false">{{
-          formErrors.songName
-        }}</Message>
-        <Message v-if="formErrors.artist" severity="error" :closable="false">{{
-          formErrors.artist
-        }}</Message>
+        <Message v-if="formErrors.songName" severity="error" :closable="false" class="mt-2 w-full">
+          {{ formErrors.songName }}
+        </Message>
+        <Message v-if="formErrors.artist" severity="error" :closable="false" class="mt-2 w-full">
+          {{ formErrors.artist }}
+        </Message>
       </div>
 
       <!-- Position Input (for Entry predictions) -->
-      <div v-if="predictionType === 'entry'" class="form-group">
-        <label for="position">Predicted Position</label>
-        <input
+      <div v-if="predictionType === 'entry'" class="form-field mb-6">
+        <label for="position" class="block text-sm font-medium text-gray-600 mb-2"
+          >Predicted Position</label
+        >
+        <InputNumber
           id="position"
-          v-model.number="position"
-          type="number"
-          min="1"
-          max="100"
+          v-model="position"
+          :min="1"
+          :max="100"
           :disabled="isSubmitting"
           placeholder="Enter position (1-100)"
-          class="form-input"
-          @input="formErrors.position = ''"
+          class="w-full"
+          @update:modelValue="formErrors.position = ''"
         />
-        <Message v-if="formErrors.position" severity="error" :closable="false">{{
-          formErrors.position
-        }}</Message>
-        <p class="input-hint">Lower numbers are higher on the chart (1 is the top position)</p>
+        <Message v-if="formErrors.position" severity="error" :closable="false" class="mt-2 w-full">
+          {{ formErrors.position }}
+        </Message>
+        <p class="input-hint text-sm text-gray-600 mt-2">
+          Lower numbers are higher on the chart (1 is the top position)
+        </p>
       </div>
 
       <!-- Position Change Input (for Position Change predictions) -->
-      <div v-if="predictionType === 'position_change'" class="form-group">
-        <label for="prediction-change">Predicted Position Change</label>
+      <div v-if="predictionType === 'position_change'" class="form-field mb-6">
+        <label for="prediction-change" class="block text-sm font-medium text-gray-600 mb-2">
+          Predicted Position Change
+        </label>
 
         <!-- Current position reminder -->
-        <div v-if="selectedSong && selectedSong.chartPosition" class="current-position-reminder">
+        <div
+          v-if="selectedSong && selectedSong.chartPosition"
+          class="current-position-reminder p-2 bg-gray-50 border border-gray-200 rounded mb-2 text-sm"
+        >
           Current position of "{{ selectedSong.name }}": #{{ selectedSong.chartPosition }}
         </div>
 
-        <input
+        <InputNumber
           id="prediction-change"
-          v-model.number="predictionChange"
-          type="number"
+          v-model="predictionChange"
           :disabled="isSubmitting"
           placeholder="Enter position change"
-          class="form-input"
-          @input="formErrors.predictionChange = ''"
+          class="w-full"
+          @update:modelValue="formErrors.predictionChange = ''"
         />
-        <Message v-if="formErrors.predictionChange" severity="error" :closable="false">{{
-          formErrors.predictionChange
-        }}</Message>
-        <p class="input-hint">
+        <Message
+          v-if="formErrors.predictionChange"
+          severity="error"
+          :closable="false"
+          class="mt-2 w-full"
+        >
+          {{ formErrors.predictionChange }}
+        </Message>
+        <p class="input-hint text-sm text-gray-600 mt-2">
           Positive numbers mean the song moves up the chart (improves position). Negative numbers
           mean the song moves down the chart.
         </p>
       </div>
 
       <!-- Form Actions -->
-      <div class="form-actions">
-        <button type="button" @click="resetForm" class="reset-button" :disabled="isSubmitting">
-          Reset
-        </button>
-        <button type="submit" class="submit-button" :disabled="!canSubmit || isSubmitting">
-          {{ isSubmitting ? 'Submitting...' : 'Submit Prediction' }}
-        </button>
+      <div class="form-actions flex justify-end gap-3 mt-6">
+        <Button
+          type="button"
+          label="Reset"
+          icon="pi pi-refresh"
+          severity="secondary"
+          outlined
+          @click="resetForm"
+          :disabled="isSubmitting"
+        />
+        <Button
+          type="submit"
+          label="Submit Prediction"
+          icon="pi pi-check"
+          :disabled="!canSubmit || isSubmitting"
+          :loading="isSubmitting"
+        />
       </div>
     </form>
   </div>

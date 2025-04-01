@@ -167,7 +167,7 @@ watch(activeTabValue, async (newTab) => {
       centerInContainer
     />
 
-    <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6">
+    <div v-else-if="authStore.user" class="profile-content flex flex-col w-full gap-6 h-full">
       <h1 class="text-3xl font-bold">Your Account</h1>
 
       <Tabs v-model:value="activeTabValue" @update:value="onTabChange">
@@ -245,7 +245,7 @@ watch(activeTabValue, async (newTab) => {
         </div>
       </div>
 
-      <div class="tab-content">
+      <div class="tab-content h-full">
         <router-view />
       </div>
     </div>

@@ -166,7 +166,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="profile-predictions-tab flex flex-col gap-6">
+  <div class="profile-predictions-tab flex flex-col gap-6 h-full">
     <!-- Loading state -->
     <LoadingSpinner
       v-if="isPredictionsLoading"
