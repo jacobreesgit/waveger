@@ -169,14 +169,6 @@ watch(
 
 <template>
   <div class="profile-favourites-tab flex flex-col w-full gap-6">
-    <div class="p-8 mb-6 bg-white border border-gray-200 rounded-lg">
-      <h2 class="text-2xl font-bold">Your Favourites</h2>
-      <p class="text-gray-600 mt-1">
-        {{ favouritesStore.favouritesCount }} songs from
-        {{ favouritesStore.chartAppearancesCount }} chart appearances
-      </p>
-    </div>
-
     <!-- Loading state -->
     <LoadingSpinner
       v-if="favouritesStore.loading"

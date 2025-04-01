@@ -14,7 +14,6 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Message from 'primevue/message'
-import Avatar from 'primevue/avatar'
 import ProgressBar from 'primevue/progressbar'
 import Divider from 'primevue/divider'
 
@@ -61,12 +60,6 @@ const submittingUsername = ref(false)
 const submittingEmail = ref(false)
 const submittingPassword = ref(false)
 
-// Generate initials for avatar
-const userInitials = computed(() => {
-  const username = authStore.user?.username || ''
-  return username.substring(0, 2).toUpperCase()
-})
-
 // Calculate prediction accuracy with animation
 const predictionAccuracy = computed(() => {
   const user = authStore.user
@@ -89,57 +82,6 @@ const formatDate = (dateString?: string | null) => {
   if (!dateString) return 'Not available'
   return timezoneStore.formatDateOnly(dateString)
 }
-
-// Get random gradient for avatar background
-const avatarGradient = computed(() => {
-  const gradients = [
-    'linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)',
-    'linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%)',
-    'linear-gradient(135deg, #EC4899 0%, #BE185D 100%)',
-    'linear-gradient(135deg, #10B981 0%, #047857 100%)',
-  ]
-
-  if (!authStore.user?.username) return gradients[0]
-
-  // Generate a consistent index based on username
-  const username = authStore.user.username
-  const charSum = username.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
-  const index = charSum % gradients.length
-
-  return gradients[index]
-})
-
-// Compute the optimal text color based on background brightness
-const avatarTextColor = computed(() => {
-  // Extract the main color from the gradient to analyze
-  const match = avatarGradient.value.match(/#[0-9A-F]{6}/i)
-  const mainColor = match ? match[0].toLowerCase() : '#3b82f6'
-
-  // Calculate color brightness with proper normalization
-  const r = parseInt(mainColor.slice(1, 3), 16) / 255
-  const g = parseInt(mainColor.slice(3, 5), 16) / 255
-  const b = parseInt(mainColor.slice(5, 7), 16) / 255
-
-  // WCAG luminance formula (gives proper weight to each color)
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-
-  return luminance > 0.45 ? '#000000' : '#ffffff'
-})
-
-// Calculate account age
-const accountAge = computed(() => {
-  if (!authStore.user?.created_at) return 'New account'
-
-  const createdDate = new Date(authStore.user.created_at)
-  const now = new Date()
-
-  const diffTime = Math.abs(now.getTime() - createdDate.getTime())
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  if (diffDays < 30) return `${diffDays} days`
-  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`
-  return `${Math.floor(diffDays / 365)} years`
-})
 
 const handleLogout = () => {
   authStore.logout()
@@ -368,40 +310,6 @@ const updatePassword = async () => {
     <Message v-if="formErrors.general" class="w-full mb-6" severity="error" :closable="false">
       {{ formErrors.general }}
     </Message>
-
-    <!-- User profile header -->
-    <div
-      class="flex flex-col md:flex-row items-center gap-6 p-8 mb-6 bg-white border border-gray-200 rounded-lg"
-    >
-      <div
-        class="relative w-24 h-24 flex items-center justify-center rounded-full overflow-hidden"
-        :style="{ background: avatarGradient }"
-      >
-        <Avatar
-          :label="userInitials"
-          size="xlarge"
-          :style="{ background: 'transparent', color: avatarTextColor }"
-        />
-      </div>
-      <div class="flex-grow">
-        <h2 class="text-3xl font-bold mb-1">{{ authStore.user?.username }}</h2>
-        <p class="text-gray-600 mb-3">{{ authStore.user?.email }}</p>
-        <div class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
-          <div class="flex items-center">
-            <i class="pi pi-calendar mr-2 text-blue-500"></i>
-            <span>Member for {{ accountAge }}</span>
-          </div>
-          <div class="flex items-center">
-            <i class="pi pi-clock mr-2 text-blue-500"></i>
-            <span>Last login: {{ formatDate(authStore.user?.last_login) }}</span>
-          </div>
-          <div class="flex items-center">
-            <i class="pi pi-chart-line mr-2 text-blue-500"></i>
-            <span>{{ authStore.user?.predictions_made || 0 }} predictions made</span>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Account settings section -->
     <div class="p-8 mb-6 bg-white border border-gray-200 rounded-lg">
