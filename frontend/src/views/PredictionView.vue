@@ -25,6 +25,7 @@ const authStore = useAuthStore()
 const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
 const isLoading = ref(true)
 const error = ref('')
+const initializationAttempted = ref(false) // Flag to prevent multiple initialization attempts
 
 // Computed properties
 const hasActiveContest = computed(() => Boolean(predictionStore.currentContest))
@@ -141,31 +142,42 @@ const getActualResultText = (prediction: Prediction): string => {
   return ''
 }
 
-// Initialize component
+// Initialize component - with safeguards against repeated initialization
 onMounted(async () => {
   try {
+    // Guard against multiple initialization attempts
+    if (initializationAttempted.value) {
+      console.log('Initialization already attempted, skipping')
+      return
+    }
+
+    initializationAttempted.value = true
     isLoading.value = true
 
     // Check what's already initialized
     const storeStatus = checkStoreInitialization()
 
+    // Only initialize what's necessary
+    const needsAuth = !storeStatus.auth
+    const needsPredictions = !storeStatus.predictions
+
+    if (!needsAuth && !needsPredictions) {
+      console.log('All required stores already initialized')
+      isLoading.value = false
+      return
+    }
+
     // Use store manager to ensure proper initialization tracking
     await initializeStores({
-      auth: !storeStatus.auth,
+      auth: needsAuth,
       timezone: false, // Already initialized in App.vue
-      predictions: !storeStatus.predictions,
+      predictions: needsPredictions,
       charts: false,
       favourites: false,
       appleMusic: false,
     })
 
-    // Log the current Authorization header
-    console.log(
-      'Current Authorization header:',
-      axios.defaults.headers.common['Authorization'] || 'None set',
-    )
-
-    // If no token is set in axios, try to set it again
+    // Check token only once
     if (!axios.defaults.headers.common['Authorization']) {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token')
       if (token) {
@@ -173,8 +185,6 @@ onMounted(async () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
       }
     }
-
-    // Rest of your code...
   } catch (e) {
     console.error('Error initializing prediction view:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load prediction data'
@@ -183,19 +193,22 @@ onMounted(async () => {
   }
 })
 
-// Update predictions when tab changes
-watch(activeTab, async () => {
-  if (authStore.user && predictionStore.currentContest) {
-    try {
-      await predictionStore.fetchUserPredictions({
-        contest_id: predictionStore.currentContest.id,
-        chart_type: activeTab.value,
-      })
-    } catch (e) {
-      console.error('Error fetching predictions for tab:', e)
-    }
+// Update predictions when tab changes - with debounce to prevent excessive calls
+const updatePredictions = async () => {
+  if (!authStore.user || !predictionStore.currentContest) return
+
+  try {
+    await predictionStore.fetchUserPredictions({
+      contest_id: predictionStore.currentContest.id,
+      chart_type: activeTab.value,
+    })
+  } catch (e) {
+    console.error('Error fetching predictions for tab:', e)
   }
-})
+}
+
+// Use watch with immediate:false to prevent execution on mount
+watch(activeTab, updatePredictions, { immediate: false })
 </script>
 
 <template>
