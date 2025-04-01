@@ -11,13 +11,7 @@ import type { PredictionSubmission, SearchResult } from '@/types/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
-import InputText from 'primevue/inputtext'
-import Dropdown from 'primevue/dropdown'
-import InputNumber from 'primevue/inputnumber'
-import Button from 'primevue/button'
-import Tabs from 'primevue/tabs'
-import TabList from 'primevue/tablist'
-import Tab from 'primevue/tab'
+import Divider from 'primevue/divider'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -533,17 +527,20 @@ const chartTypeOptions = [
     <h2 class="text-2xl font-bold mb-4">Make a Chart Prediction</h2>
 
     <div v-if="hasActiveContest" class="contest-info mb-6">
-      <Message severity="info" :closable="false" class="w-full">
-        <span class="font-medium">Current Prediction Window:</span>
+      <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-700">
+        <div class="font-medium text-blue-700">Current Prediction Window:</div>
         Make your predictions for the Billboard chart that will be released on
         <strong>{{ formatDate(predictionStore.currentContest!.chart_release_date) }}</strong
         >.
-        <div class="text-sm mt-1">
+        <div class="mt-1">
           Predictions close on
           <strong>{{ formatDate(predictionStore.currentContest!.end_date) }}</strong
-          >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
+          >.
+          <span class="text-blue-800 font-medium"
+            >You have <strong>{{ remainingPredictions }}</strong> predictions remaining.</span
+          >
         </div>
-      </Message>
+      </div>
     </div>
 
     <div v-else class="no-contest mb-6">
@@ -553,31 +550,41 @@ const chartTypeOptions = [
         size="medium"
         class="loading-spinner"
       />
-      <Message v-else severity="warn" :closable="false" class="w-full">
+      <div v-else class="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-yellow-700">
         There is no active prediction contest at this time.<br />
         Check back soon for the next prediction window!
-      </Message>
+      </div>
     </div>
 
     <!-- Authentication Check -->
     <div v-if="!isLoggedIn" class="auth-required mb-6">
-      <Message severity="error" :closable="false" class="w-full">
+      <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700">
         You must be logged in to make predictions.
-      </Message>
+      </div>
       <div class="flex justify-center mt-4">
-        <Button label="Login" icon="pi pi-sign-in" @click="goToLogin" />
+        <button
+          type="button"
+          @click="goToLogin"
+          class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors"
+        >
+          <i class="pi pi-sign-in mr-2"></i> Login
+        </button>
       </div>
     </div>
 
     <!-- Prediction Form -->
     <form v-else-if="hasActiveContest" @submit.prevent="submitPrediction" class="form-container">
-      <Message v-if="showSuccess" severity="success" :closable="false" class="w-full mb-6">
-        {{ successMessage }}
-      </Message>
+      <div v-if="showSuccess" class="mb-6">
+        <div class="p-4 bg-green-50 border border-green-100 rounded-lg text-green-700">
+          {{ successMessage }}
+        </div>
+      </div>
 
-      <Message v-if="formErrors.general" severity="error" :closable="false" class="w-full mb-6">
-        {{ formErrors.general }}
-      </Message>
+      <div v-if="formErrors.general" class="mb-6">
+        <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700">
+          {{ formErrors.general }}
+        </div>
+      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <!-- Chart Type Selection -->
@@ -585,16 +592,21 @@ const chartTypeOptions = [
           <label for="chart-type" class="block text-sm font-medium text-gray-600 mb-2"
             >Chart Type</label
           >
-          <Dropdown
-            id="chart-type"
-            v-model="chartType"
-            :options="chartTypeOptions"
-            optionLabel="label"
-            optionValue="value"
-            :disabled="isSubmitting"
-            class="w-full"
-            placeholder="Select chart type"
-          />
+          <div class="relative">
+            <select
+              id="chart-type"
+              v-model="chartType"
+              :disabled="isSubmitting"
+              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10 focus:outline-none focus:border-gray-400"
+            >
+              <option v-for="option in chartTypeOptions" :key="option.value" :value="option.value">
+                {{ option.label }}
+              </option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+              <i class="pi pi-chevron-down text-gray-500"></i>
+            </div>
+          </div>
         </div>
 
         <!-- Prediction Type Selection -->
@@ -602,16 +614,25 @@ const chartTypeOptions = [
           <label for="prediction-type" class="block text-sm font-medium text-gray-600 mb-2"
             >Prediction Type</label
           >
-          <Dropdown
-            id="prediction-type"
-            v-model="predictionType"
-            :options="predictionTypeOptions"
-            optionLabel="label"
-            optionValue="value"
-            :disabled="isSubmitting"
-            class="w-full"
-            placeholder="Select prediction type"
-          />
+          <div class="relative">
+            <select
+              id="prediction-type"
+              v-model="predictionType"
+              :disabled="isSubmitting"
+              class="w-full p-3 border border-gray-300 rounded-lg bg-white appearance-none pr-10 focus:outline-none focus:border-gray-400"
+            >
+              <option
+                v-for="option in predictionTypeOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none">
+              <i class="pi pi-chevron-down text-gray-500"></i>
+            </div>
+          </div>
           <div class="prediction-type-description text-sm text-gray-600 mt-2">
             <div v-if="predictionType === 'entry'">
               Predict a song that will <strong>enter the chart</strong> next week and its position
@@ -687,24 +708,44 @@ const chartTypeOptions = [
         <!-- Search Input -->
         <div v-else class="search-container">
           <!-- Search/Favorites Tabs -->
-          <Tabs v-model:value="activeTab" class="mb-4">
-            <TabList>
-              <Tab value="search">Search</Tab>
-              <Tab value="favourites">My Favorites</Tab>
-            </TabList>
-          </Tabs>
+          <div class="flex border-b border-gray-200 mb-4">
+            <button
+              type="button"
+              @click="activeTab = 'search'"
+              class="py-2 px-4 font-medium text-sm border-b-2 transition-colors duration-200"
+              :class="
+                activeTab === 'search'
+                  ? 'border-green-500 text-green-500'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              "
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              @click="activeTab = 'favourites'"
+              class="py-2 px-4 font-medium text-sm border-b-2 transition-colors duration-200"
+              :class="
+                activeTab === 'favourites'
+                  ? 'border-green-500 text-green-500'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              "
+            >
+              My Favorites
+            </button>
+          </div>
 
           <!-- Search Content -->
           <div v-if="activeTab === 'search'" class="search-tab-content">
-            <div class="p-input-icon-left w-full">
-              <i class="pi pi-search" />
-              <InputText
+            <div class="relative flex items-center mb-2">
+              <i class="pi pi-search absolute left-3 text-gray-500 z-10"></i>
+              <input
                 id="song-search"
                 v-model="searchQuery"
                 type="text"
                 :disabled="isSubmitting"
                 placeholder="Search current chart & Apple Music..."
-                class="search-input w-full"
+                class="search-input w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
                 @input="handleSearchInput"
                 @focus="searchResultsVisible = !!searchQuery.trim()"
               />
@@ -779,15 +820,15 @@ const chartTypeOptions = [
 
           <!-- Favorites Content -->
           <div v-else-if="activeTab === 'favourites'" class="favourites-tab-content">
-            <div class="p-input-icon-left w-full">
-              <i class="pi pi-search" />
-              <InputText
+            <div class="relative flex items-center mb-2">
+              <i class="pi pi-search absolute left-3 text-gray-500 z-10"></i>
+              <input
                 id="favorites-search"
                 v-model="searchQuery"
                 type="text"
                 :disabled="isSubmitting"
                 placeholder="Filter your favorites..."
-                class="search-input w-full"
+                class="search-input w-full pl-10 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
                 @input="handleSearchInput"
               />
             </div>
@@ -860,12 +901,12 @@ const chartTypeOptions = [
           </div>
         </div>
 
-        <Message v-if="formErrors.songName" severity="error" :closable="false" class="mt-2 w-full">
+        <div v-if="formErrors.songName" class="text-red-500 text-sm mt-2">
           {{ formErrors.songName }}
-        </Message>
-        <Message v-if="formErrors.artist" severity="error" :closable="false" class="mt-2 w-full">
+        </div>
+        <div v-if="formErrors.artist" class="text-red-500 text-sm mt-2">
           {{ formErrors.artist }}
-        </Message>
+        </div>
       </div>
 
       <!-- Position Input (for Entry predictions) -->
@@ -873,19 +914,20 @@ const chartTypeOptions = [
         <label for="position" class="block text-sm font-medium text-gray-600 mb-2"
           >Predicted Position</label
         >
-        <InputNumber
+        <input
           id="position"
-          v-model="position"
-          :min="1"
-          :max="100"
+          v-model.number="position"
+          type="number"
+          min="1"
+          max="100"
           :disabled="isSubmitting"
           placeholder="Enter position (1-100)"
-          class="w-full"
-          @update:modelValue="formErrors.position = ''"
+          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+          @input="formErrors.position = ''"
         />
-        <Message v-if="formErrors.position" severity="error" :closable="false" class="mt-2 w-full">
+        <div v-if="formErrors.position" class="text-red-500 text-sm mt-2">
           {{ formErrors.position }}
-        </Message>
+        </div>
         <p class="input-hint text-sm text-gray-600 mt-2">
           Lower numbers are higher on the chart (1 is the top position)
         </p>
@@ -900,27 +942,23 @@ const chartTypeOptions = [
         <!-- Current position reminder -->
         <div
           v-if="selectedSong && selectedSong.chartPosition"
-          class="current-position-reminder p-2 bg-gray-50 border border-gray-200 rounded mb-2 text-sm"
+          class="current-position-reminder p-2 bg-gray-50 border border-gray-200 rounded-lg mb-2 text-sm"
         >
           Current position of "{{ selectedSong.name }}": #{{ selectedSong.chartPosition }}
         </div>
 
-        <InputNumber
+        <input
           id="prediction-change"
-          v-model="predictionChange"
+          v-model.number="predictionChange"
+          type="number"
           :disabled="isSubmitting"
           placeholder="Enter position change"
-          class="w-full"
-          @update:modelValue="formErrors.predictionChange = ''"
+          class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400"
+          @input="formErrors.predictionChange = ''"
         />
-        <Message
-          v-if="formErrors.predictionChange"
-          severity="error"
-          :closable="false"
-          class="mt-2 w-full"
-        >
+        <div v-if="formErrors.predictionChange" class="text-red-500 text-sm mt-2">
           {{ formErrors.predictionChange }}
-        </Message>
+        </div>
         <p class="input-hint text-sm text-gray-600 mt-2">
           Positive numbers mean the song moves up the chart (improves position). Negative numbers
           mean the song moves down the chart.
@@ -928,23 +966,22 @@ const chartTypeOptions = [
       </div>
 
       <!-- Form Actions -->
-      <div class="form-actions flex justify-end gap-3 mt-6">
-        <Button
+      <div class="form-actions flex justify-end gap-3 mt-8">
+        <button
           type="button"
-          label="Reset"
-          icon="pi pi-refresh"
-          severity="secondary"
-          outlined
           @click="resetForm"
           :disabled="isSubmitting"
-        />
-        <Button
+          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors disabled:opacity-50"
+        >
+          <i class="pi pi-refresh mr-2"></i> Reset
+        </button>
+        <button
           type="submit"
-          label="Submit Prediction"
-          icon="pi pi-check"
           :disabled="!canSubmit || isSubmitting"
-          :loading="isSubmitting"
-        />
+          class="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-white bg-green-500 hover:bg-green-600 transition-colors disabled:opacity-50"
+        >
+          <i class="pi pi-check mr-2"></i> Submit Prediction
+        </button>
       </div>
     </form>
   </div>
