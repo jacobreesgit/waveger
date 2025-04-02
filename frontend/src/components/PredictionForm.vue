@@ -1,4 +1,3 @@
-// frontend/src/components/PredictionForm.vue
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
@@ -21,7 +20,7 @@ const authStore = useAuthStore()
 const chartsStore = useChartsStore()
 
 // Form state
-const selectedChartType = ref<'hot-100' | 'billboard-200'>('hot-100')
+const selectedChartType = ref<'hot-100'>('hot-100') // Fixed to hot-100 only
 const predictionType = ref<'entry' | 'position_change' | 'exit'>('entry')
 const searchQuery = ref('')
 const selectedSearchResult = ref<SearchResult | null>(null)
@@ -43,7 +42,7 @@ const clearSelection = () => {
 
 // Computed properties
 const displayedChartType = computed(() => {
-  return selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
+  return 'Billboard Hot 100'
 })
 
 const canSubmitPrediction = computed(() => {
@@ -76,7 +75,8 @@ const debouncedSearch = useDebounceFn(async () => {
     isSearching.value = true
     searchError.value = ''
 
-    const chartType = selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
+    // Fixed chart type to Billboard Hot 100
+    const chartType = 'Billboard Hot 100'
 
     // Use the API to search songs
     const response = await axios.get('/search', {
@@ -176,7 +176,7 @@ const submitPrediction = async () => {
     // Prepare submission data
     const submission = {
       contest_id: predictionStore.currentContest.id,
-      chart_type: selectedChartType.value,
+      chart_type: selectedChartType.value, // Always 'hot-100'
       prediction_type: predictionType.value,
       target_name: selectedSearchResult.value.name,
       artist: selectedSearchResult.value.artist,
@@ -247,23 +247,6 @@ onMounted(async () => {
     </div>
 
     <div class="form-grid grid gap-4">
-      <!-- Chart Type Selection -->
-      <div class="form-section">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Chart</label>
-        <Dropdown
-          v-model="selectedChartType"
-          :options="[
-            { label: 'Billboard Hot 100', value: 'hot-100' },
-            { label: 'Billboard 200', value: 'billboard-200' },
-          ]"
-          optionLabel="label"
-          optionValue="value"
-          placeholder="Select Chart"
-          class="w-full"
-          :disabled="isFormLoading"
-        />
-      </div>
-
       <!-- Prediction Type Selection -->
       <div class="form-section">
         <label class="block text-sm font-medium text-gray-700 mb-1">Prediction Type</label>

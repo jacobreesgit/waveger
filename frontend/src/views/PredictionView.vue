@@ -1,6 +1,6 @@
 // frontend/src/views/PredictionView.vue
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
@@ -18,7 +18,6 @@ const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
 
 // UI state
-const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
 const isLoading = ref(true)
 const error = ref('')
 
@@ -30,9 +29,10 @@ const remainingPredictions = computed(() => {
   return predictionStore.remainingPredictions
 })
 
+// Filtered predictions for Billboard Hot 100 only
 const userPredictions = computed(() => {
   if (!predictionStore.currentContest) return []
-  return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
+  return predictionStore.userPredictions.filter((p) => p.chart_type === 'hot-100')
 })
 
 // Format a specific time in UTC to the user's timezone
@@ -137,11 +137,6 @@ const getActualResultText = (prediction: Prediction): string => {
   return ''
 }
 
-// Change the active chart tab
-const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
-  activeTab.value = tab
-}
-
 // Initialize component with improved store checking
 onMounted(async () => {
   try {
@@ -158,11 +153,11 @@ onMounted(async () => {
         await predictionStore.initialize()
       }
 
-      // If we have a current contest, fetch predictions for the active tab
+      // If we have a current contest, fetch predictions for Billboard Hot 100
       if (predictionStore.currentContest) {
         await predictionStore.fetchUserPredictions({
           contest_id: predictionStore.currentContest.id,
-          chart_type: activeTab.value,
+          chart_type: 'hot-100',
         })
       }
     }
@@ -173,25 +168,11 @@ onMounted(async () => {
     isLoading.value = false
   }
 })
-
-// Watch for tab changes to update predictions data - simplified implementation
-watch(activeTab, async (newTab) => {
-  if (!isAuthenticated() || !predictionStore.currentContest) return
-
-  try {
-    await predictionStore.fetchUserPredictions({
-      contest_id: predictionStore.currentContest.id,
-      chart_type: newTab,
-    })
-  } catch (e) {
-    console.error('Error fetching predictions for tab:', e)
-  }
-})
 </script>
 
 <template>
   <div class="prediction-view flex flex-col max-w-[1200px]">
-    <h1 class="text-3xl font-bold mb-6">Predictions</h1>
+    <h1 class="text-3xl font-bold mb-6">Billboard Hot 100 Predictions</h1>
 
     <LoadingSpinner
       v-if="isLoading"
@@ -274,131 +255,102 @@ watch(activeTab, async (newTab) => {
         </div>
       </div>
 
-      <!-- Chart type tabs -->
-      <div class="chart-tabs w-full mb-6">
-        <div class="flex border-b border-gray-200">
-          <button
-            @click="changeTab('Billboard Hot 100')"
-            class="py-2 px-4 mr-4 font-medium text-sm focus:outline-none"
-            :class="
-              activeTab === 'Billboard Hot 100'
-                ? 'text-blue-500 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            "
-          >
-            Billboard Hot 100
-          </button>
-          <button
-            @click="changeTab('Billboard 200')"
-            class="py-2 px-4 font-medium text-sm focus:outline-none"
-            :class="
-              activeTab === 'Billboard 200'
-                ? 'text-blue-500 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            "
-          >
-            Billboard 200
-          </button>
+      <div class="prediction-sections mt-6" :class="{ 'deadline-passed': isDeadlinePassed }">
+        <!-- Prediction form -->
+        <div class="prediction-form-section mb-6" v-if="!isDeadlinePassed">
+          <PredictionForm />
         </div>
 
-        <div class="prediction-sections mt-6" :class="{ 'deadline-passed': isDeadlinePassed }">
-          <!-- Prediction form -->
-          <div class="prediction-form-section mb-6" v-if="!isDeadlinePassed">
-            <PredictionForm />
+        <!-- User predictions -->
+        <div
+          class="user-predictions-section"
+          v-if="userPredictions.length > 0 || predictionStore.loading.predictions"
+        >
+          <h2 class="text-2xl font-bold mb-4">Your Billboard Hot 100 Predictions</h2>
+
+          <LoadingSpinner
+            v-if="predictionStore.loading.predictions"
+            class="loading-spinner"
+            label="Loading your predictions..."
+            size="small"
+            centerInContainer
+          />
+
+          <div v-else-if="userPredictions.length === 0" class="text-center w-full">
+            <Message severity="info" :closable="false">
+              <p v-if="isDeadlinePassed">
+                You didn't make any Billboard Hot 100 predictions for this contest before the
+                deadline passed.
+              </p>
+              <p v-else>You haven't made any Billboard Hot 100 predictions for this contest yet.</p>
+            </Message>
           </div>
 
-          <!-- User predictions -->
-          <div
-            class="user-predictions-section"
-            v-if="userPredictions.length > 0 || predictionStore.loading.predictions"
-          >
-            <h2 class="text-2xl font-bold mb-4">Your {{ activeTab }} Predictions</h2>
-
-            <LoadingSpinner
-              v-if="predictionStore.loading.predictions"
-              class="loading-spinner"
-              label="Loading your predictions..."
-              size="small"
-              centerInContainer
-            />
-
-            <div v-else-if="userPredictions.length === 0" class="text-center w-full">
-              <Message severity="info" :closable="false">
-                <p v-if="isDeadlinePassed">
-                  You didn't make any {{ activeTab }} predictions for this contest before the
-                  deadline passed.
-                </p>
-                <p v-else>You haven't made any {{ activeTab }} predictions for this contest yet.</p>
-              </Message>
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-              <div
-                v-for="prediction in userPredictions"
-                :key="prediction.id"
-                class="prediction-card border border-gray-200 rounded-md p-4 bg-white shadow-sm transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-md"
-                :class="{
-                  'border-green-300 bg-green-50': getPredictionStatus(prediction) === 'correct',
-                  'border-red-300 bg-red-50': getPredictionStatus(prediction) === 'incorrect',
-                  'border-blue-300 bg-blue-50': getPredictionStatus(prediction) === 'pending',
-                }"
-              >
-                <!-- Header with badges -->
-                <div class="flex justify-between items-center mb-3">
-                  <div class="flex gap-2">
-                    <span
-                      class="text-xs px-2 py-1 rounded-full font-medium"
-                      :class="{
-                        'bg-green-100 text-green-800': prediction.prediction_type === 'entry',
-                        'bg-blue-100 text-blue-800':
-                          prediction.prediction_type === 'position_change',
-                        'bg-yellow-100 text-yellow-800': prediction.prediction_type === 'exit',
-                      }"
-                    >
-                      {{ prediction.prediction_type.replace('_', ' ') }}
-                    </span>
-                  </div>
-                  <span class="text-xs text-gray-500">
-                    {{ formatDate(prediction.prediction_date) }}
+          <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            <div
+              v-for="prediction in userPredictions"
+              :key="prediction.id"
+              class="prediction-card border border-gray-200 rounded-md p-4 bg-white shadow-sm transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-md"
+              :class="{
+                'border-green-300 bg-green-50': getPredictionStatus(prediction) === 'correct',
+                'border-red-300 bg-red-50': getPredictionStatus(prediction) === 'incorrect',
+                'border-blue-300 bg-blue-50': getPredictionStatus(prediction) === 'pending',
+              }"
+            >
+              <!-- Header with badges -->
+              <div class="flex justify-between items-center mb-3">
+                <div class="flex gap-2">
+                  <span
+                    class="text-xs px-2 py-1 rounded-full font-medium"
+                    :class="{
+                      'bg-green-100 text-green-800': prediction.prediction_type === 'entry',
+                      'bg-blue-100 text-blue-800': prediction.prediction_type === 'position_change',
+                      'bg-yellow-100 text-yellow-800': prediction.prediction_type === 'exit',
+                    }"
+                  >
+                    {{ prediction.prediction_type.replace('_', ' ') }}
                   </span>
                 </div>
+                <span class="text-xs text-gray-500">
+                  {{ formatDate(prediction.prediction_date) }}
+                </span>
+              </div>
 
-                <!-- Song details -->
-                <div class="mb-3">
-                  <h4 class="text-base font-bold truncate">{{ prediction.target_name }}</h4>
-                  <p class="text-sm text-gray-600 truncate">{{ prediction.artist }}</p>
-                </div>
+              <!-- Song details -->
+              <div class="mb-3">
+                <h4 class="text-base font-bold truncate">{{ prediction.target_name }}</h4>
+                <p class="text-sm text-gray-600 truncate">{{ prediction.artist }}</p>
+              </div>
 
-                <!-- Prediction details -->
-                <div class="text-sm font-medium mb-3">{{ getPositionText(prediction) }}</div>
+              <!-- Prediction details -->
+              <div class="text-sm font-medium mb-3">{{ getPositionText(prediction) }}</div>
 
-                <!-- Results -->
-                <div
-                  class="mt-2 p-3 rounded-md text-sm"
-                  :class="{
-                    'bg-green-100': prediction.is_correct === true,
-                    'bg-red-100': prediction.is_correct === false,
-                    'bg-gray-100':
-                      prediction.is_correct === null || prediction.is_correct === undefined,
-                  }"
-                >
-                  <div class="flex justify-between items-center">
-                    <span class="font-medium">
-                      {{
-                        prediction.is_correct === true
-                          ? 'Correct!'
-                          : prediction.is_correct === false
-                            ? 'Incorrect'
-                            : 'Pending'
-                      }}
-                    </span>
-                    <span
-                      v-if="prediction.points"
-                      class="font-bold px-2 py-1 bg-white rounded-md shadow-sm"
-                    >
-                      +{{ prediction.points }} pts
-                    </span>
-                  </div>
+              <!-- Results -->
+              <div
+                class="mt-2 p-3 rounded-md text-sm"
+                :class="{
+                  'bg-green-100': prediction.is_correct === true,
+                  'bg-red-100': prediction.is_correct === false,
+                  'bg-gray-100':
+                    prediction.is_correct === null || prediction.is_correct === undefined,
+                }"
+              >
+                <div class="flex justify-between items-center">
+                  <span class="font-medium">
+                    {{
+                      prediction.is_correct === true
+                        ? 'Correct!'
+                        : prediction.is_correct === false
+                          ? 'Incorrect'
+                          : 'Pending'
+                    }}
+                  </span>
+                  <span
+                    v-if="prediction.points"
+                    class="font-bold px-2 py-1 bg-white rounded-md shadow-sm"
+                  >
+                    +{{ prediction.points }} pts
+                  </span>
                 </div>
               </div>
             </div>
