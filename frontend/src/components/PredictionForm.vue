@@ -4,7 +4,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useChartsStore } from '@/stores/charts'
 import { isStoreInitialized } from '@/services/storeManager'
-import { useDebounceFn } from '@vueuse/core' // Changed from useDebounce to useDebounceFn
+import { useDebounceFn } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth'
 import type { SearchResult } from '@/types/predictions'
 import axios from 'axios'
@@ -35,8 +35,37 @@ const activeSearchResults = ref<SearchResult[]>([])
 const isSearching = ref(false)
 const searchError = ref('')
 
+// Method to clear selection
+const clearSelection = () => {
+  selectedSearchResult.value = null
+  searchQuery.value = ''
+}
+
+// Computed properties
+const displayedChartType = computed(() => {
+  return selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
+})
+
+const canSubmitPrediction = computed(() => {
+  return (
+    predictionStore.canSubmitPredictions &&
+    selectedSearchResult.value !== null &&
+    ((predictionType.value === 'position_change' && positionValue.value !== null) ||
+      predictionType.value === 'entry' ||
+      predictionType.value === 'exit')
+  )
+})
+
+const positionLabel = computed(() => {
+  if (predictionType.value === 'entry') {
+    return 'Enter at position:'
+  } else if (predictionType.value === 'position_change') {
+    return 'Position change:'
+  }
+  return ''
+})
+
 // Debounced search function to prevent excessive API calls
-// Use useDebounceFn instead of useDebounce for function debouncing
 const debouncedSearch = useDebounceFn(async () => {
   if (!searchQuery.value || searchQuery.value.length < 2) {
     activeSearchResults.value = []
@@ -80,55 +109,12 @@ const debouncedSearch = useDebounceFn(async () => {
   }
 }, 500)
 
-// Computed properties
-const displayedChartType = computed(() => {
-  return selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
-})
-
-const canSubmitPrediction = computed(() => {
-  return (
-    predictionStore.canSubmitPredictions &&
-    selectedSearchResult.value !== null &&
-    ((predictionType.value === 'position_change' && positionValue.value !== null) ||
-      predictionType.value === 'entry' ||
-      predictionType.value === 'exit')
-  )
-})
-
-const positionLabel = computed(() => {
-  if (predictionType.value === 'entry') {
-    return 'Enter at position:'
-  } else if (predictionType.value === 'position_change') {
-    return 'Position change:'
-  }
-  return ''
-})
-
-const searchResultDisplay = (result: SearchResult) => {
-  return `${result.name} - ${result.artist}`
-}
-
-// Position validation
-const validatePosition = (): boolean => {
-  if (predictionType.value === 'position_change' && positionValue.value === null) {
-    formError.value = 'Please enter a position change value'
-    return false
-  }
-
-  if (predictionType.value === 'entry' && positionValue.value === null) {
-    // For entry predictions, default to position 100
-    positionValue.value = 100
-  }
-
-  return true
-}
-
 // Handle search query changes
 watch(searchQuery, () => {
   // Clear current selection when query changes
   selectedSearchResult.value = null
 
-  // Invoke debounced search function correctly
+  // Invoke debounced search function
   if (searchQuery.value.length >= 2) {
     debouncedSearch()
   } else {
@@ -149,6 +135,14 @@ const selectSearchResult = (result: SearchResult) => {
   activeSearchResults.value = []
 }
 
+// Reset form function
+const resetForm = () => {
+  selectedSearchResult.value = null
+  searchQuery.value = ''
+  positionValue.value = null
+  activeSearchResults.value = []
+}
+
 // Handle form submission
 const submitPrediction = async () => {
   // Clear previous messages
@@ -161,8 +155,14 @@ const submitPrediction = async () => {
     return
   }
 
-  if (!validatePosition()) {
+  if (predictionType.value === 'position_change' && positionValue.value === null) {
+    formError.value = 'Please enter a position change value'
     return
+  }
+
+  if (predictionType.value === 'entry' && positionValue.value === null) {
+    // For entry predictions, default to position 100
+    positionValue.value = 100
   }
 
   if (!predictionStore.currentContest) {
@@ -189,10 +189,7 @@ const submitPrediction = async () => {
     if (result) {
       formSuccess.value = 'Prediction submitted successfully!'
       // Reset form
-      selectedSearchResult.value = null
-      searchQuery.value = ''
-      positionValue.value = null
-      activeSearchResults.value = []
+      resetForm()
     } else {
       formError.value = 'Failed to submit prediction. Please try again.'
     }
@@ -204,7 +201,7 @@ const submitPrediction = async () => {
   }
 }
 
-// Initialize component - improved version with store initialization checks
+// Initialize component with store initialization checks
 onMounted(async () => {
   // Check if predictions store is initialized
   if (!isStoreInitialized('predictions')) {
@@ -394,10 +391,7 @@ onMounted(async () => {
                 severity="danger"
                 text
                 rounded
-                @click="
-                  selectedSearchResult = null
-                  searchQuery = ''
-                "
+                @click="clearSelection"
                 aria-label="Clear selection"
               />
             </div>
