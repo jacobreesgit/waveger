@@ -228,7 +228,7 @@ watch(activeTab, async (newTab) => {
     </div>
 
     <!-- Main prediction content -->
-    <div v-else class="flex flex-col gap-6">
+    <div v-else class="flex flex-col gap-6 w-full">
       <!-- Contest info bar -->
       <div class="contest-info-container mb-6">
         <!-- No active contest -->
@@ -269,7 +269,7 @@ watch(activeTab, async (newTab) => {
           <p v-if="predictionStore.currentContest?.end_date">
             Submissions are open until
             <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
-            >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
+            >.
           </p>
         </div>
       </div>
