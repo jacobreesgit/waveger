@@ -1,24 +1,23 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { initializeStores } from '@/services/storeManager'
+import { useAuthStore } from '@/stores/auth'
+import { useTimezoneStore } from '@/stores/timezone'
 import Nav from '@/components/Nav.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const isInitializing = ref(true)
+const authStore = useAuthStore()
+const timezoneStore = useTimezoneStore()
 
 onMounted(async () => {
   try {
-    // Initialize only essential stores needed for all routes
-    await initializeStores({
-      auth: true, // Always initialize auth first
-      timezone: true, // Always initialize timezone for date formatting
+    // Initialize essential stores sequentially
+    await authStore.initialize()
 
-      // These can be lazily loaded per route when needed:
-      charts: false,
-      favourites: false,
-      predictions: false,
-      appleMusic: false,
-    })
+    // Timezone initialization is synchronous and doesn't depend on other stores
+    timezoneStore.initialize()
+
+    // Note: Other stores will be initialized lazily when components need them
   } catch (e) {
     console.error('Failed to initialize core stores:', e)
   } finally {
@@ -45,5 +44,3 @@ onMounted(async () => {
     </main>
   </div>
 </template>
-
-<style lang="scss" scoped></style>

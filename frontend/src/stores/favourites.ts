@@ -1,11 +1,17 @@
-// stores/favourites.ts
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import type { Song } from '@/types/api'
 import { useAuthStore } from '@/stores/auth'
+import {
+  isStoreInitialized,
+  isStoreInitializing,
+  markStoreInitialized,
+  markStoreInitializing,
+  resetStoreState,
+} from '@/services/storeManager'
 
-// New type for a favourite song with chart information
+// Type for a favourite song with chart information
 export interface FavouriteSong {
   song_name: string
   artist: string
@@ -23,27 +29,47 @@ export interface FavouriteSong {
 }
 
 export const useFavouritesStore = defineStore('favourites', () => {
+  // State
   const favourites = ref<FavouriteSong[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // Add proper initialization flags consistent with other stores
-  const initialized = ref(false)
-  const initializing = ref(false)
-
-  // Keep track of favourites being added/removed to show immediate UI feedback
+  // Track pending changes for UI feedback
   const pendingFavouriteChanges = ref<{ [key: string]: boolean }>({})
 
-  // Get count of songs favourited (not charts, as songs can be on multiple charts)
+  // Computed properties
   const favouritesCount = computed(() => favourites.value.length)
 
-  // Get count of chart appearances (total number of times songs were favourited across all charts)
   const chartAppearancesCount = computed(() => {
     return favourites.value.reduce((total, song) => total + song.charts.length, 0)
   })
 
-  // Function to check if a song is favourited in a specific chart
-  const isFavourited = (songName: string, artist: string, chartId: string) => {
+  /**
+   * Initialize the favourites store
+   */
+  const initialize = async (): Promise<void> => {
+    // Skip if already initialized or initializing
+    if (isStoreInitialized('favourites') || isStoreInitializing('favourites')) {
+      return
+    }
+
+    markStoreInitializing('favourites')
+
+    const authStore = useAuthStore()
+    if (!authStore.user) {
+      // No authenticated user, just mark as initialized and return
+      markStoreInitialized('favourites')
+      return
+    }
+
+    // Load favourites for authenticated user
+    await loadFavourites()
+  }
+
+  /**
+   * Check if a song is favourited in a specific chart
+   */
+  const isFavourited = (songName: string, artist: string, chartId: string): boolean => {
     // Create a unique key for this song+chart combination
     const key = `${songName}||${artist}||${chartId}`
 
@@ -54,100 +80,69 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
     // Then check actual favourites data
     const song = favourites.value.find((f) => f.song_name === songName && f.artist === artist)
-
     if (!song) return false
 
     return song.charts.some((chart) => chart.chart_id === chartId)
   }
 
-  // Get favourite ID for a song on a specific chart
+  /**
+   * Get favourite ID for a song on a specific chart
+   */
   const getFavouriteId = (songName: string, artist: string, chartId: string): number | null => {
     const song = favourites.value.find((f) => f.song_name === songName && f.artist === artist)
-
     if (!song) return null
 
     const chart = song.charts.find((c) => c.chart_id === chartId)
     return chart ? chart.id : null
   }
 
-  // Improved initialize function that's consistent with other stores
-  const initialize = async () => {
-    if (initializing.value) {
-      console.debug('Favourites - Initialization already in progress')
-      return
-    }
-
-    if (initialized.value && favourites.value.length > 0) {
-      console.debug('Favourites - Already initialized with data, skipping')
-      return
-    }
-
-    const authStore = useAuthStore()
-    if (!authStore.user) {
-      console.log('Favourites - No authenticated user, skipping initialization')
-      initialized.value = true // Mark as initialized even if empty
-      return
-    }
-
-    return await loadFavourites()
-  }
-
-  // Load all favourites for the current user
-  const loadFavourites = async () => {
+  /**
+   * Load all favourites for the current user
+   */
+  const loadFavourites = async (): Promise<void> => {
     // Skip if loading in progress
     if (loading.value) {
       return
     }
 
-    // Skip if already initialized with data
-    if (initialized.value && favourites.value.length > 0) {
-      return
-    }
-
     const authStore = useAuthStore()
     if (!authStore.user) {
-      console.log('Favourites - No authenticated user, skipping load')
-      initialized.value = true // Mark as initialized even if empty
+      markStoreInitialized('favourites') // Mark as initialized even if empty
       return
     }
 
     try {
       loading.value = true
-      initializing.value = true
       error.value = null
-
-      console.log(`Favourites - Loading from API...`)
 
       const response = await axios.get('/favourites')
 
       // Check if the expected data structure is present
       if (!response.data || !response.data.favourites) {
-        console.error('Favourites - API response missing "favourites" key:', response.data)
         error.value = 'Invalid response format from API'
         return
       }
 
       favourites.value = response.data.favourites || []
-      initialized.value = true
-
-      console.log(`Favourites - Loaded ${favourites.value.length} favourite songs`)
+      markStoreInitialized('favourites')
     } catch (e) {
-      console.error('Favourites - Error loading:', e)
-      if (axios.isAxiosError(e)) {
-        console.error('Axios error details:', e.response?.data)
-      }
+      console.error('Error loading favourites:', e)
       error.value = e instanceof Error ? e.message : 'Failed to load favourites'
     } finally {
       loading.value = false
-      initializing.value = false
     }
   }
 
-  // Add a song to favourites
-  const addFavourite = async (song: Song, chartId: string, chartTitle: string) => {
+  /**
+   * Add a song to favourites
+   */
+  const addFavourite = async (
+    song: Song,
+    chartId: string,
+    chartTitle: string,
+  ): Promise<boolean> => {
     const authStore = useAuthStore()
     if (!authStore.user) {
-      console.log('Favourites - No authenticated user, cannot add favourite')
       return false
     }
 
@@ -173,7 +168,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
       return true
     } catch (e) {
-      console.error('Favourites - Error adding favourite:', e)
+      console.error('Error adding favourite:', e)
       error.value = e instanceof Error ? e.message : 'Failed to add favourite'
 
       // Revert pending state
@@ -183,17 +178,21 @@ export const useFavouritesStore = defineStore('favourites', () => {
     }
   }
 
-  // Remove a song from favourites
-  const removeFavourite = async (songName: string, artist: string, chartId: string) => {
+  /**
+   * Remove a song from favourites
+   */
+  const removeFavourite = async (
+    songName: string,
+    artist: string,
+    chartId: string,
+  ): Promise<boolean> => {
     const authStore = useAuthStore()
     if (!authStore.user) {
-      console.log('Favourites - No authenticated user, cannot remove favourite')
       return false
     }
 
     const favouriteId = getFavouriteId(songName, artist, chartId)
     if (!favouriteId) {
-      console.log('Favourite not found, cannot remove')
       return false
     }
 
@@ -210,7 +209,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
       return true
     } catch (e) {
-      console.error('Favourites - Error removing favourite:', e)
+      console.error('Error removing favourite:', e)
       error.value = e instanceof Error ? e.message : 'Failed to remove favourite'
 
       // Revert pending state
@@ -220,8 +219,14 @@ export const useFavouritesStore = defineStore('favourites', () => {
     }
   }
 
-  // Toggle favourite status
-  const toggleFavourite = async (song: Song, chartId: string, chartTitle: string) => {
+  /**
+   * Toggle favourite status
+   */
+  const toggleFavourite = async (
+    song: Song,
+    chartId: string,
+    chartTitle: string,
+  ): Promise<boolean> => {
     const isFav = isFavourited(song.name, song.artist, chartId)
 
     if (isFav) {
@@ -231,8 +236,14 @@ export const useFavouritesStore = defineStore('favourites', () => {
     }
   }
 
-  // Check favourite status with the API directly (useful when first loading the app)
-  const checkFavouriteStatus = async (songName: string, artist: string, chartId: string) => {
+  /**
+   * Check favourite status with the API directly
+   */
+  const checkFavouriteStatus = async (
+    songName: string,
+    artist: string,
+    chartId: string,
+  ): Promise<boolean> => {
     const authStore = useAuthStore()
     if (!authStore.user) {
       return false
@@ -245,31 +256,35 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
       return response.data.is_favourited
     } catch (e) {
-      console.error('Favourites - Error checking status:', e)
+      console.error('Error checking favourite status:', e)
       return false
     }
   }
 
-  // Reset store state (for logout)
-  const reset = () => {
+  /**
+   * Reset store state
+   */
+  const reset = (): void => {
     favourites.value = []
     loading.value = false
     error.value = null
-    initialized.value = false
-    initializing.value = false
     pendingFavouriteChanges.value = {}
+    resetStoreState('favourites')
   }
 
   return {
+    // State
     favourites,
     loading,
     error,
-    initialized,
-    initializing,
+
+    // Computed
     favouritesCount,
     chartAppearancesCount,
+
+    // Methods
+    initialize,
     isFavourited,
-    initialize, // New consistent initialize method
     loadFavourites,
     addFavourite,
     removeFavourite,

@@ -1,4 +1,3 @@
-// Enhanced axios interceptor setup for main.ts
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import axios from 'axios'
@@ -16,24 +15,13 @@ import 'primeicons/primeicons.css'
 // Configure axios defaults
 axios.defaults.baseURL = 'https://wavegerpython.onrender.com/api'
 
-// Initial token setup from storage
+// Initial token setup from storage (if available)
 const token = localStorage.getItem('token') || sessionStorage.getItem('token')
 if (token) {
-  console.log('🔄 Main - Setting initial Authorization header from storage')
   axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
 }
 
-// Set up request interceptor to always use the latest token
-axios.interceptors.request.use((config) => {
-  // Always get the most recent token on every request
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-    console.log('🔑 Request interceptor: Using fresh token from storage')
-  }
-  return config
-})
-
+// Create app instance
 const app = createApp(App)
 
 // Create Pinia instance and pass to app

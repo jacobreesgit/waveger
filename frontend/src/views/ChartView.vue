@@ -1,3 +1,4 @@
+// frontend/src/views/ChartView.vue
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -8,10 +9,12 @@ import { useMediaQuery } from '@vueuse/core'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
+import { isStoreInitialized } from '@/services/storeManager'
+import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
-const store = useChartsStore()
+const chartsStore = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const timezoneStore = useTimezoneStore()
 
@@ -19,6 +22,7 @@ const songData = ref(new Map())
 const isLoadingMore = ref(false)
 const isLoadingAppleMusic = ref(false)
 
+// Responsive queries for grid layout
 const isSm = useMediaQuery('(min-width: 40rem)') // 640px
 const isMd = useMediaQuery('(min-width: 48rem)') // 768px
 const isLg = useMediaQuery('(min-width: 64rem)') // 1024px
@@ -43,13 +47,13 @@ const normalizeChartId = (id: string): string => {
 const rowsToFetch = 2
 const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
 
-const isLoading = computed(() => store.loading && !isLoadingMore.value)
+const isLoading = computed(() => chartsStore.loading && !isLoadingMore.value)
 
 const isWaitingForAppleMusic = computed(() => {
   // If we have chart data but not all songs have Apple Music data
-  if (store.currentChart?.songs && store.currentChart.songs.length > 0) {
+  if (chartsStore.currentChart?.songs && chartsStore.currentChart.songs.length > 0) {
     // Check if all songs have Apple Music data
-    const allSongsHaveData = store.currentChart.songs.every((song) =>
+    const allSongsHaveData = chartsStore.currentChart.songs.every((song) =>
       songData.value.has(`${song.position}`),
     )
 
@@ -59,9 +63,9 @@ const isWaitingForAppleMusic = computed(() => {
 })
 
 const formattedChartWeek = computed(() => {
-  if (!store.currentChart) return ''
+  if (!chartsStore.currentChart) return ''
 
-  const chartWeek = store.currentChart.week
+  const chartWeek = chartsStore.currentChart.week
   const dateMatch = chartWeek.match(/Week of ([A-Za-z]+ \d+, \d+)/)
 
   if (!dateMatch || !dateMatch[1]) {
@@ -73,19 +77,24 @@ const formattedChartWeek = computed(() => {
 })
 
 const loadAppleMusicData = async () => {
-  if (!store.currentChart || !store.currentChart.songs || !store.currentChart.songs.length) {
+  if (
+    !chartsStore.currentChart ||
+    !chartsStore.currentChart.songs ||
+    !chartsStore.currentChart.songs.length
+  ) {
     return
   }
 
   isLoadingAppleMusic.value = true
 
   try {
-    if (!appleMusicStore.token) {
-      await appleMusicStore.fetchToken()
+    // Initialize Apple Music store if needed
+    if (!isStoreInitialized('appleMusic')) {
+      await appleMusicStore.initialize()
     }
 
     // Sort songs by position to ensure sequential loading
-    const sortedSongs = [...store.currentChart.songs].sort((a, b) => a.position - b.position)
+    const sortedSongs = [...chartsStore.currentChart.songs].sort((a, b) => a.position - b.position)
 
     // Process songs in sequential order by position
     for (const song of sortedSongs) {
@@ -115,11 +124,11 @@ const loadAppleMusicData = async () => {
 }
 
 const fetchMoreSongs = async () => {
-  if (!store.hasMore || isLoadingMore.value) return
+  if (!chartsStore.hasMore || isLoadingMore.value) return
 
   isLoadingMore.value = true
   try {
-    await store.fetchMoreSongs(itemsPerPage.value) // Fetch items based on current grid size
+    await chartsStore.fetchMoreSongs(itemsPerPage.value) // Fetch items based on current grid size
     // Load Apple Music data for the new songs
     await loadAppleMusicData()
   } catch (error) {
@@ -129,24 +138,36 @@ const fetchMoreSongs = async () => {
   }
 }
 
-// onMounted hook for ChartView.vue
+// onMounted hook for ChartView.vue with improved store initialization
 onMounted(async () => {
   try {
+    // Initialize charts store if not already initialized
+    if (!isStoreInitialized('charts')) {
+      await chartsStore.initialize()
+    }
+
+    // Parse route params
     const chartId = route.query.id ? normalizeChartId(route.query.id as string) : 'hot-100'
     const dateParam = route.query.date as string
 
     let formattedDate: string | undefined
     if (dateParam) {
-      formattedDate = store.parseDateFromURL(dateParam)
+      formattedDate = chartsStore.parseDateFromURL(dateParam)
     }
 
     // Load chart data - fetch based on responsive grid size
-    await store.fetchChartDetails({
+    await chartsStore.fetchChartDetails({
       id: chartId,
       week: formattedDate,
       range: `1-${itemsPerPage.value}`,
     })
 
+    // Make sure the timezone store is initialized for date formatting
+    if (!isStoreInitialized('timezone')) {
+      timezoneStore.initialize()
+    }
+
+    // Load Apple Music data for songs
     await loadAppleMusicData()
 
     // Update URL if needed
@@ -154,7 +175,7 @@ onMounted(async () => {
       router.replace({
         path: '/charts',
         query: {
-          date: dateParam || store.formatDateForURL(new Date().toISOString().split('T')[0]),
+          date: dateParam || chartsStore.formatDateForURL(new Date().toISOString().split('T')[0]),
           id: chartId,
         },
       })
@@ -179,7 +200,7 @@ watch(itemsPerPage, (newCount, oldCount) => {
 
 // Watch for chart changes to update Apple Music data
 watch(
-  () => store.currentChart,
+  () => chartsStore.currentChart,
   async (newChart, oldChart) => {
     if (newChart) {
       // Only clear cache if it's a different chart than before
@@ -193,7 +214,7 @@ watch(
 
 // Watch for new songs to load Apple Music data
 watch(
-  () => store.currentChart?.songs,
+  () => chartsStore.currentChart?.songs,
   async (newSongs) => {
     if (newSongs) {
       await loadAppleMusicData()
@@ -210,14 +231,14 @@ watch(
       // Get formatted date if provided
       let formattedDate: string | undefined
       if (newDate) {
-        formattedDate = store.parseDateFromURL(newDate as string)
+        formattedDate = chartsStore.parseDateFromURL(newDate as string)
       }
 
       // Normalize chart ID for consistency
       const chartId = newChartId ? normalizeChartId(newChartId as string) : 'hot-100'
 
       // Use fetchChartDetails with normalized chart ID
-      await store.fetchChartDetails({
+      await chartsStore.fetchChartDetails({
         id: chartId,
         week: formattedDate,
         range: `1-${itemsPerPage.value}`,
@@ -236,24 +257,24 @@ watch(
     </div>
 
     <div
-      v-if="store.currentChart"
+      v-if="chartsStore.currentChart"
       class="chart-view__chart-header p-6 flex flex-col items-center gap-2"
       :class="{ 'opacity-25': isLoading }"
     >
-      <h1 class="text-3xl font-bold">{{ store.currentChart.title }}</h1>
+      <h1 class="text-3xl font-bold">{{ chartsStore.currentChart.title }}</h1>
       <p class="chart-view__chart-header__chart-info text-sm text-center">
-        {{ store.currentChart.info }}
+        {{ chartsStore.currentChart.info }}
       </p>
       <p class="chart-view__chart-header__chart-week font-medium">{{ formattedChartWeek }}</p>
     </div>
 
     <ChartCardHolder
-      :current-chart="store.currentChart"
+      :current-chart="chartsStore.currentChart"
       :loading="isLoading"
-      :error="store.error"
-      :has-more="store.hasMore"
+      :error="chartsStore.error"
+      :has-more="chartsStore.hasMore"
       :is-loading-more="isLoadingMore"
-      :selected-chart-id="store.selectedChartId"
+      :selected-chart-id="chartsStore.selectedChartId"
       :song-data="songData"
       :fetch-more-songs="fetchMoreSongs"
       :show-skeletons="isWaitingForAppleMusic"

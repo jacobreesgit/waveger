@@ -2,16 +2,12 @@ import { useAuthStore } from '@/stores/auth'
 import type { Router } from 'vue-router'
 
 /**
- * Auth utility functions
- */
-
-/**
- * Check if user is authenticated
+ * Check if user is authenticated - directly using the auth store
  * @returns Boolean indicating authentication status
  */
 export const isAuthenticated = (): boolean => {
   const authStore = useAuthStore()
-  return !!authStore.user
+  return authStore.isAuthenticated()
 }
 
 /**

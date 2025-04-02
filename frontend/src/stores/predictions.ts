@@ -13,7 +13,13 @@ import type {
   LeaderboardEntry,
 } from '@/types/predictions'
 import { useAuthStore } from './auth'
-import axios from 'axios'
+import {
+  isStoreInitialized,
+  isStoreInitializing,
+  markStoreInitialized,
+  markStoreInitializing,
+  resetStoreState,
+} from '@/services/storeManager'
 
 export const usePredictionsStore = defineStore('predictions', () => {
   // State
@@ -32,10 +38,8 @@ export const usePredictionsStore = defineStore('predictions', () => {
     leaderboard: null as string | null,
     submission: null as string | null,
   })
-  const initialized = ref(false)
-  const initializing = ref(false)
 
-  // Getters/Computed
+  // Computed properties
   const activeContest = computed(() => Boolean(currentContest.value?.active))
 
   const remainingPredictions = computed(() => {
@@ -75,7 +79,44 @@ export const usePredictionsStore = defineStore('predictions', () => {
     return { entry, position, exit }
   })
 
-  // Actions
+  /**
+   * Initialize the predictions store
+   * Simplified version that only loads what's needed
+   */
+  const initialize = async (): Promise<void> => {
+    // Skip if already initialized or initializing
+    if (isStoreInitialized('predictions') || isStoreInitializing('predictions')) {
+      return
+    }
+
+    markStoreInitializing('predictions')
+
+    try {
+      // Step 1: Always fetch the current contest (doesn't require auth)
+      await fetchCurrentContest()
+
+      // Step 2: Only fetch user-specific data if user is logged in
+      const authStore = useAuthStore()
+      if (authStore.user) {
+        if (currentContest.value) {
+          await fetchUserPredictions({ contest_id: currentContest.value.id })
+        } else {
+          await fetchUserPredictions()
+        }
+      }
+
+      markStoreInitialized('predictions')
+    } catch (e) {
+      console.error('Failed to initialize predictions store:', e)
+
+      // Mark as initialized anyway to prevent endless attempts
+      markStoreInitialized('predictions')
+    }
+  }
+
+  /**
+   * Fetch current contest data
+   */
   const fetchCurrentContest = async () => {
     // We can fetch the contest info without auth
     try {
@@ -107,6 +148,9 @@ export const usePredictionsStore = defineStore('predictions', () => {
     }
   }
 
+  /**
+   * Fetch user predictions with optional filtering
+   */
   const fetchUserPredictions = async (params?: { contest_id?: number; chart_type?: string }) => {
     const authStore = useAuthStore()
     if (!authStore.user) {
@@ -118,40 +162,19 @@ export const usePredictionsStore = defineStore('predictions', () => {
       loading.value.predictions = true
       error.value.predictions = null
 
-      // Make a direct test to verify token
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      console.log('Token from storage when fetching predictions:', token ? 'Present' : 'Missing')
-
       const response = await getUserPredictions(params)
       userPredictions.value = response.predictions
     } catch (e) {
       console.error('Error fetching user predictions:', e)
       error.value.predictions = e instanceof Error ? e.message : 'Failed to fetch predictions'
-
-      // Check if this is an authentication error
-      if (axios.isAxiosError(e) && e.response?.status === 401) {
-        console.log('Authentication error detected, trying to handle...')
-
-        // Option 1: Try to refresh the token
-        try {
-          // Try to reload the user info which might refresh the token
-          await authStore.fetchUserData()
-          console.log('User data refreshed, retrying prediction fetch')
-
-          // Try again
-          const response = await getUserPredictions(params)
-          userPredictions.value = response.predictions
-          error.value.predictions = null // Clear error if successful
-        } catch (refreshError) {
-          console.error('Failed to refresh authentication:', refreshError)
-          error.value.predictions = 'Your session may have expired. Please try logging in again.'
-        }
-      }
     } finally {
       loading.value.predictions = false
     }
   }
 
+  /**
+   * Fetch leaderboard data
+   */
   const fetchLeaderboard = async (params?: {
     contest_id?: number
     limit?: number
@@ -171,6 +194,9 @@ export const usePredictionsStore = defineStore('predictions', () => {
     }
   }
 
+  /**
+   * Submit a new prediction
+   */
   const createPrediction = async (prediction: PredictionSubmission) => {
     const authStore = useAuthStore()
     if (!authStore.user) {
@@ -197,45 +223,9 @@ export const usePredictionsStore = defineStore('predictions', () => {
     }
   }
 
-  // Initialize store
-  const initialize = async () => {
-    if (initialized.value || initializing.value) {
-      console.log('Predictions store already initialized or initializing')
-      return
-    }
-
-    try {
-      initializing.value = true
-      console.log('Initializing predictions store')
-
-      // First fetch the current contest (doesn't require auth)
-      await fetchCurrentContest()
-
-      // Then fetch user-specific data if user is logged in
-      const authStore = useAuthStore()
-      if (authStore.user) {
-        if (currentContest.value) {
-          console.log('Fetching user predictions for current contest')
-          await fetchUserPredictions({ contest_id: currentContest.value.id })
-        } else {
-          console.log('No active contest, fetching recent user predictions')
-          await fetchUserPredictions()
-        }
-
-        // Always fetch global leaderboard
-        await fetchLeaderboard({ period: 'all' })
-      }
-
-      initialized.value = true
-      console.log('Predictions store initialized successfully')
-    } catch (e) {
-      console.error('Failed to initialize predictions store:', e)
-    } finally {
-      initializing.value = false
-    }
-  }
-
-  // Reset store state (e.g., on logout)
+  /**
+   * Reset store state (e.g., on logout)
+   */
   const reset = () => {
     currentContest.value = null
     userPredictions.value = []
@@ -243,7 +233,7 @@ export const usePredictionsStore = defineStore('predictions', () => {
     Object.keys(error.value).forEach((key) => {
       error.value[key as keyof typeof error.value] = null
     })
-    initialized.value = false
+    resetStoreState('predictions')
   }
 
   return {
@@ -253,8 +243,6 @@ export const usePredictionsStore = defineStore('predictions', () => {
     leaderboard,
     loading,
     error,
-    initialized,
-    initializing,
 
     // Getters
     activeContest,

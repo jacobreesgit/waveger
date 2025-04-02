@@ -143,9 +143,13 @@ const router = createRouter({
 })
 
 // Navigation guard
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   // Check if the route requires authentication
   if (to.matched.some((record) => record.meta.requiresAuth)) {
+    // Import the isAuthenticated utility
+    const { isAuthenticated } = await import('@/utils/authUtils')
+
+    // Check authentication status
     if (!isAuthenticated()) {
       // Redirect to login with return path
       next({

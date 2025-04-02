@@ -1,3 +1,4 @@
+// frontend/src/views/PredictionView.vue
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
@@ -6,17 +7,12 @@ import { useRouter } from 'vue-router'
 import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import PredictionForm from '@/components/PredictionForm.vue'
 import type { Prediction } from '@/types/predictions'
-import axios from 'axios'
 import { formatDate, formatTimeOnly } from '@/utils/dateUtils'
-import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
+import { isStoreInitialized } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 
-// Change the active chart tab
-const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
-  activeTab.value = tab
-}
-
+// Router and stores
 const router = useRouter()
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
@@ -25,7 +21,6 @@ const authStore = useAuthStore()
 const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
 const isLoading = ref(true)
 const error = ref('')
-const initializationAttempted = ref(false) // Flag to prevent multiple initialization attempts
 
 // Computed properties
 const hasActiveContest = computed(() => Boolean(predictionStore.currentContest))
@@ -142,47 +137,33 @@ const getActualResultText = (prediction: Prediction): string => {
   return ''
 }
 
-// Initialize component - with safeguards against repeated initialization
+// Change the active chart tab
+const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
+  activeTab.value = tab
+}
+
+// Initialize component with improved store checking
 onMounted(async () => {
   try {
-    // Guard against multiple initialization attempts
-    if (initializationAttempted.value) {
-      console.log('Initialization already attempted, skipping')
-      return
-    }
-
-    initializationAttempted.value = true
     isLoading.value = true
 
-    // Check what's already initialized
-    const storeStatus = checkStoreInitialization()
-
-    // Only initialize what's necessary
-    const needsAuth = !storeStatus.auth
-    const needsPredictions = !storeStatus.predictions
-
-    if (!needsAuth && !needsPredictions) {
-      console.log('All required stores already initialized')
-      isLoading.value = false
-      return
+    // Check if auth is initialized first (should be from App.vue)
+    if (!isStoreInitialized('auth')) {
+      await authStore.initialize()
     }
 
-    // Use store manager to ensure proper initialization tracking
-    await initializeStores({
-      auth: needsAuth,
-      timezone: false, // Already initialized in App.vue
-      predictions: needsPredictions,
-      charts: false,
-      favourites: false,
-      appleMusic: false,
-    })
+    // If authenticated, initialize predictions store if needed
+    if (isAuthenticated()) {
+      if (!isStoreInitialized('predictions')) {
+        await predictionStore.initialize()
+      }
 
-    // Check token only once
-    if (!axios.defaults.headers.common['Authorization']) {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      if (token) {
-        console.log('Setting missing Authorization header')
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      // If we have a current contest, fetch predictions for the active tab
+      if (predictionStore.currentContest) {
+        await predictionStore.fetchUserPredictions({
+          contest_id: predictionStore.currentContest.id,
+          chart_type: activeTab.value,
+        })
       }
     }
   } catch (e) {
@@ -193,22 +174,19 @@ onMounted(async () => {
   }
 })
 
-// Update predictions when tab changes - with debounce to prevent excessive calls
-const updatePredictions = async () => {
-  if (!authStore.user || !predictionStore.currentContest) return
+// Watch for tab changes to update predictions data - simplified implementation
+watch(activeTab, async (newTab) => {
+  if (!isAuthenticated() || !predictionStore.currentContest) return
 
   try {
     await predictionStore.fetchUserPredictions({
       contest_id: predictionStore.currentContest.id,
-      chart_type: activeTab.value,
+      chart_type: newTab,
     })
   } catch (e) {
     console.error('Error fetching predictions for tab:', e)
   }
-}
-
-// Use watch with immediate:false to prevent execution on mount
-watch(activeTab, updatePredictions, { immediate: false })
+})
 </script>
 
 <template>

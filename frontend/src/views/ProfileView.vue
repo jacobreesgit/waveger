@@ -1,3 +1,4 @@
+// frontend/src/views/ProfileView.vue
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -6,6 +7,7 @@ import { useFavouritesStore } from '@/stores/favourites'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
 import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
+import { isStoreInitialized } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
@@ -121,38 +123,67 @@ const predictionAccuracy = computed(() => {
   return `${accuracy.toFixed(1)}%`
 })
 
+// Load tab-specific data function
+const loadTabData = async (tabName: string) => {
+  if (!isAuthenticated()) return
+
+  try {
+    isLoading.value = true
+
+    // Make sure timezone store is initialized for date formatting
+    if (!isStoreInitialized('timezone')) {
+      timezoneStore.initialize()
+    }
+
+    // Load tab-specific data
+    if (tabName === 'favourites') {
+      if (!isStoreInitialized('favourites')) {
+        await favouritesStore.initialize()
+      }
+    } else if (tabName === 'predictions') {
+      if (!isStoreInitialized('predictions')) {
+        await predictionStore.initialize()
+      }
+    }
+  } catch (e) {
+    console.error(`Error loading data for ${tabName} tab:`, e)
+    error.value = e instanceof Error ? e.message : `Failed to load ${tabName} data`
+  } finally {
+    isLoading.value = false
+  }
+}
+
 onMounted(async () => {
   try {
-    // Initialize data for the active user
+    // Ensure auth store is initialized
+    if (!isStoreInitialized('auth')) {
+      await authStore.initialize()
+    }
+
+    // Only proceed if user is authenticated
     if (isAuthenticated()) {
-      // Load predictions and favourites data based on current route
-      if (activeTabValue.value === 'favourites' || activeTabValue.value === 'predictions') {
-        await Promise.all([
-          activeTabValue.value === 'favourites'
-            ? favouritesStore.loadFavourites()
-            : Promise.resolve(),
-          activeTabValue.value === 'predictions'
-            ? predictionStore.fetchUserPredictions()
-            : Promise.resolve(),
-        ])
+      // Initialize timezone store (needed for date formatting)
+      if (!isStoreInitialized('timezone')) {
+        timezoneStore.initialize()
       }
+
+      // Load data for the current tab
+      await loadTabData(activeTabValue.value)
+    } else {
+      isLoading.value = false
     }
   } catch (e) {
     console.error('Error initializing profile view:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load profile data'
-  } finally {
     isLoading.value = false
   }
 })
 
 // Watch for tab changes to load relevant data
 watch(activeTabValue, async (newTab) => {
+  // Only load data if user is authenticated
   if (isAuthenticated()) {
-    if (newTab === 'favourites' && !favouritesStore.initialized) {
-      await favouritesStore.loadFavourites()
-    } else if (newTab === 'predictions' && !predictionStore.initialized) {
-      await predictionStore.fetchUserPredictions()
-    }
+    await loadTabData(newTab)
   }
 })
 </script>
@@ -245,11 +276,20 @@ watch(activeTabValue, async (newTab) => {
         </div>
       </div>
 
+      <!-- Error message -->
+      <div v-if="error" class="mb-4">
+        <Message severity="error" :closable="true" @close="error = ''">
+          {{ error }}
+        </Message>
+      </div>
+
+      <!-- Tab content area -->
       <div class="tab-content h-full">
         <router-view />
       </div>
     </div>
 
+    <!-- Unauthenticated state -->
     <div v-else class="unauthenticated">
       <Message severity="info" :closable="false">
         You must be logged in to view your profile.

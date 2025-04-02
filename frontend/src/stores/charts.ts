@@ -4,8 +4,16 @@ import type { ChartData } from '@/types/api'
 import { getChartDetails } from '@/services/api'
 import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils'
 import { normalizeChartId } from '@/utils/chartUtils'
+import {
+  isStoreInitialized,
+  isStoreInitializing,
+  markStoreInitialized,
+  markStoreInitializing,
+  resetStoreState,
+} from '@/services/storeManager'
 
 export const useChartsStore = defineStore('charts', () => {
+  // State
   const currentChart = ref<ChartData | null>(null)
   const selectedChartId = ref('hot-100') // Store without trailing slash consistently
   const loading = ref(false)
@@ -14,8 +22,34 @@ export const useChartsStore = defineStore('charts', () => {
   const currentPage = ref(1)
   const dataSource = ref<'api' | 'database'>('api')
 
-  // IMPORTANT: Keep the original function name and signature
-  const fetchChartDetails = async (params: { id?: string; week?: string; range?: string }) => {
+  /**
+   * Initialize the charts store
+   */
+  const initialize = async (): Promise<void> => {
+    // Skip if already initialized or initializing
+    if (isStoreInitialized('charts') || isStoreInitializing('charts')) {
+      return
+    }
+
+    markStoreInitializing('charts')
+
+    try {
+      await loadCurrentChart()
+      markStoreInitialized('charts')
+    } catch (e) {
+      console.error('Failed to initialize charts store:', e)
+      markStoreInitialized('charts') // Mark as initialized even on error
+    }
+  }
+
+  /**
+   * Fetch chart details
+   */
+  const fetchChartDetails = async (params: {
+    id?: string
+    week?: string
+    range?: string
+  }): Promise<ChartData | null> => {
     try {
       // Set loading state
       loading.value = true
@@ -46,7 +80,6 @@ export const useChartsStore = defineStore('charts', () => {
         localStorage.setItem('lastViewedDate', urlFormattedDate)
       }
 
-      console.log(`Requesting chart data: ${chartId}, date: ${params.week || 'current'}`)
       const response = await getChartDetails(params)
 
       if (params.range && params.range !== '1-10' && currentChart.value) {
@@ -74,8 +107,10 @@ export const useChartsStore = defineStore('charts', () => {
     }
   }
 
-  // Simplified method for fetching more songs
-  const fetchMoreSongs = async (itemsPerPage = 8) => {
+  /**
+   * Fetch more songs for the current chart
+   */
+  const fetchMoreSongs = async (itemsPerPage = 8): Promise<void> => {
     if (!currentChart.value || loading.value || !hasMore.value) {
       return
     }
@@ -94,8 +129,10 @@ export const useChartsStore = defineStore('charts', () => {
     })
   }
 
-  // Method to load current chart (for retry functionality)
-  const loadCurrentChart = async (itemsPerRequest = 8) => {
+  /**
+   * Load current chart (for retry functionality)
+   */
+  const loadCurrentChart = async (itemsPerRequest = 8): Promise<ChartData | null> => {
     const lastViewedDate = localStorage.getItem('lastViewedDate')
     const formattedDate = lastViewedDate
       ? parseDateFromURL(lastViewedDate)
@@ -108,12 +145,10 @@ export const useChartsStore = defineStore('charts', () => {
     })
   }
 
-  const initialize = async () => {
-    return loadCurrentChart()
-  }
-
-  // Reset store state
-  const reset = () => {
+  /**
+   * Reset store state
+   */
+  const reset = (): void => {
     currentChart.value = null
     selectedChartId.value = 'hot-100'
     loading.value = false
@@ -121,24 +156,28 @@ export const useChartsStore = defineStore('charts', () => {
     hasMore.value = true
     currentPage.value = 1
     dataSource.value = 'api'
+    resetStoreState('charts')
   }
 
   return {
+    // State
     currentChart,
     selectedChartId,
     loading,
     error,
     hasMore,
     dataSource,
+
+    // Actions
+    initialize,
     fetchChartDetails,
     fetchMoreSongs,
     loadCurrentChart,
-    // We retain these methods in the store's return value for backwards compatibility
-    // but they now use the imported utility functions
+    reset,
+
+    // Utils (for backwards compatibility)
     parseDateFromURL,
     formatDateForURL,
-    initialize,
-    reset,
-    normalizeChartId, // Keep this in the return object for backwards compatibility
+    normalizeChartId,
   }
 })

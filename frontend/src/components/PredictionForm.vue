@@ -1,420 +1,425 @@
+// frontend/src/components/PredictionForm.vue
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
+import { useChartsStore } from '@/stores/charts'
+import { isStoreInitialized } from '@/services/storeManager'
+import { useDebounceFn } from '@vueuse/core' // Changed from useDebounce to useDebounceFn
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
-import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
-import PredictionForm from '@/components/PredictionForm.vue'
-import type { Prediction } from '@/types/predictions'
+import type { SearchResult } from '@/types/predictions'
 import axios from 'axios'
-import { formatDate, formatTimeOnly } from '@/utils/dateUtils'
-import { initializeStores, checkStoreInitialization } from '@/services/storeManager'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import InputText from 'primevue/inputtext'
+import Dropdown from 'primevue/dropdown'
+import Button from 'primevue/button'
 import Message from 'primevue/message'
+import Card from 'primevue/card'
+import RadioButton from 'primevue/radiobutton'
 
-// Change the active chart tab
-const changeTab = (tab: 'Billboard Hot 100' | 'Billboard 200') => {
-  activeTab.value = tab
-}
-
-const router = useRouter()
+// Stores
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
+const chartsStore = useChartsStore()
+
+// Form state
+const selectedChartType = ref<'hot-100' | 'billboard-200'>('hot-100')
+const predictionType = ref<'entry' | 'position_change' | 'exit'>('entry')
+const searchQuery = ref('')
+const selectedSearchResult = ref<SearchResult | null>(null)
+const positionValue = ref<number | null>(null)
+const isFormLoading = ref(false)
+const formError = ref('')
+const formSuccess = ref('')
 
 // UI state
-const activeTab = ref<'Billboard Hot 100' | 'Billboard 200'>('Billboard Hot 100')
-const isLoading = ref(true)
-const error = ref('')
+const activeSearchResults = ref<SearchResult[]>([])
+const isSearching = ref(false)
+const searchError = ref('')
 
-// Computed properties
-const hasActiveContest = computed(() => Boolean(predictionStore.currentContest))
-
-const remainingPredictions = computed(() => {
-  if (!predictionStore.currentContest) return 0
-  return predictionStore.remainingPredictions
-})
-
-const userPredictions = computed(() => {
-  if (!predictionStore.currentContest) return []
-  return predictionStore.userPredictions.filter((p) => p.chart_type === activeTab.value)
-})
-
-// Format a specific time in UTC to the user's timezone
-const formatTransitionTime = () => {
-  // Create a date object for 2PM UTC today
-  const today = new Date()
-  const transitionDate = new Date(
-    Date.UTC(
-      today.getUTCFullYear(),
-      today.getUTCMonth(),
-      today.getUTCDate(),
-      14, // 2PM UTC (14:00)
-      0, // 0 minutes
-      0, // 0 seconds
-    ),
-  )
-
-  // Format only the time portion
-  return formatTimeOnly(transitionDate.toISOString())
-}
-
-// Check if the transition time has passed today
-const isTransitionTimePassed = computed(() => {
-  const now = new Date()
-  const transitionTime = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      14, // 2PM UTC (14:00)
-      0, // 0 minutes
-      0, // 0 seconds
-    ),
-  )
-
-  return now > transitionTime
-})
-
-// Calculate the days remaining until the contest ends
-const daysUntilDeadline = computed(() => {
-  if (!predictionStore.currentContest?.end_date) return null
-
-  const endDate = new Date(predictionStore.currentContest.end_date)
-  const now = new Date()
-
-  // If deadline has passed, return a negative number to indicate expiration
-  if (endDate < now) return -1
-
-  const diffTime = endDate.getTime() - now.getTime()
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-  return diffDays
-})
-
-// Then add a computed property to check if deadline is passed
-const isDeadlinePassed = computed(() => {
-  return daysUntilDeadline.value !== null && daysUntilDeadline.value < 0
-})
-
-// Get prediction status for display
-const getPredictionStatus = (prediction: Prediction): 'pending' | 'correct' | 'incorrect' => {
-  if (prediction.is_correct === null || prediction.is_correct === undefined) {
-    return 'pending'
+// Debounced search function to prevent excessive API calls
+// Use useDebounceFn instead of useDebounce for function debouncing
+const debouncedSearch = useDebounceFn(async () => {
+  if (!searchQuery.value || searchQuery.value.length < 2) {
+    activeSearchResults.value = []
+    return
   }
 
-  return prediction.is_correct ? 'correct' : 'incorrect'
-}
-
-// Navigate to authentication page if needed
-const navigateToAuth = () => {
-  redirectToLogin(router, '/predictions')
-}
-
-// Get position change or position text based on prediction type
-const getPositionText = (prediction: Prediction): string => {
-  if (prediction.prediction_type === 'entry') {
-    return `Position: #${prediction.position}`
-  } else if (prediction.prediction_type === 'position_change') {
-    const changeValue = prediction.position
-    const prefix = changeValue > 0 ? '+' : ''
-    return `Change: ${prefix}${changeValue}`
-  }
-  return ''
-}
-
-// Get actual position or change text based on prediction type and results
-const getActualResultText = (prediction: Prediction): string => {
-  if (!prediction.is_correct && prediction.is_correct !== false) {
-    return 'Pending'
-  }
-
-  // Note: In a real implementation, we'd need to access the actual position or change
-  // from the prediction_results table. For now, we'll simulate with placeholder text.
-  if (prediction.prediction_type === 'entry') {
-    return prediction.is_correct ? 'Entered chart' : 'Did not enter'
-  } else if (prediction.prediction_type === 'position_change') {
-    return prediction.is_correct ? 'Changed as predicted' : 'Different change'
-  } else if (prediction.prediction_type === 'exit') {
-    return prediction.is_correct ? 'Exited chart' : 'Still on chart'
-  }
-
-  return ''
-}
-
-// Initialize component
-onMounted(async () => {
   try {
-    isLoading.value = true
+    isSearching.value = true
+    searchError.value = ''
 
-    // Check what's already initialized
-    const storeStatus = checkStoreInitialization()
+    const chartType = selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
 
-    // Use store manager to ensure proper initialization tracking
-    await initializeStores({
-      auth: !storeStatus.auth,
-      timezone: false, // Already initialized in App.vue
-      predictions: !storeStatus.predictions,
-      charts: false,
-      favourites: false,
-      appleMusic: false,
+    // Use the API to search songs
+    const response = await axios.get('/search', {
+      params: {
+        q: searchQuery.value,
+        chart_type: chartType,
+        limit: 5,
+      },
     })
 
-    // Log the current Authorization header
-    console.log(
-      'Current Authorization header:',
-      axios.defaults.headers.common['Authorization'] || 'None set',
-    )
-
-    // If no token is set in axios, try to set it again
-    if (!axios.defaults.headers.common['Authorization']) {
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token')
-      if (token) {
-        console.log('Setting missing Authorization header')
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-      }
+    if (response.data && response.data.results) {
+      activeSearchResults.value = response.data.results.map((item: any) => ({
+        name: item.name,
+        artist: item.artist,
+        source: 'chart',
+        imageUrl: item.image,
+        chartPosition: item.position,
+        id: `${item.name}-${item.artist}`,
+        originalData: item,
+      }))
+    } else {
+      activeSearchResults.value = []
     }
-
-    // Rest of your code...
   } catch (e) {
-    console.error('Error initializing prediction view:', e)
-    error.value = e instanceof Error ? e.message : 'Failed to load prediction data'
+    console.error('Search error:', e)
+    searchError.value = 'Failed to search songs'
+    activeSearchResults.value = []
   } finally {
-    isLoading.value = false
+    isSearching.value = false
+  }
+}, 500)
+
+// Computed properties
+const displayedChartType = computed(() => {
+  return selectedChartType.value === 'hot-100' ? 'Billboard Hot 100' : 'Billboard 200'
+})
+
+const canSubmitPrediction = computed(() => {
+  return (
+    predictionStore.canSubmitPredictions &&
+    selectedSearchResult.value !== null &&
+    ((predictionType.value === 'position_change' && positionValue.value !== null) ||
+      predictionType.value === 'entry' ||
+      predictionType.value === 'exit')
+  )
+})
+
+const positionLabel = computed(() => {
+  if (predictionType.value === 'entry') {
+    return 'Enter at position:'
+  } else if (predictionType.value === 'position_change') {
+    return 'Position change:'
+  }
+  return ''
+})
+
+const searchResultDisplay = (result: SearchResult) => {
+  return `${result.name} - ${result.artist}`
+}
+
+// Position validation
+const validatePosition = (): boolean => {
+  if (predictionType.value === 'position_change' && positionValue.value === null) {
+    formError.value = 'Please enter a position change value'
+    return false
+  }
+
+  if (predictionType.value === 'entry' && positionValue.value === null) {
+    // For entry predictions, default to position 100
+    positionValue.value = 100
+  }
+
+  return true
+}
+
+// Handle search query changes
+watch(searchQuery, () => {
+  // Clear current selection when query changes
+  selectedSearchResult.value = null
+
+  // Invoke debounced search function correctly
+  if (searchQuery.value.length >= 2) {
+    debouncedSearch()
+  } else {
+    activeSearchResults.value = []
   }
 })
 
-// Watch for active tab changes
-watch(activeTab, async (newTab) => {
-  // Set chart type to match the active tab
-  const chartType = newTab === 'Billboard Hot 100' ? 'hot-100' : 'billboard-200'
+// Handle prediction type changes
+watch(predictionType, () => {
+  // Reset position value when type changes
+  positionValue.value = null
+})
 
-  if (authStore.user && predictionStore.currentContest) {
+// Handle selection of a search result
+const selectSearchResult = (result: SearchResult) => {
+  selectedSearchResult.value = result
+  searchQuery.value = `${result.name} - ${result.artist}`
+  activeSearchResults.value = []
+}
+
+// Handle form submission
+const submitPrediction = async () => {
+  // Clear previous messages
+  formError.value = ''
+  formSuccess.value = ''
+
+  // Validate form
+  if (!selectedSearchResult.value) {
+    formError.value = 'Please select a song from the search results'
+    return
+  }
+
+  if (!validatePosition()) {
+    return
+  }
+
+  if (!predictionStore.currentContest) {
+    formError.value = 'No active contest available'
+    return
+  }
+
+  try {
+    isFormLoading.value = true
+
+    // Prepare submission data
+    const submission = {
+      contest_id: predictionStore.currentContest.id,
+      chart_type: selectedChartType.value,
+      prediction_type: predictionType.value,
+      target_name: selectedSearchResult.value.name,
+      artist: selectedSearchResult.value.artist,
+      position: positionValue.value || 0, // Default to 0 for exit predictions
+    }
+
+    // Submit prediction
+    const result = await predictionStore.createPrediction(submission)
+
+    if (result) {
+      formSuccess.value = 'Prediction submitted successfully!'
+      // Reset form
+      selectedSearchResult.value = null
+      searchQuery.value = ''
+      positionValue.value = null
+      activeSearchResults.value = []
+    } else {
+      formError.value = 'Failed to submit prediction. Please try again.'
+    }
+  } catch (e) {
+    console.error('Prediction submission error:', e)
+    formError.value = e instanceof Error ? e.message : 'Failed to submit prediction'
+  } finally {
+    isFormLoading.value = false
+  }
+}
+
+// Initialize component - improved version with store initialization checks
+onMounted(async () => {
+  // Check if predictions store is initialized
+  if (!isStoreInitialized('predictions')) {
     try {
-      await predictionStore.fetchUserPredictions({
-        contest_id: predictionStore.currentContest.id,
-        chart_type: chartType,
-      })
-    } catch (e) {
-      console.error('Error fetching predictions for tab:', e)
+      await predictionStore.initialize()
+    } catch (error) {
+      console.error('Error initializing predictions store:', error)
+      formError.value = 'Failed to load prediction data. Please try again.'
+    }
+  }
+
+  // Initialize charts store if needed for chart data
+  if (!isStoreInitialized('charts')) {
+    try {
+      await chartsStore.initialize()
+    } catch (error) {
+      console.error('Error initializing charts store:', error)
     }
   }
 })
 </script>
 
 <template>
-  <div class="prediction-view flex flex-col max-w-[1200px]">
-    <h1 class="text-3xl font-bold mb-6">Predictions</h1>
+  <div class="prediction-form p-5 border border-gray-200 rounded-lg bg-white">
+    <h3 class="text-xl font-bold mb-4">Make a Prediction</h3>
 
-    <LoadingSpinner
-      v-if="isLoading"
-      class="loading-spinner"
-      label="Loading prediction data..."
-      centerInContainer
-      size="medium"
-    />
-
-    <div v-else-if="error" class="text-center w-full mb-6">
-      <div class="p-4 bg-red-50 border border-red-100 rounded-lg text-red-700">
-        {{ error }}
-      </div>
-      <div class="flex justify-center mt-4">
-        <button
-          class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors flex items-center"
-          @click="predictionStore.initialize"
-        >
-          <i class="pi pi-refresh mr-2"></i> Retry
-        </button>
-      </div>
+    <div v-if="formSuccess" class="mb-4">
+      <Message severity="success" :closable="true" @close="formSuccess = ''">
+        {{ formSuccess }}
+      </Message>
     </div>
 
-    <!-- Authentication check -->
-    <div v-else-if="!isAuthenticated()" class="text-center w-full mb-6">
-      <h2 class="text-2xl font-bold mb-4">Authentication Required</h2>
-      <p class="mb-4 text-gray-600">You need to log in to make Billboard chart predictions.</p>
-      <button
-        class="px-4 py-2 border border-transparent rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors flex items-center mx-auto"
-        @click="navigateToAuth"
-      >
-        <i class="pi pi-sign-in mr-2"></i> Log In
-      </button>
+    <div v-if="formError" class="mb-4">
+      <Message severity="error" :closable="true" @close="formError = ''">
+        {{ formError }}
+      </Message>
     </div>
 
-    <!-- Main prediction content -->
-    <div v-else class="flex flex-col gap-6">
-      <!-- Contest info bar -->
-      <div class="contest-info-container mb-6">
-        <!-- No active contest -->
-        <div
-          v-if="!hasActiveContest"
-          class="p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-700"
-        >
-          <div class="font-medium mb-1">No Active Contest</div>
-          <p>
-            New prediction contests open every Tuesday at 2:00 PM UTC ({{ formatTransitionTime() }}
-            in your local time)
-          </p>
-        </div>
+    <div v-if="predictionStore.error.submission" class="mb-4">
+      <Message severity="error" :closable="true" @close="predictionStore.error.submission = null">
+        {{ predictionStore.error.submission }}
+      </Message>
+    </div>
 
-        <!-- Deadline passed notification -->
-        <div
-          v-else-if="isDeadlinePassed"
-          class="p-4 bg-yellow-50 border border-yellow-100 rounded-lg text-yellow-700"
-        >
-          <div class="font-medium mb-1">Submission Deadline Has Passed</div>
-          <p>
-            The prediction window for this contest has closed. While the contest is still active, no
-            new predictions can be submitted at this time.
-          </p>
-          <p v-if="predictionStore.currentContest?.chart_release_date">
-            Results will be processed when the Billboard chart is released on
-            <strong>{{ formatDate(predictionStore.currentContest.chart_release_date) }}</strong
-            >.
-          </p>
-        </div>
+    <div class="form-grid grid gap-4">
+      <!-- Chart Type Selection -->
+      <div class="form-section">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Chart</label>
+        <Dropdown
+          v-model="selectedChartType"
+          :options="[
+            { label: 'Billboard Hot 100', value: 'hot-100' },
+            { label: 'Billboard 200', value: 'billboard-200' },
+          ]"
+          optionLabel="label"
+          optionValue="value"
+          placeholder="Select Chart"
+          class="w-full"
+          :disabled="isFormLoading"
+        />
+      </div>
 
-        <!-- Active contest info -->
-        <div
-          v-else-if="hasActiveContest"
-          class="p-4 bg-green-50 border border-green-100 rounded-lg text-green-700"
-        >
-          <div class="font-medium mb-1">Active Prediction Contest</div>
-          <p v-if="predictionStore.currentContest?.end_date">
-            Submissions are open until
-            <strong>{{ formatDate(predictionStore.currentContest.end_date) }}</strong
-            >. You have <strong>{{ remainingPredictions }}</strong> predictions remaining.
-          </p>
+      <!-- Prediction Type Selection -->
+      <div class="form-section">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Prediction Type</label>
+        <div class="flex flex-wrap gap-4 mt-2">
+          <div class="flex items-center">
+            <RadioButton
+              v-model="predictionType"
+              value="entry"
+              :disabled="isFormLoading"
+              inputId="type_entry"
+            />
+            <label for="type_entry" class="ml-2 cursor-pointer">New Entry</label>
+          </div>
+          <div class="flex items-center">
+            <RadioButton
+              v-model="predictionType"
+              value="position_change"
+              :disabled="isFormLoading"
+              inputId="type_change"
+            />
+            <label for="type_change" class="ml-2 cursor-pointer">Position Change</label>
+          </div>
+          <div class="flex items-center">
+            <RadioButton
+              v-model="predictionType"
+              value="exit"
+              :disabled="isFormLoading"
+              inputId="type_exit"
+            />
+            <label for="type_exit" class="ml-2 cursor-pointer">Chart Exit</label>
+          </div>
         </div>
       </div>
 
-      <!-- Chart type tabs -->
-      <div class="chart-tabs w-full mb-6">
-        <div class="flex border-b border-gray-200">
-          <button
-            @click="changeTab('Billboard Hot 100')"
-            class="py-2 px-4 mr-4 font-medium text-sm focus:outline-none"
-            :class="
-              activeTab === 'Billboard Hot 100'
-                ? 'text-blue-500 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            "
-          >
-            Billboard Hot 100
-          </button>
-          <button
-            @click="changeTab('Billboard 200')"
-            class="py-2 px-4 font-medium text-sm focus:outline-none"
-            :class="
-              activeTab === 'Billboard 200'
-                ? 'text-blue-500 border-b-2 border-blue-500'
-                : 'text-gray-500 hover:text-gray-700'
-            "
-          >
-            Billboard 200
-          </button>
-        </div>
+      <!-- Song Search -->
+      <div class="form-section">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Search for a {{ displayedChartType }} song
+        </label>
+        <div class="relative">
+          <InputText
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search by song name or artist"
+            class="w-full"
+            :disabled="isFormLoading"
+          />
 
-        <div class="prediction-sections mt-6" :class="{ 'deadline-passed': isDeadlinePassed }">
-          <!-- Prediction form -->
-          <div class="prediction-form-section mb-6" v-if="!isDeadlinePassed">
-            <PredictionForm />
+          <!-- Search Results Dropdown -->
+          <div
+            v-if="activeSearchResults.length > 0 || isSearching"
+            class="absolute z-10 w-full mt-1 bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
+          >
+            <div v-if="isSearching" class="p-4 text-center text-gray-500">
+              <i class="pi pi-spin pi-spinner mr-2"></i> Searching...
+            </div>
+            <ul v-else>
+              <li
+                v-for="result in activeSearchResults"
+                :key="result.id"
+                class="p-3 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-0"
+                @click="selectSearchResult(result)"
+              >
+                <div class="font-medium">{{ result.name }}</div>
+                <div class="text-sm text-gray-600">{{ result.artist }}</div>
+              </li>
+            </ul>
           </div>
 
-          <!-- User predictions -->
-          <div
-            class="user-predictions-section"
-            v-if="userPredictions.length > 0 || predictionStore.loading.predictions"
-          >
-            <h2 class="text-2xl font-bold mb-4">Your {{ activeTab }} Predictions</h2>
+          <div v-if="searchError" class="mt-1 text-red-500 text-sm">
+            {{ searchError }}
+          </div>
+        </div>
+      </div>
 
-            <LoadingSpinner
-              v-if="predictionStore.loading.predictions"
-              class="loading-spinner"
-              label="Loading your predictions..."
-              size="small"
-              centerInContainer
-            />
+      <!-- Position Input (for entry or position_change) -->
+      <div v-if="predictionType !== 'exit'" class="form-section">
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ positionLabel }}</label>
+        <InputText
+          v-model.number="positionValue"
+          type="number"
+          :placeholder="
+            predictionType === 'entry' ? 'Enter position (1-100)' : 'Enter position change'
+          "
+          class="w-full"
+          :disabled="isFormLoading"
+          :min="predictionType === 'entry' ? 1 : undefined"
+          :max="predictionType === 'entry' ? 100 : undefined"
+        />
+        <div class="mt-1 text-xs text-gray-500">
+          <template v-if="predictionType === 'entry'">
+            Enter a position between 1-100 where you predict this song will enter the chart.
+          </template>
+          <template v-else-if="predictionType === 'position_change'">
+            Enter a positive number for upward movement or negative for downward movement.
+          </template>
+        </div>
+      </div>
 
-            <div v-else-if="userPredictions.length === 0" class="text-center w-full">
-              <Message severity="info" :closable="false">
-                <p v-if="isDeadlinePassed">
-                  You didn't make any {{ activeTab }} predictions for this contest before the
-                  deadline passed.
-                </p>
-                <p v-else>You haven't made any {{ activeTab }} predictions for this contest yet.</p>
-              </Message>
-            </div>
-
-            <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+      <!-- Selected Song Card -->
+      <div v-if="selectedSearchResult" class="form-section mt-2">
+        <Card class="selected-song-card">
+          <template #title>Selected Song</template>
+          <template #content>
+            <div class="flex items-start gap-4">
               <div
-                v-for="prediction in userPredictions"
-                :key="prediction.id"
-                class="prediction-card border border-gray-200 rounded-md p-4 bg-white shadow-sm transition-transform duration-300 ease-in-out will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-md"
-                :class="{
-                  'border-green-300 bg-green-50': getPredictionStatus(prediction) === 'correct',
-                  'border-red-300 bg-red-50': getPredictionStatus(prediction) === 'incorrect',
-                  'border-blue-300 bg-blue-50': getPredictionStatus(prediction) === 'pending',
-                }"
+                v-if="selectedSearchResult.imageUrl"
+                class="flex-shrink-0 w-16 h-16 bg-gray-200 rounded overflow-hidden"
               >
-                <!-- Header with badges -->
-                <div class="flex justify-between items-center mb-3">
-                  <div class="flex gap-2">
-                    <span
-                      class="text-xs px-2 py-1 rounded-full font-medium"
-                      :class="{
-                        'bg-green-100 text-green-800': prediction.prediction_type === 'entry',
-                        'bg-blue-100 text-blue-800':
-                          prediction.prediction_type === 'position_change',
-                        'bg-yellow-100 text-yellow-800': prediction.prediction_type === 'exit',
-                      }"
-                    >
-                      {{ prediction.prediction_type.replace('_', ' ') }}
-                    </span>
-                  </div>
-                  <span class="text-xs text-gray-500">
-                    {{ formatDate(prediction.prediction_date) }}
-                  </span>
-                </div>
-
-                <!-- Song details -->
-                <div class="mb-3">
-                  <h4 class="text-base font-bold truncate">{{ prediction.target_name }}</h4>
-                  <p class="text-sm text-gray-600 truncate">{{ prediction.artist }}</p>
-                </div>
-
-                <!-- Prediction details -->
-                <div class="text-sm font-medium mb-3">{{ getPositionText(prediction) }}</div>
-
-                <!-- Results -->
-                <div
-                  class="mt-2 p-3 rounded-md text-sm"
-                  :class="{
-                    'bg-green-100': prediction.is_correct === true,
-                    'bg-red-100': prediction.is_correct === false,
-                    'bg-gray-100':
-                      prediction.is_correct === null || prediction.is_correct === undefined,
-                  }"
-                >
-                  <div class="flex justify-between items-center">
-                    <span class="font-medium">
-                      {{
-                        prediction.is_correct === true
-                          ? 'Correct!'
-                          : prediction.is_correct === false
-                            ? 'Incorrect'
-                            : 'Pending'
-                      }}
-                    </span>
-                    <span
-                      v-if="prediction.points"
-                      class="font-bold px-2 py-1 bg-white rounded-md shadow-sm"
-                    >
-                      +{{ prediction.points }} pts
-                    </span>
-                  </div>
+                <img
+                  :src="selectedSearchResult.imageUrl"
+                  :alt="selectedSearchResult.name"
+                  class="w-full h-full object-cover"
+                />
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium">{{ selectedSearchResult.name }}</div>
+                <div class="text-sm text-gray-600">{{ selectedSearchResult.artist }}</div>
+                <div v-if="selectedSearchResult.chartPosition" class="text-xs mt-1 text-blue-600">
+                  Current position: #{{ selectedSearchResult.chartPosition }}
                 </div>
               </div>
+              <Button
+                icon="pi pi-times"
+                severity="danger"
+                text
+                rounded
+                @click="
+                  selectedSearchResult = null
+                  searchQuery = ''
+                "
+                aria-label="Clear selection"
+              />
             </div>
-          </div>
+          </template>
+        </Card>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="form-actions mt-4">
+        <Button
+          label="Submit Prediction"
+          :disabled="!canSubmitPrediction || isFormLoading"
+          @click="submitPrediction"
+          :loading="isFormLoading"
+          class="w-full"
+        />
+        <div
+          v-if="predictionStore.remainingPredictions !== undefined"
+          class="mt-2 text-center text-sm text-gray-600"
+        >
+          You have {{ predictionStore.remainingPredictions }} predictions remaining for this
+          contest.
         </div>
       </div>
     </div>

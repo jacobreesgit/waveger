@@ -1,18 +1,33 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { isStoreInitialized, markStoreInitialized } from '@/services/storeManager'
 
 export const useTimezoneStore = defineStore('timezone', () => {
   // State
-  const countryCode = ref<string>(localStorage.getItem('country_code') || '')
-  const timezone = ref<string>(localStorage.getItem('timezone') || 'UTC')
+  const countryCode = ref<string>('')
+  const timezone = ref<string>('UTC')
 
-  // Initialize with stored values or defaults
-  if (!countryCode.value && !timezone.value) {
-    countryCode.value = 'UTC'
-    timezone.value = 'UTC'
+  /**
+   * Initialize the timezone store
+   * This is a synchronous operation since it just loads from localStorage
+   */
+  const initialize = (): void => {
+    // Skip if already initialized
+    if (isStoreInitialized('timezone')) {
+      return
+    }
+
+    // Load from localStorage or set defaults
+    countryCode.value = localStorage.getItem('country_code') || 'UTC'
+    timezone.value = localStorage.getItem('timezone') || 'UTC'
+
+    // Mark as initialized
+    markStoreInitialized('timezone')
   }
 
-  // Actions
+  /**
+   * Set country and timezone
+   */
   const setCountry = (code: string, tz: string) => {
     countryCode.value = code
     timezone.value = tz
@@ -22,7 +37,9 @@ export const useTimezoneStore = defineStore('timezone', () => {
     localStorage.setItem('timezone', tz)
   }
 
-  // Format date with the selected timezone
+  /**
+   * Format date with the selected timezone
+   */
   const formatDate = (
     dateString: string | null | undefined,
     options?: Intl.DateTimeFormatOptions,
@@ -75,7 +92,9 @@ export const useTimezoneStore = defineStore('timezone', () => {
     }
   }
 
-  // Format date without time
+  /**
+   * Format date without time
+   */
   const formatDateOnly = (dateString: string | null | undefined): string => {
     return formatDate(dateString, {
       weekday: 'long',
@@ -87,7 +106,9 @@ export const useTimezoneStore = defineStore('timezone', () => {
     })
   }
 
-  // Format date with only time
+  /**
+   * Format date with only time
+   */
   const formatTimeOnly = (dateString: string | null | undefined): string => {
     return formatDate(dateString, {
       weekday: undefined,
@@ -99,7 +120,9 @@ export const useTimezoneStore = defineStore('timezone', () => {
     })
   }
 
-  // Current timezone display name
+  /**
+   * Current timezone display name
+   */
   const timezoneDisplayName = computed(() => {
     try {
       const date = new Date()
@@ -121,6 +144,7 @@ export const useTimezoneStore = defineStore('timezone', () => {
     countryCode,
     timezone,
     timezoneDisplayName,
+    initialize,
     setCountry,
     formatDate,
     formatDateOnly,
