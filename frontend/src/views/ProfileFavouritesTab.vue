@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import { isStoreInitialized } from '@/services/storeManager'
 
 // Stores
 const favouritesStore = useFavouritesStore()
@@ -140,7 +141,7 @@ const handleRetry = async () => {
 // Initialize component
 onMounted(async () => {
   try {
-    if (!favouritesStore.initialized || favouritesStore.favourites.length === 0) {
+    if (!isStoreInitialized('favourites') || favouritesStore.favourites.length === 0) {
       await favouritesStore.loadFavourites()
     }
     await loadAppleMusicData()

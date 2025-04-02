@@ -25,7 +25,7 @@ const selectedChartType = ref<'hot-100' | 'billboard-200'>('hot-100')
 const predictionType = ref<'entry' | 'position_change' | 'exit'>('entry')
 const searchQuery = ref('')
 const selectedSearchResult = ref<SearchResult | null>(null)
-const positionValue = ref<number | null>(null)
+const positionValue = ref<string | null>(null)
 const isFormLoading = ref(false)
 const formError = ref('')
 const formSuccess = ref('')
@@ -162,7 +162,7 @@ const submitPrediction = async () => {
 
   if (predictionType.value === 'entry' && positionValue.value === null) {
     // For entry predictions, default to position 100
-    positionValue.value = 100
+    positionValue.value = '100'
   }
 
   if (!predictionStore.currentContest) {
@@ -180,7 +180,7 @@ const submitPrediction = async () => {
       prediction_type: predictionType.value,
       target_name: selectedSearchResult.value.name,
       artist: selectedSearchResult.value.artist,
-      position: positionValue.value || 0, // Default to 0 for exit predictions
+      position: positionValue.value ? parseInt(positionValue.value) : 0, // Convert string to number
     }
 
     // Submit prediction
@@ -343,7 +343,7 @@ onMounted(async () => {
       <div v-if="predictionType !== 'exit'" class="form-section">
         <label class="block text-sm font-medium text-gray-700 mb-1">{{ positionLabel }}</label>
         <InputText
-          v-model.number="positionValue"
+          v-model="positionValue"
           type="number"
           :placeholder="
             predictionType === 'entry' ? 'Enter position (1-100)' : 'Enter position change'

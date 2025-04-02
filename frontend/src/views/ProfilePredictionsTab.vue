@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Divider from 'primevue/divider'
 import ProgressBar from 'primevue/progressbar'
 import type { Prediction } from '@/types/predictions'
+import { isStoreInitialized } from '@/services/storeManager'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
@@ -143,7 +144,7 @@ const formatDate = (dateString: string): string => {
 // Load user predictions on component mount
 onMounted(async () => {
   try {
-    if (!predictionStore.initialized || predictionStore.userPredictions.length === 0) {
+    if (!isStoreInitialized('predictions') || predictionStore.userPredictions.length === 0) {
       isPredictionsLoading.value = true
       await predictionStore.fetchUserPredictions()
     }
