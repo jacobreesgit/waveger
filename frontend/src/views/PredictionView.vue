@@ -1,49 +1,42 @@
 <script setup lang="ts">
-import { onMounted, ref, watch, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { onMounted, ref, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useTimezoneStore } from '@/stores/timezone'
-import { useMediaQuery } from '@vueuse/core'
+import { usePredictionsStore } from '@/stores/predictions'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
+import Message from 'primevue/message'
 
-const route = useRoute()
-const router = useRouter()
 const chartsStore = useChartsStore()
 const appleMusicStore = useAppleMusicStore()
 const timezoneStore = useTimezoneStore()
+const predictionsStore = usePredictionsStore()
 
 const songData = ref(new Map())
-const isLoadingMore = ref(false)
 const isLoadingAppleMusic = ref(false)
+const errorMessage = ref<string | null>(null)
+const FIXED_CHART_ID = 'hot-100'
+const FIXED_RANGE = '1-10' // Always only top 10 songs
 
-// Responsive queries for grid layout
-const isSm = useMediaQuery('(min-width: 40rem)') // 640px
-const isMd = useMediaQuery('(min-width: 48rem)') // 768px
-const isLg = useMediaQuery('(min-width: 64rem)') // 1024px
-const isXl = useMediaQuery('(min-width: 80rem)') // 1280px
-const is2Xl = useMediaQuery('(min-width: 96rem)') // 1536px
+const isLoading = computed(() => chartsStore.loading)
 
-// Calculate grid columns based on Tailwind's breakpoints
-const gridColumns = computed(() => {
-  if (is2Xl.value) return 4 // 2xl: 4 columns (2xl:grid-cols-4)
-  if (isXl.value) return 4 // xl: 4 columns (xl:grid-cols-4)
-  if (isLg.value) return 4 // lg: 4 columns (lg:grid-cols-4)
-  if (isMd.value) return 3 // md: 3 columns (md:grid-cols-3)
-  if (isSm.value) return 2 // sm: 2 columns (sm:grid-cols-2)
-  return 1 // Default: 1 column (grid-cols-1)
+const currentContestInfo = computed(() => {
+  if (!predictionsStore.currentContest) {
+    return null
+  }
+
+  return {
+    status: predictionsStore.currentContest.status,
+    endDate: predictionsStore.currentContest.end_date,
+    releaseDate: predictionsStore.currentContest.chart_release_date,
+    remainingPredictions: predictionsStore.remainingPredictions,
+  }
 })
 
-const normalizeChartId = (id: string): string => {
-  return id ? id.replace(/\/$/, '') : 'hot-100'
-}
-
-// Always fetch 2 rows worth of data
-const rowsToFetch = 2
-const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
-
-const isLoading = computed(() => chartsStore.loading && !isLoadingMore.value)
+const isContestActive = computed(() => {
+  return predictionsStore.activeContest
+})
 
 const isWaitingForAppleMusic = computed(() => {
   // If we have chart data but not all songs have Apple Music data
@@ -89,11 +82,8 @@ const loadAppleMusicData = async () => {
       await appleMusicStore.initialize()
     }
 
-    // Sort songs by position to ensure sequential loading
-    const sortedSongs = [...chartsStore.currentChart.songs].sort((a, b) => a.position - b.position)
-
     // Process songs in sequential order by position
-    for (const song of sortedSongs) {
+    for (const song of chartsStore.currentChart.songs) {
       const songPosition = `${song.position}`
 
       // Only fetch data if we don't already have it
@@ -119,146 +109,86 @@ const loadAppleMusicData = async () => {
   }
 }
 
-const fetchMoreSongs = async () => {
-  if (!chartsStore.hasMore || isLoadingMore.value) return
-
-  isLoadingMore.value = true
-  try {
-    await chartsStore.fetchMoreSongs(itemsPerPage.value) // Fetch items based on current grid size
-    // Load Apple Music data for the new songs
-    await loadAppleMusicData()
-  } catch (error) {
-    console.error('Error loading more songs:', error)
-  } finally {
-    isLoadingMore.value = false
-  }
-}
-
-// onMounted hook for ChartView.vue with improved store initialization
+// Initialize data on component mount
 onMounted(async () => {
   try {
-    // Initialize charts store if not already initialized
+    // Initialize prediction store
+    if (!isStoreInitialized('predictions')) {
+      await predictionsStore.initialize()
+    }
+
+    // Initialize charts store if needed
     if (!isStoreInitialized('charts')) {
       await chartsStore.initialize()
     }
-
-    // Parse route params
-    const chartId = route.query.id ? normalizeChartId(route.query.id as string) : 'hot-100'
-    const dateParam = route.query.date as string
-
-    let formattedDate: string | undefined
-    if (dateParam) {
-      formattedDate = chartsStore.parseDateFromURL(dateParam)
-    }
-
-    // Load chart data - fetch based on responsive grid size
-    await chartsStore.fetchChartDetails({
-      id: chartId,
-      week: formattedDate,
-      range: `1-${itemsPerPage.value}`,
-    })
 
     // Make sure the timezone store is initialized for date formatting
     if (!isStoreInitialized('timezone')) {
       timezoneStore.initialize()
     }
 
+    // Always use the Hot 100 chart
+    chartsStore.selectedChartId = FIXED_CHART_ID
+
+    // Load chart data - always fetch top 10 only
+    await chartsStore.fetchChartDetails({
+      id: FIXED_CHART_ID,
+      range: FIXED_RANGE,
+    })
+
     // Load Apple Music data for songs
     await loadAppleMusicData()
-
-    // Update URL if needed
-    if (!route.query.date || !route.query.id) {
-      router.replace({
-        path: '/charts',
-        query: {
-          date: dateParam || chartsStore.formatDateForURL(new Date().toISOString().split('T')[0]),
-          id: chartId,
-        },
-      })
-    }
   } catch (error) {
-    console.error('Error setting up chart view:', error)
+    console.error('Error setting up prediction view:', error)
+    errorMessage.value = 'Failed to load chart data. Please try again later.'
   }
 })
-
-// Watch for grid columns changes due to responsive breakpoints
-watch(gridColumns, (newColumns, oldColumns) => {
-  console.log(`Grid layout changed: now showing ${newColumns} columns (was ${oldColumns})`)
-  console.log(`Will fetch ${itemsPerPage.value} items per page`)
-})
-
-// Watch for item count changes (this can happen when rowsToFetch is changed)
-watch(itemsPerPage, (newCount, oldCount) => {
-  if (newCount !== oldCount) {
-    console.log(`Items per page changed from ${oldCount} to ${newCount}`)
-  }
-})
-
-// Watch for chart changes to update Apple Music data
-watch(
-  () => chartsStore.currentChart,
-  async (newChart, oldChart) => {
-    if (newChart) {
-      // Only clear cache if it's a different chart than before
-      if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
-        songData.value.clear()
-        await loadAppleMusicData()
-      }
-    }
-  },
-)
-
-// Watch for new songs to load Apple Music data
-watch(
-  () => chartsStore.currentChart?.songs,
-  async (newSongs) => {
-    if (newSongs) {
-      await loadAppleMusicData()
-    }
-  },
-  { deep: true },
-)
-
-// Watch for route parameter changes
-watch(
-  () => [route.query.id, route.query.date],
-  async ([newChartId, newDate]) => {
-    if (newChartId || newDate) {
-      // Get formatted date if provided
-      let formattedDate: string | undefined
-      if (newDate) {
-        formattedDate = chartsStore.parseDateFromURL(newDate as string)
-      }
-
-      // Normalize chart ID for consistency
-      const chartId = newChartId ? normalizeChartId(newChartId as string) : 'hot-100'
-
-      // Use fetchChartDetails with normalized chart ID
-      await chartsStore.fetchChartDetails({
-        id: chartId,
-        week: formattedDate,
-        range: `1-${itemsPerPage.value}`,
-      })
-    }
-  },
-  { immediate: false },
-)
 </script>
 
 <template>
   <div class="prediction-view flex flex-col gap-6 max-w-[1200px]">
+    <div class="prediction-view__header p-6 flex flex-col items-center gap-4">
+      <div
+        v-if="chartsStore.currentChart"
+        class="chart-view__chart-header p-6 flex flex-col items-center gap-2"
+      >
+        <h1 class="text-3xl font-bold">{{ chartsStore.currentChart.title }} Predictions</h1>
+        <p class="chart-view__chart-header__chart-week font-medium">{{ formattedChartWeek }}</p>
+      </div>
+
+      <div v-if="isContestActive" class="prediction-view__contest-info w-full">
+        <Message severity="info" :closable="false" class="contest-message">
+          <p><strong>Active Prediction Contest!</strong></p>
+          <p v-if="currentContestInfo">
+            Contest ends on {{ timezoneStore.formatDateOnly(currentContestInfo.endDate) }}. Results
+            will be available after
+            {{ timezoneStore.formatDateOnly(currentContestInfo.releaseDate) }}.
+          </p>
+          <p v-if="currentContestInfo && currentContestInfo.remainingPredictions > 0">
+            You have {{ currentContestInfo.remainingPredictions }} predictions remaining.
+          </p>
+          <p v-else-if="currentContestInfo && currentContestInfo.remainingPredictions === 0">
+            You've used all your predictions for this contest.
+          </p>
+        </Message>
+      </div>
+      <div v-else class="prediction-view__no-contest w-full">
+        <Message severity="info" :closable="false">
+          There is no active prediction contest at this time. Check back later for the next contest.
+        </Message>
+      </div>
+    </div>
+
     <ChartCardHolder
       :current-chart="chartsStore.currentChart"
       :loading="isLoading"
-      :error="chartsStore.error"
-      :has-more="chartsStore.hasMore"
-      :is-loading-more="isLoadingMore"
-      :selected-chart-id="chartsStore.selectedChartId"
+      :error="errorMessage || chartsStore.error"
+      :has-more="false"
+      :selected-chart-id="FIXED_CHART_ID"
       :song-data="songData"
-      :fetch-more-songs="fetchMoreSongs"
       :show-skeletons="isWaitingForAppleMusic"
-      :skeleton-count="itemsPerPage"
-      class="prediction-view__chart-card-holder grow w-full"
+      :skeleton-count="10"
+      class="prediction-view__chart-card-holder w-full"
     >
     </ChartCardHolder>
   </div>
