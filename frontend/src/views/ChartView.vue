@@ -10,7 +10,6 @@ import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
-import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
