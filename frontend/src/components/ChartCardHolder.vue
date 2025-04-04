@@ -142,7 +142,7 @@ onUnmounted(() => {
 
     <div v-else-if="currentChart || hasItems" class="chart-card-holder__chart-container w-full">
       <div
-        class="chart-card-holder__chart-container__songs w-full grid gap-4 p-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4"
+        class="chart-card-holder__chart-container__songs w-full grid gap-4 p-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 justify-items-center"
       >
         <template v-if="hasSongs">
           <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
@@ -252,14 +252,6 @@ onUnmounted(() => {
           >
             Scroll for more songs
           </div>
-        </div>
-
-        <div
-          v-else-if="hasSongs || hasItems"
-          :key="'end-message'"
-          class="chart-card-holder__chart-container__songs__end-message col-span-full text-center p-5 italic text-gray-600"
-        >
-          No more songs to load
         </div>
       </div>
     </div>
