@@ -145,7 +145,7 @@ onUnmounted(() => {
         class="chart-card-holder__chart-container__songs w-full flex flex-wrap gap-4 p-4 justify-center"
       >
         <template v-if="hasSongs">
-          <div class="flex flex-wrap w-full">
+          <div class="flex flex-wrap w-full justify-center">
             <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
               <transition
                 name="card-fade"
@@ -178,7 +178,7 @@ onUnmounted(() => {
         </template>
 
         <template v-else-if="loading && showSkeletons">
-          <div class="flex flex-wrap w-full">
+          <div class="flex flex-wrap w-full justify-center">
             <transition-group
               name="card-list"
               tag="div"
@@ -203,7 +203,7 @@ onUnmounted(() => {
 
         <template v-else-if="isForFavourites && hasItems">
           <slot :items="items">
-            <div class="flex flex-wrap w-full">
+            <div class="flex flex-wrap w-full justify-center">
               <transition-group
                 name="card-list"
                 tag="div"

@@ -1,20 +1,25 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useChartsStore } from '@/stores/charts'
-import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useTimezoneStore } from '@/stores/timezone'
 import { usePredictionsStore } from '@/stores/predictions'
+import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
 import Message from 'primevue/message'
 
 const chartsStore = useChartsStore()
-const appleMusicStore = useAppleMusicStore()
 const timezoneStore = useTimezoneStore()
 const predictionsStore = usePredictionsStore()
 
-const songData = ref(new Map())
-const isLoadingAppleMusic = ref(false)
+// Use the new composable
+const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoader({
+  getItems: () => chartsStore.currentChart?.songs || [],
+  getItemKey: (song) => `${song.position}`,
+  watchSource: () => chartsStore.currentChart?.songs,
+  deepWatch: true,
+})
+
 const errorMessage = ref<string | null>(null)
 const FIXED_CHART_ID = 'hot-100'
 const FIXED_RANGE = '1-10' // Always only top 10 songs
@@ -66,50 +71,6 @@ const formattedChartWeek = computed(() => {
   return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
 })
 
-const loadAppleMusicData = async () => {
-  if (
-    !chartsStore.currentChart ||
-    !chartsStore.currentChart.songs ||
-    !chartsStore.currentChart.songs.length
-  ) {
-    return
-  }
-
-  isLoadingAppleMusic.value = true
-
-  try {
-    // Initialize Apple Music store if needed
-    if (!isStoreInitialized('appleMusic')) {
-      await appleMusicStore.initialize()
-    }
-
-    // Process songs in sequential order by position
-    for (const song of chartsStore.currentChart.songs) {
-      const songPosition = `${song.position}`
-
-      // Only fetch data if we don't already have it
-      if (!songData.value.has(songPosition)) {
-        try {
-          const query = `${song.name} ${song.artist}`
-          const data = await appleMusicStore.searchSong(query)
-          if (data) {
-            songData.value.set(songPosition, data)
-          }
-
-          // Add small delay between requests to avoid rate limits
-          await new Promise((r) => setTimeout(r, 50))
-        } catch (error) {
-          console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error loading Apple Music data:', error)
-  } finally {
-    isLoadingAppleMusic.value = false
-  }
-}
-
 // Initialize data on component mount
 onMounted(async () => {
   isInitializing.value = true
@@ -138,7 +99,8 @@ onMounted(async () => {
       range: FIXED_RANGE,
     })
 
-    // Load Apple Music data for songs
+    // Apple Music data will be loaded by the watcher
+    // but call it explicitly to handle initial load
     await loadAppleMusicData()
   } catch (error) {
     console.error('Error setting up prediction view:', error)

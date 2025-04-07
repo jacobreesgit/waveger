@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
-import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useChartsStore } from '@/stores/charts'
-import { useMediaQuery } from '@vueuse/core'
+import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -14,12 +13,18 @@ import { isStoreInitialized } from '@/services/storeManager'
 
 // Stores
 const favouritesStore = useFavouritesStore()
-const appleMusicStore = useAppleMusicStore()
 const chartsStore = useChartsStore()
 
+// Use the new composable
+const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoader({
+  getItems: () => favouritesStore.favourites || [],
+  getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
+  getQuery: (fav) => `${fav.song_name} ${fav.artist}`,
+  watchSource: () => favouritesStore.favourites,
+  deepWatch: true,
+})
+
 // UI state
-const songData = ref(new Map())
-const isLoadingAppleMusic = ref(false)
 const error = ref<string | null>(null)
 const selectedChartId = ref('')
 const statsVisible = ref(false)
@@ -69,52 +74,12 @@ const getSelectedChartTitle = computed(() => {
 const rowsToFetch = 2
 const itemsPerPage = computed(() => 4 * rowsToFetch)
 
-// Function to load Apple Music data for favorites
-const loadAppleMusicData = async () => {
-  if (!favouritesStore.favourites || !favouritesStore.favourites.length) {
-    return
-  }
-
-  isLoadingAppleMusic.value = true
-
-  try {
-    if (!appleMusicStore.token) {
-      await appleMusicStore.fetchToken()
-    }
-
-    // Process each favorite to get Apple Music data - sequential loading to avoid rate limits
-    for (const fav of favouritesStore.favourites) {
-      const songKey = `${fav.song_name}||${fav.artist}`
-
-      // Only fetch data if we don't already have it
-      if (!songData.value.has(songKey)) {
-        try {
-          const query = `${fav.song_name} ${fav.artist}`
-          const data = await appleMusicStore.searchSong(query)
-          if (data) {
-            songData.value.set(songKey, data)
-          }
-
-          // Add small delay between requests to avoid rate limits
-          await new Promise((resolve) => setTimeout(resolve, 50))
-        } catch (error) {
-          console.error(`Error searching Apple Music for ${fav.song_name}:`, error)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error loading Apple Music data:', error)
-  } finally {
-    isLoadingAppleMusic.value = false
-  }
-}
-
 // Function to retry loading favorites if there was an error
 const handleRetry = async () => {
   error.value = null
   try {
     await favouritesStore.loadFavourites()
-    await loadAppleMusicData()
+    // Apple Music data will be loaded by the watcher
   } catch (e) {
     console.error('Error retrying load favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
@@ -127,6 +92,9 @@ onMounted(async () => {
     if (!isStoreInitialized('favourites') || favouritesStore.favourites.length === 0) {
       await favouritesStore.loadFavourites()
     }
+
+    // Apple Music data will be loaded by the watcher
+    // but call it explicitly to handle initial load
     await loadAppleMusicData()
 
     // Short delay to ensure DOM is ready for animations
@@ -143,17 +111,6 @@ onMounted(async () => {
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
   }
 })
-
-// Watch for changes in favorites collection
-watch(
-  () => favouritesStore.favourites,
-  async (newFavourites) => {
-    if (newFavourites.length > 0) {
-      await loadAppleMusicData()
-    }
-  },
-  { deep: true },
-)
 
 // Watch for chart selection changes
 watch(

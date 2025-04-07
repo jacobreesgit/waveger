@@ -2,8 +2,8 @@
 import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
-import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useTimezoneStore } from '@/stores/timezone'
+import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
@@ -12,12 +12,17 @@ import { isStoreInitialized } from '@/services/storeManager'
 const route = useRoute()
 const router = useRouter()
 const chartsStore = useChartsStore()
-const appleMusicStore = useAppleMusicStore()
 const timezoneStore = useTimezoneStore()
 
-const songData = ref(new Map())
+// Use the new composable
+const { songData, isLoadingAppleMusic, loadAppleMusicData, clearSongData } = useAppleMusicLoader({
+  getItems: () => chartsStore.currentChart?.songs || [],
+  getItemKey: (song) => `${song.position}`,
+  watchSource: () => chartsStore.currentChart?.songs,
+  deepWatch: true,
+})
+
 const isLoadingMore = ref(false)
-const isLoadingAppleMusic = ref(false)
 const initialLoadComplete = ref(false)
 
 const normalizeChartId = (id: string): string => {
@@ -57,67 +62,33 @@ const formattedChartWeek = computed(() => {
   return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
 })
 
-const loadAppleMusicData = async () => {
-  if (
-    !chartsStore.currentChart ||
-    !chartsStore.currentChart.songs ||
-    !chartsStore.currentChart.songs.length
-  ) {
-    return
-  }
-
-  isLoadingAppleMusic.value = true
-
-  try {
-    // Initialize Apple Music store if needed
-    if (!isStoreInitialized('appleMusic')) {
-      await appleMusicStore.initialize()
-    }
-
-    // Sort songs by position to ensure sequential loading
-    const sortedSongs = [...chartsStore.currentChart.songs].sort((a, b) => a.position - b.position)
-
-    // Process songs in sequential order by position
-    for (const song of sortedSongs) {
-      const songPosition = `${song.position}`
-
-      // Only fetch data if we don't already have it
-      if (!songData.value.has(songPosition)) {
-        try {
-          const query = `${song.name} ${song.artist}`
-          const data = await appleMusicStore.searchSong(query)
-          if (data) {
-            songData.value.set(songPosition, data)
-          }
-
-          // Add small delay between requests to avoid rate limits
-          await new Promise((r) => setTimeout(r, 50))
-        } catch (error) {
-          console.error(`Error searching Apple Music for #${song.position} - ${song.name}:`, error)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error loading Apple Music data:', error)
-  } finally {
-    isLoadingAppleMusic.value = false
-  }
-}
-
 const fetchMoreSongs = async () => {
   if (!chartsStore.hasMore || isLoadingMore.value) return
 
   isLoadingMore.value = true
   try {
     await chartsStore.fetchMoreSongs(itemsPerPage.value) // Fetch items based on current grid size
-    // Load Apple Music data for the new songs
-    await loadAppleMusicData()
+    // Apple Music data will be loaded automatically via the watcher
   } catch (error) {
     console.error('Error loading more songs:', error)
   } finally {
     isLoadingMore.value = false
   }
 }
+
+// Additional watcher for chart changes to clear data when switching charts
+watch(
+  () => chartsStore.currentChart,
+  async (newChart, oldChart) => {
+    if (newChart) {
+      // Only clear cache if it's a different chart than before
+      if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
+        clearSongData()
+        await loadAppleMusicData()
+      }
+    }
+  },
+)
 
 // onMounted hook for ChartView.vue with improved store initialization
 onMounted(async () => {
@@ -162,7 +133,8 @@ onMounted(async () => {
         timezoneStore.initialize()
       }
 
-      // Load Apple Music data for songs
+      // Apple Music data will be loaded by the watcher
+      // but call it explicitly to handle initial load
       await loadAppleMusicData()
 
       // Mark as complete after successful load
@@ -174,31 +146,6 @@ onMounted(async () => {
     initialLoadComplete.value = true
   }
 })
-
-// Watch for chart changes to update Apple Music data
-watch(
-  () => chartsStore.currentChart,
-  async (newChart, oldChart) => {
-    if (newChart) {
-      // Only clear cache if it's a different chart than before
-      if (!oldChart || newChart.title !== oldChart.title || newChart.week !== oldChart.week) {
-        songData.value.clear()
-        await loadAppleMusicData()
-      }
-    }
-  },
-)
-
-// Watch for new songs to load Apple Music data
-watch(
-  () => chartsStore.currentChart?.songs,
-  async (newSongs) => {
-    if (newSongs) {
-      await loadAppleMusicData()
-    }
-  },
-  { deep: true },
-)
 
 // Watch for route parameter changes
 watch(
