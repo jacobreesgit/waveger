@@ -142,7 +142,7 @@ onUnmounted(() => {
 
     <div v-else-if="currentChart || hasItems" class="chart-card-holder__chart-container w-full">
       <div
-        class="chart-card-holder__chart-container__songs w-full grid gap-4 p-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 justify-items-center"
+        class="chart-card-holder__chart-container__songs w-full flex flex-wrap gap-4 p-4 justify-center"
       >
         <template v-if="hasSongs">
           <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
@@ -164,9 +164,12 @@ onUnmounted(() => {
                 :apple-music-data="songData?.get(`${song.position}`)"
                 :show-details="true"
                 @click="() => {}"
-                class="chart-card-holder__chart-container__songs__card-item transition-all duration-[800ms] ease-in-out"
+                class="chart-card-holder__chart-container__songs__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
               />
-              <SkeletonCard v-else class="card-item transition-all duration-[800ms] ease-in-out" />
+              <SkeletonCard
+                v-else
+                class="card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
+              />
             </transition>
           </template>
         </template>
@@ -184,7 +187,7 @@ onUnmounted(() => {
             <SkeletonCard
               v-for="i in skeletonCount"
               :key="`skeleton-${i}`"
-              class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out"
+              class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
             />
           </transition-group>
         </template>
@@ -227,7 +230,7 @@ onUnmounted(() => {
                 "
                 :compact="true"
                 @click="() => {}"
-                class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out"
+                class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
               />
             </transition-group>
           </slot>
