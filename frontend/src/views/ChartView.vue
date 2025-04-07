@@ -1,11 +1,9 @@
-// frontend/src/views/ChartView.vue
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicStore } from '@/stores/appleMusic'
 import { useTimezoneStore } from '@/stores/timezone'
-import { useMediaQuery } from '@vueuse/core'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
@@ -20,6 +18,7 @@ const timezoneStore = useTimezoneStore()
 const songData = ref(new Map())
 const isLoadingMore = ref(false)
 const isLoadingAppleMusic = ref(false)
+const initialLoadComplete = ref(false)
 
 const normalizeChartId = (id: string): string => {
   return id ? id.replace(/\/$/, '') : 'hot-100'
@@ -137,33 +136,42 @@ onMounted(async () => {
       formattedDate = chartsStore.parseDateFromURL(dateParam)
     }
 
-    // Load chart data - fetch based on responsive grid size
-    await chartsStore.fetchChartDetails({
-      id: chartId,
-      week: formattedDate,
-      range: `1-${itemsPerPage.value}`,
-    })
-
-    // Make sure the timezone store is initialized for date formatting
-    if (!isStoreInitialized('timezone')) {
-      timezoneStore.initialize()
-    }
-
-    // Load Apple Music data for songs
-    await loadAppleMusicData()
-
-    // Update URL if needed
+    // Handle URL update first if needed - BEFORE the data fetch
     if (!route.query.date || !route.query.id) {
-      router.replace({
+      await router.replace({
         path: '/charts',
         query: {
           date: dateParam || chartsStore.formatDateForURL(new Date().toISOString().split('T')[0]),
           id: chartId,
         },
       })
+
+      // Set the flag to indicate initial routing is complete
+      // The watcher will handle the data fetch now
+      initialLoadComplete.value = true
+    } else {
+      // URL is already correct, load chart data directly
+      await chartsStore.fetchChartDetails({
+        id: chartId,
+        week: formattedDate,
+        range: `1-${itemsPerPage.value}`,
+      })
+
+      // Make sure the timezone store is initialized for date formatting
+      if (!isStoreInitialized('timezone')) {
+        timezoneStore.initialize()
+      }
+
+      // Load Apple Music data for songs
+      await loadAppleMusicData()
+
+      // Mark as complete after successful load
+      initialLoadComplete.value = true
     }
   } catch (error) {
     console.error('Error setting up chart view:', error)
+    // Still set the flag to prevent any potential infinite loops
+    initialLoadComplete.value = true
   }
 })
 
@@ -196,6 +204,9 @@ watch(
 watch(
   () => [route.query.id, route.query.date],
   async ([newChartId, newDate]) => {
+    // Skip if we're still in the initial load process
+    if (!initialLoadComplete.value) return
+
     if (newChartId || newDate) {
       // Get formatted date if provided
       let formattedDate: string | undefined

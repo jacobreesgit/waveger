@@ -147,11 +147,33 @@ const isArtistChart = computed(() => {
 
 <style lang="scss" scoped>
 .chart-item-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
   &__image-container {
     &:hover {
       &__image {
         transform: scale(1.05);
       }
+    }
+  }
+
+  &__item-info {
+    flex: 0 0 auto;
+  }
+
+  &__stats {
+    flex: 0 0 auto;
+  }
+
+  &__metadata {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+
+    &__actions {
+      margin-top: auto;
     }
   }
 }

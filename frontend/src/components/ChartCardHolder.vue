@@ -145,55 +145,40 @@ onUnmounted(() => {
         class="chart-card-holder__chart-container__songs w-full flex flex-wrap gap-4 p-4 justify-center"
       >
         <template v-if="hasSongs">
-          <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
-            <transition
-              name="card-fade"
-              mode="out-in"
-              appear
-              :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
-            >
-              <ChartItemCard
-                v-if="
-                  !showSkeletons ||
-                  isAppleMusicDataLoaded(`${song.position}`) ||
-                  getHighestLoadedPosition() >= song.position
-                "
-                :song="song"
-                :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
-                :chart-title="currentChart?.title || ''"
-                :apple-music-data="songData?.get(`${song.position}`)"
-                :show-details="true"
-                @click="() => {}"
-                class="chart-card-holder__chart-container__songs__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
-              />
-              <SkeletonCard
-                v-else
-                class="card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
-              />
-            </transition>
-          </template>
+          <div class="flex flex-wrap w-full">
+            <template v-for="(song, songIndex) in currentChart?.songs || []" :key="song.position">
+              <transition
+                name="card-fade"
+                mode="out-in"
+                appear
+                :appear-active-class="`card-fade-enter-active delay-${songIndex % 8}`"
+              >
+                <div
+                  class="chart-card-holder__chart-container__songs__card-wrapper transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)] p-2 mb-4"
+                >
+                  <ChartItemCard
+                    v-if="
+                      !showSkeletons ||
+                      isAppleMusicDataLoaded(`${song.position}`) ||
+                      getHighestLoadedPosition() >= song.position
+                    "
+                    :song="song"
+                    :chart-id="selectedChartId?.replace(/\/$/, '') || ''"
+                    :chart-title="currentChart?.title || ''"
+                    :apple-music-data="songData?.get(`${song.position}`)"
+                    :show-details="true"
+                    @click="() => {}"
+                    class="chart-card-holder__chart-container__songs__card-item h-full"
+                  />
+                  <SkeletonCard v-else class="card-item h-full" />
+                </div>
+              </transition>
+            </template>
+          </div>
         </template>
 
         <template v-else-if="loading && showSkeletons">
-          <transition-group
-            name="card-list"
-            tag="div"
-            class="chart-card-holder__chart-container__songs__skeleton-group contents"
-            :css="false"
-            @before-enter="beforeEnter"
-            @enter="enter"
-            @leave="leave"
-          >
-            <SkeletonCard
-              v-for="i in skeletonCount"
-              :key="`skeleton-${i}`"
-              class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
-            />
-          </transition-group>
-        </template>
-
-        <template v-else-if="isForFavourites && hasItems">
-          <slot :items="items">
+          <div class="flex flex-wrap w-full">
             <transition-group
               name="card-list"
               tag="div"
@@ -203,36 +188,66 @@ onUnmounted(() => {
               @enter="enter"
               @leave="leave"
             >
-              <ChartItemCard
-                v-for="(item, index) in items || []"
-                :key="index"
-                :song="
-                  'song_name' in item
-                    ? {
-                        name: item.song_name,
-                        artist: item.artist,
-                        position: item.charts?.[0]?.position || 0,
-                        peak_position: item.charts?.[0]?.peak_position || 0,
-                        weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
-                        image: item.image_url,
-                        last_week_position: 0,
-                        url: '',
-                      }
-                    : (item as Song)
-                "
-                :chart-id="
-                  'song_name' in item
-                    ? item.charts?.[0]?.chart_id || ''
-                    : selectedChartId?.replace(/\/$/, '') || ''
-                "
-                :chart-title="
-                  'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
-                "
-                :compact="true"
-                @click="() => {}"
-                class="chart-card-holder__chart-container__songs__skeleton-group__card-item transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)]"
-              />
+              <div
+                v-for="i in skeletonCount"
+                :key="`skeleton-${i}`"
+                class="chart-card-holder__chart-container__songs__skeleton-group__card-wrapper transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)] p-2 mb-4"
+              >
+                <SkeletonCard
+                  class="chart-card-holder__chart-container__songs__skeleton-group__card-item h-full"
+                />
+              </div>
             </transition-group>
+          </div>
+        </template>
+
+        <template v-else-if="isForFavourites && hasItems">
+          <slot :items="items">
+            <div class="flex flex-wrap w-full">
+              <transition-group
+                name="card-list"
+                tag="div"
+                class="chart-card-holder__chart-container__songs__skeleton-group contents"
+                :css="false"
+                @before-enter="beforeEnter"
+                @enter="enter"
+                @leave="leave"
+              >
+                <div
+                  v-for="(item, index) in items || []"
+                  :key="index"
+                  class="chart-card-holder__chart-container__songs__skeleton-group__card-wrapper transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)] p-2 mb-4"
+                >
+                  <ChartItemCard
+                    :song="
+                      'song_name' in item
+                        ? {
+                            name: item.song_name,
+                            artist: item.artist,
+                            position: item.charts?.[0]?.position || 0,
+                            peak_position: item.charts?.[0]?.peak_position || 0,
+                            weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
+                            image: item.image_url,
+                            last_week_position: 0,
+                            url: '',
+                          }
+                        : (item as Song)
+                    "
+                    :chart-id="
+                      'song_name' in item
+                        ? item.charts?.[0]?.chart_id || ''
+                        : selectedChartId?.replace(/\/$/, '') || ''
+                    "
+                    :chart-title="
+                      'song_name' in item ? item.charts?.[0]?.chart_title || 'Favourites' : 'Chart'
+                    "
+                    :compact="true"
+                    @click="() => {}"
+                    class="chart-card-holder__chart-container__songs__skeleton-group__card-item h-full"
+                  />
+                </div>
+              </transition-group>
+            </div>
           </slot>
         </template>
 
@@ -280,3 +295,17 @@ onUnmounted(() => {
     </div>
   </div>
 </template>
+
+<style lang="scss" scoped>
+.chart-card-holder {
+  &__chart-container {
+    &__songs {
+      &__card-wrapper,
+      &__skeleton-group__card-wrapper {
+        display: flex;
+        flex-direction: column;
+      }
+    }
+  }
+}
+</style>

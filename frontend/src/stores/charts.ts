@@ -45,6 +45,7 @@ export const useChartsStore = defineStore('charts', () => {
   /**
    * Fetch chart details
    */
+
   const fetchChartDetails = async (params: {
     id?: string
     week?: string
@@ -55,14 +56,18 @@ export const useChartsStore = defineStore('charts', () => {
       loading.value = true
       error.value = null
 
-      // Only reset paging if we're loading a new chart (not more songs)
-      if (!params.range || params.range === '1-10') {
+      // Normalize the chart ID for consistency
+      const chartId = params.id ? normalizeChartId(params.id) : 'hot-100'
+
+      // Check if this is an initial load or a "load more" request
+      // Any range that starts with '1-' is considered an initial load
+      const isInitialLoad = !params.range || /^1-\d+$/.test(params.range)
+
+      // Reset paging for initial loads
+      if (isInitialLoad) {
         hasMore.value = true
         currentPage.value = 1
       }
-
-      // Normalize the chart ID for consistency
-      const chartId = params.id ? normalizeChartId(params.id) : 'hot-100'
 
       // Store the selected chart ID - consistently without trailing slash
       selectedChartId.value = chartId
@@ -82,7 +87,7 @@ export const useChartsStore = defineStore('charts', () => {
 
       const response = await getChartDetails(params)
 
-      if (params.range && params.range !== '1-10' && currentChart.value) {
+      if (!isInitialLoad && currentChart.value) {
         // Adding more songs to an existing chart
         if (response.data.songs.length === 0) {
           hasMore.value = false
@@ -91,7 +96,7 @@ export const useChartsStore = defineStore('charts', () => {
           currentPage.value++
         }
       } else {
-        // Loading a completely new chart
+        // Loading a completely new chart - replace the entire data
         currentChart.value = response.data
         dataSource.value = response.source
       }
