@@ -33,6 +33,8 @@ const trendIcon = computed(() => {
       return '↓'
     case 'SAME':
       return '='
+    case 'NEW':
+      return '★'
     default:
       return 'NEW'
   }
@@ -96,6 +98,8 @@ const isArtistChart = computed(() => {
               trendDirection === 'DOWN',
             'chart-item-card__item-info__trend--trend-same bg-[#f8f9fa] text-[#6c757d]':
               trendDirection === 'SAME',
+            'chart-item-card__item-info__trend--trend-new bg-[#e3f2fd] text-[#2196f3]':
+              trendDirection === 'NEW',
           }"
         >
           {{ trendIcon }}

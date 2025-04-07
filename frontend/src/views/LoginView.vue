@@ -46,7 +46,7 @@ const handleUsernameBlur = async () => {
     )
     if (response.data && response.data.success) {
       preLoadedUserData.value = response.data.user
-      console.log('Pre-loaded user data found:', preLoadedUserData.value)
+      // console.log('Pre-loaded user data found:', preLoadedUserData.value)
     }
   } catch (error) {
     preLoadedUserData.value = null

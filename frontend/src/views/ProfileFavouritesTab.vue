@@ -116,7 +116,7 @@ onMounted(async () => {
 watch(
   () => chartsStore.selectedChartId,
   (newChartId) => {
-    console.log('Selected chart changed to:', newChartId)
+    // console.log('Selected chart changed to:', newChartId)
   },
 )
 </script>

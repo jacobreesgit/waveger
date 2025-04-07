@@ -44,7 +44,7 @@ const { stop: stopObserver } = useIntersectionObserver(
       !props.error &&
       props.fetchMoreSongs
     ) {
-      console.log('Intersection observed, loading more songs')
+      // console.log('Intersection observed, loading more songs')
       await props.fetchMoreSongs()
     }
   },

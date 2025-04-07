@@ -40,7 +40,7 @@ onMounted(() => {
   if (storedCountry && storedTimezone) {
     selectedCountry.value = storedCountry
     timezoneStore.setCountry(storedCountry, storedTimezone)
-    console.log(`Using stored country: ${storedCountry} with timezone: ${storedTimezone}`)
+    // console.log(`Using stored country: ${storedCountry} with timezone: ${storedTimezone}`)
   } else {
     detectCountry()
   }

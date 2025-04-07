@@ -24,7 +24,7 @@ const isNotToday = computed(() => {
 const updateRoute = async (newDate: Date) => {
   const urlDate = formatDateForURL(newDate.toISOString().split('T')[0])
   const chartId = route.query.id || 'hot-100'
-  console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
+  // console.log(`Updating route to date: ${urlDate} with chart: ${chartId}`)
   await router.push({
     path: '/charts',
     query: {
@@ -43,7 +43,7 @@ watch(
   () => route.query.date,
   (newDate) => {
     if (newDate) {
-      console.log(`Route date query param changed to: ${newDate}`)
+      // console.log(`Route date query param changed to: ${newDate}`)
       selectedDate.value = new Date(parseDateFromURL(newDate as string))
     }
   },
@@ -52,7 +52,7 @@ watch(
 
 watch(selectedDate, async (newDate) => {
   if (!newDate) return // Skip if date is null
-  console.log(`Date picker changed to: ${newDate}`)
+  // console.log(`Date picker changed to: ${newDate}`)
   // Only update route if the date actually changed
   const currentUrlDate = route.query.date as string
   const newUrlDate = formatDateForURL(newDate.toISOString().split('T')[0])

@@ -52,7 +52,7 @@ const filteredChartOptions = computed(() => {
 
 const updateRoute = async () => {
   const chartId = normalizeChartId(selectedChartId.value)
-  console.log(`Chart changed to: ${chartId}`)
+  // console.log(`Chart changed to: ${chartId}`)
   store.selectedChartId = chartId
   let datePath =
     (route.query.date as string) || formatDateForURL(new Date().toISOString().split('T')[0])
@@ -93,11 +93,11 @@ onMounted(() => {
     const normalizedRouteId = normalizeChartId(routeChartId)
     const normalizedStoreId = normalizeChartId(store.selectedChartId)
 
-    console.log('Chart selector mounting with IDs:', {
-      routeId: normalizedRouteId,
-      storeId: normalizedStoreId,
-      currentChart: store.currentChart?.title || 'None',
-    })
+    // console.log('Chart selector mounting with IDs:', {
+    //   routeId: normalizedRouteId,
+    //   storeId: normalizedStoreId,
+    //   currentChart: store.currentChart?.title || 'None',
+    // })
 
     const idMismatch = normalizedRouteId !== normalizedStoreId
 
@@ -126,7 +126,7 @@ onMounted(() => {
 
       // Force a data reload if there's a mismatch and we already have chart data
       if (store.currentChart) {
-        console.log('Detected chart type mismatch, forcing data reload')
+        // console.log('Detected chart type mismatch, forcing data reload')
         const formattedDate = route.query.date
           ? parseDateFromURL(route.query.date as string)
           : new Date().toISOString().split('T')[0]
