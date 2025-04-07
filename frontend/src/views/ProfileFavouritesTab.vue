@@ -65,26 +65,9 @@ const getSelectedChartTitle = computed(() => {
   return chartsStore.currentChart?.title || ''
 })
 
-// Responsive grid layout calculations
-const isSm = useMediaQuery('(min-width: 40rem)') // 640px
-const isMd = useMediaQuery('(min-width: 48rem)') // 768px
-const isLg = useMediaQuery('(min-width: 64rem)') // 1024px
-const isXl = useMediaQuery('(min-width: 80rem)') // 1280px
-const is2Xl = useMediaQuery('(min-width: 96rem)') // 1536px
-
-// Calculate grid columns based on Tailwind's breakpoints
-const gridColumns = computed(() => {
-  if (is2Xl.value) return 4 // 2xl: 4 columns
-  if (isXl.value) return 4 // xl: 4 columns
-  if (isLg.value) return 4 // lg: 4 columns
-  if (isMd.value) return 3 // md: 3 columns
-  if (isSm.value) return 2 // sm: 2 columns
-  return 1 // Default: 1 column
-})
-
 // Always fetch 2 rows worth of data (matches ChartView.vue pattern)
 const rowsToFetch = 2
-const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
+const itemsPerPage = computed(() => 4 * rowsToFetch)
 
 // Function to load Apple Music data for favorites
 const loadAppleMusicData = async () => {

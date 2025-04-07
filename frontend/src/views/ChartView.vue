@@ -21,30 +21,13 @@ const songData = ref(new Map())
 const isLoadingMore = ref(false)
 const isLoadingAppleMusic = ref(false)
 
-// Responsive queries for grid layout
-const isSm = useMediaQuery('(min-width: 40rem)') // 640px
-const isMd = useMediaQuery('(min-width: 48rem)') // 768px
-const isLg = useMediaQuery('(min-width: 64rem)') // 1024px
-const isXl = useMediaQuery('(min-width: 80rem)') // 1280px
-const is2Xl = useMediaQuery('(min-width: 96rem)') // 1536px
-
-// Calculate grid columns based on Tailwind's breakpoints
-const gridColumns = computed(() => {
-  if (is2Xl.value) return 4 // 2xl: 4 columns (2xl:grid-cols-4)
-  if (isXl.value) return 4 // xl: 4 columns (xl:grid-cols-4)
-  if (isLg.value) return 4 // lg: 4 columns (lg:grid-cols-4)
-  if (isMd.value) return 3 // md: 3 columns (md:grid-cols-3)
-  if (isSm.value) return 2 // sm: 2 columns (sm:grid-cols-2)
-  return 1 // Default: 1 column (grid-cols-1)
-})
-
 const normalizeChartId = (id: string): string => {
   return id ? id.replace(/\/$/, '') : 'hot-100'
 }
 
 // Always fetch 2 rows worth of data
 const rowsToFetch = 2
-const itemsPerPage = computed(() => gridColumns.value * rowsToFetch)
+const itemsPerPage = computed(() => 4 * rowsToFetch)
 
 const isLoading = computed(() => chartsStore.loading && !isLoadingMore.value)
 
@@ -181,19 +164,6 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error setting up chart view:', error)
-  }
-})
-
-// Watch for grid columns changes due to responsive breakpoints
-watch(gridColumns, (newColumns, oldColumns) => {
-  console.log(`Grid layout changed: now showing ${newColumns} columns (was ${oldColumns})`)
-  console.log(`Will fetch ${itemsPerPage.value} items per page`)
-})
-
-// Watch for item count changes (this can happen when rowsToFetch is changed)
-watch(itemsPerPage, (newCount, oldCount) => {
-  if (newCount !== oldCount) {
-    console.log(`Items per page changed from ${oldCount} to ${newCount}`)
   }
 })
 
