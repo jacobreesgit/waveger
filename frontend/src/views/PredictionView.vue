@@ -103,10 +103,10 @@ onMounted(async () => {
     <div class="prediction-view__header p-6 flex flex-col items-center gap-4">
       <div
         v-if="chartsStore.currentChart"
-        class="prediction-view__chart-header p-6 flex flex-col items-center gap-2"
+        class="prediction-view__prediction-header p-6 flex flex-col items-center gap-2"
       >
         <h1 class="text-3xl font-bold">{{ chartsStore.currentChart.title }} Predictions</h1>
-        <p class="prediction-view__chart-header__chart-week font-medium">
+        <p class="prediction-view__prediction-header__chart-week font-medium">
           {{ formattedChartWeek }}
         </p>
       </div>
