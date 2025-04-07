@@ -101,13 +101,16 @@ onMounted(async () => {
 <template>
   <div class="prediction-view flex flex-col gap-6 max-w-[1200px]">
     <div class="prediction-view__header p-6 flex flex-col items-center gap-4">
-      <div
-        v-if="chartsStore.currentChart"
-        class="prediction-view__prediction-header p-6 flex flex-col items-center gap-2"
-      >
-        <h1 class="text-3xl font-bold">{{ chartsStore.currentChart.title }} Predictions</h1>
-        <p class="prediction-view__prediction-header__chart-week font-medium">
+      <div class="prediction-view__prediction-header p-6 flex flex-col items-center gap-2">
+        <h1 class="text-3xl font-bold">Billboard Hot 100 Predictions</h1>
+        <p
+          v-if="chartsStore.currentChart"
+          class="prediction-view__prediction-header__chart-week font-medium"
+        >
           {{ formattedChartWeek }}
+        </p>
+        <p v-else class="prediction-view__prediction-header__chart-week font-medium opacity-60">
+          Loading chart week...
         </p>
       </div>
 
