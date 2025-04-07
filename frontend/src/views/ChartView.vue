@@ -3,6 +3,7 @@ import { onMounted, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTimezoneStore } from '@/stores/timezone'
 import { useChartLoader } from '@/composables/useChartLoader'
+import { formatDateOnly } from '@/utils/dateUtils'
 import ChartSelector from '@/components/ChartSelector.vue'
 import ChartDatePicker from '@/components/ChartDatePicker.vue'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
@@ -45,7 +46,7 @@ const formattedChartWeek = computed(() => {
   }
 
   const dateStr = dateMatch[1]
-  return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
+  return `Week of ${formatDateOnly(dateStr)}`
 })
 
 // onMounted hook for ChartView.vue with improved store initialization

@@ -9,7 +9,7 @@ import {
   checkUsernameAvailability,
   checkEmailAvailability,
 } from '@/utils/validation'
-import { useTimezoneStore } from '@/stores/timezone'
+import { formatDateOnly } from '@/utils/dateUtils'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -19,7 +19,6 @@ import Divider from 'primevue/divider'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const timezoneStore = useTimezoneStore()
 
 // Editing states
 const editingUsername = ref(false)
@@ -76,12 +75,6 @@ const predictionAccuracy = computed(() => {
 const formattedAccuracy = computed(() => {
   return `${predictionAccuracy.value.toFixed(1)}%`
 })
-
-// Format date for display
-const formatDate = (dateString?: string | null) => {
-  if (!dateString) return 'Not available'
-  return timezoneStore.formatDateOnly(dateString)
-}
 
 const handleLogout = () => {
   authStore.logout()
@@ -586,7 +579,7 @@ const updatePassword = async () => {
             <i class="pi pi-calendar-plus mr-1"></i> Account Created
           </div>
           <div class="font-medium">
-            {{ formatDate(authStore.user?.created_at) }}
+            {{ formatDateOnly(authStore.user?.created_at, 'Not available') }}
           </div>
         </div>
         <div class="p-4 rounded-lg bg-gray-50">
@@ -594,7 +587,7 @@ const updatePassword = async () => {
             <i class="pi pi-sign-in mr-1"></i> Last Login
           </div>
           <div class="font-medium">
-            {{ formatDate(authStore.user?.last_login) }}
+            {{ formatDateOnly(authStore.user?.last_login, 'Not available') }}
           </div>
         </div>
       </div>

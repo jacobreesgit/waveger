@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useFavouritesStore } from '@/stores/favourites'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useTimezoneStore } from '@/stores/timezone'
+import { formatDateOnly } from '@/utils/dateUtils'
 import { isAuthenticated, redirectToLogin } from '@/utils/authUtils'
 import { isStoreInitialized } from '@/services/storeManager'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -45,12 +46,6 @@ const onTabChange = (value: any) => {
       router.push('/profile/predictions')
       break
   }
-}
-
-// Format date for display
-const formatDate = (dateString?: string | null) => {
-  if (!dateString) return 'Not available'
-  return timezoneStore.formatDateOnly(dateString)
 }
 
 // Get random gradient for avatar background
@@ -236,7 +231,10 @@ watch(activeTabValue, async (newTab) => {
               </div>
               <div class="flex items-center">
                 <i class="pi pi-clock mr-2 text-blue-500"></i>
-                <span>Last login: {{ formatDate(authStore.user?.last_login) }}</span>
+                <span
+                  >Last login:
+                  {{ formatDateOnly(authStore.user?.last_login, 'Not available') }}</span
+                >
               </div>
               <div class="flex items-center">
                 <i class="pi pi-chart-line mr-2 text-blue-500"></i>

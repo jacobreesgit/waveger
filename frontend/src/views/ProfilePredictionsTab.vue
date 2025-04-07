@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useRouter } from 'vue-router'
-import { useTimezoneStore } from '@/stores/timezone'
+import { formatDateOnly } from '@/utils/dateUtils'
 import Select from 'primevue/select'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
@@ -14,7 +14,6 @@ import { isStoreInitialized } from '@/services/storeManager'
 
 const router = useRouter()
 const predictionStore = usePredictionsStore()
-const timezoneStore = useTimezoneStore()
 
 // Prediction-related states
 const predictionFilter = ref<'all' | 'correct' | 'incorrect' | 'pending'>('all')
@@ -134,11 +133,6 @@ const getActualResultText = (prediction: Prediction): string => {
   }
 
   return ''
-}
-
-// Format date in a consistent way using the timezone store
-const formatDate = (dateString: string): string => {
-  return timezoneStore.formatDateOnly(dateString)
 }
 
 // Load user predictions on component mount
@@ -390,7 +384,7 @@ onMounted(async () => {
                   </span>
                 </div>
                 <span class="text-xs text-gray-500">
-                  {{ formatDate(prediction.prediction_date) }}
+                  {{ formatDateOnly(prediction.prediction_date) }}
                 </span>
               </div>
 

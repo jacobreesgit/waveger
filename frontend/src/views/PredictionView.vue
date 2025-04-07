@@ -3,6 +3,7 @@ import { onMounted, computed, ref } from 'vue'
 import { useTimezoneStore } from '@/stores/timezone'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useChartLoader } from '@/composables/useChartLoader'
+import { formatDateOnly } from '@/utils/dateUtils'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
 import Message from 'primevue/message'
@@ -66,7 +67,7 @@ const formattedChartWeek = computed(() => {
   }
 
   const dateStr = dateMatch[1]
-  return `Week of ${timezoneStore.formatDateOnly(dateStr)}`
+  return `Week of ${formatDateOnly(dateStr)}`
 })
 
 // Initialize data on component mount
@@ -118,9 +119,8 @@ onMounted(async () => {
         <Message severity="info" :closable="false" class="contest-message">
           <p><strong>Active Prediction Contest!</strong></p>
           <p v-if="currentContestInfo">
-            Contest ends on {{ timezoneStore.formatDateOnly(currentContestInfo.endDate) }}. Results
-            will be available after
-            {{ timezoneStore.formatDateOnly(currentContestInfo.releaseDate) }}.
+            Contest ends on {{ formatDateOnly(currentContestInfo.endDate) }}. Results will be
+            available after {{ formatDateOnly(currentContestInfo.releaseDate) }}.
           </p>
           <p v-if="currentContestInfo && currentContestInfo.remainingPredictions > 0">
             You have {{ currentContestInfo.remainingPredictions }} predictions remaining.

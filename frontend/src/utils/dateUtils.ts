@@ -4,12 +4,15 @@ import { useTimezoneStore } from '@/stores/timezone'
  * Format a date string according to the user's selected timezone
  * @param dateString The date string to format
  * @param options Optional Intl.DateTimeFormatOptions to customize formatting
+ * @param defaultValue Value to return if dateString is null/undefined
  * @returns Formatted date string with timezone
  */
 export const formatDate = (
   dateString: string | null | undefined,
   options?: Intl.DateTimeFormatOptions,
+  defaultValue: string = 'N/A',
 ): string => {
+  if (!dateString) return defaultValue
   const timezoneStore = useTimezoneStore()
   return timezoneStore.formatDate(dateString, options)
 }
@@ -17,9 +20,14 @@ export const formatDate = (
 /**
  * Format a date string to display only the date part (no time)
  * @param dateString The date string to format
+ * @param defaultValue Value to return if dateString is null/undefined
  * @returns Formatted date string with timezone
  */
-export const formatDateOnly = (dateString: string | null | undefined): string => {
+export const formatDateOnly = (
+  dateString: string | null | undefined,
+  defaultValue: string = 'N/A',
+): string => {
+  if (!dateString) return defaultValue
   const timezoneStore = useTimezoneStore()
   return timezoneStore.formatDateOnly(dateString)
 }
@@ -27,9 +35,14 @@ export const formatDateOnly = (dateString: string | null | undefined): string =>
 /**
  * Format a date string to display only the time part (no date)
  * @param dateString The date string to format
+ * @param defaultValue Value to return if dateString is null/undefined
  * @returns Formatted time string with timezone
  */
-export const formatTimeOnly = (dateString: string | null | undefined): string => {
+export const formatTimeOnly = (
+  dateString: string | null | undefined,
+  defaultValue: string = 'N/A',
+): string => {
+  if (!dateString) return defaultValue
   const timezoneStore = useTimezoneStore()
   return timezoneStore.formatTimeOnly(dateString)
 }

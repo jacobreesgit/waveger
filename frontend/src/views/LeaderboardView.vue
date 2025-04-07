@@ -2,7 +2,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { usePredictionsStore } from '@/stores/predictions'
 import { useAuthStore } from '@/stores/auth'
-import { useTimezoneStore } from '@/stores/timezone'
+import { formatDateOnly } from '@/utils/dateUtils'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Tabs from 'primevue/tabs'
@@ -13,7 +13,6 @@ import Column from 'primevue/column'
 
 const predictionStore = usePredictionsStore()
 const authStore = useAuthStore()
-const timezoneStore = useTimezoneStore()
 
 const period = ref<'all' | 'weekly'>('all')
 const isLoading = computed(() => predictionStore.loading.leaderboard)
@@ -51,11 +50,6 @@ const leaderboardData = computed(() => {
 
 const formatAccuracy = (value: number): string => {
   return `${value.toFixed(1)}%`
-}
-
-const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'N/A'
-  return timezoneStore.formatDateOnly(dateString)
 }
 
 watch(period, () => {
@@ -182,9 +176,9 @@ onMounted(async () => {
       <div v-else class="leaderboard-table-container w-full">
         <div v-if="predictionStore.currentContest" class="contest-info mb-4 flex justify-center">
           <Message severity="info" :closable="false">
-            Current contest ends on {{ formatDate(predictionStore.currentContest.end_date) }}.
+            Current contest ends on {{ formatDateOnly(predictionStore.currentContest.end_date) }}.
             Results will be processed on
-            {{ formatDate(predictionStore.currentContest.chart_release_date) }}.
+            {{ formatDateOnly(predictionStore.currentContest.chart_release_date) }}.
           </Message>
         </div>
 

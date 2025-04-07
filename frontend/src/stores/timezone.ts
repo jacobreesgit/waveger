@@ -39,6 +39,9 @@ export const useTimezoneStore = defineStore('timezone', () => {
 
   /**
    * Format date with the selected timezone
+   * @param dateString The date string to format
+   * @param options Optional formatting options
+   * @returns Formatted date string with timezone
    */
   const formatDate = (
     dateString: string | null | undefined,
@@ -94,6 +97,8 @@ export const useTimezoneStore = defineStore('timezone', () => {
 
   /**
    * Format date without time
+   * @param dateString The date string to format
+   * @returns Formatted date string
    */
   const formatDateOnly = (dateString: string | null | undefined): string => {
     return formatDate(dateString, {
@@ -108,6 +113,8 @@ export const useTimezoneStore = defineStore('timezone', () => {
 
   /**
    * Format date with only time
+   * @param dateString The date string to format
+   * @returns Formatted time string
    */
   const formatTimeOnly = (dateString: string | null | undefined): string => {
     return formatDate(dateString, {

@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useChartsStore } from '@/stores/charts'
-import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils' // Import from utility file
+import { formatDateForURL, parseDateFromURL } from '@/utils/dateUtils'
 import DatePicker from 'primevue/datepicker'
 import Button from 'primevue/button'
 
