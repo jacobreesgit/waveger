@@ -18,8 +18,9 @@ const isLoadingAppleMusic = ref(false)
 const errorMessage = ref<string | null>(null)
 const FIXED_CHART_ID = 'hot-100'
 const FIXED_RANGE = '1-10' // Always only top 10 songs
+const isInitializing = ref(true) // Added initialization state tracker
 
-const isLoading = computed(() => chartsStore.loading)
+const isLoading = computed(() => chartsStore.loading || isInitializing.value)
 
 const currentContestInfo = computed(() => {
   if (!predictionsStore.currentContest) {
@@ -111,6 +112,7 @@ const loadAppleMusicData = async () => {
 
 // Initialize data on component mount
 onMounted(async () => {
+  isInitializing.value = true
   try {
     // Initialize prediction store
     if (!isStoreInitialized('predictions')) {
@@ -141,6 +143,8 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error setting up prediction view:', error)
     errorMessage.value = 'Failed to load chart data. Please try again later.'
+  } finally {
+    isInitializing.value = false
   }
 })
 </script>
@@ -172,7 +176,7 @@ onMounted(async () => {
           </p>
         </Message>
       </div>
-      <div v-else class="prediction-view__no-contest w-full">
+      <div v-else-if="!isLoading" class="prediction-view__no-contest w-full">
         <Message severity="info" :closable="false">
           There is no active prediction contest at this time. Check back later for the next contest.
         </Message>
@@ -188,7 +192,7 @@ onMounted(async () => {
       :song-data="songData"
       :show-skeletons="isWaitingForAppleMusic"
       :skeleton-count="10"
-      class="prediction-view__chart-card-holder w-full"
+      class="prediction-view__chart-card-holder w-full h-full"
     >
     </ChartCardHolder>
   </div>

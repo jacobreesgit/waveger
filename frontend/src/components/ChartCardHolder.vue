@@ -285,7 +285,7 @@ onUnmounted(() => {
     </div>
 
     <div
-      v-else-if="!loading || isItemsEmpty"
+      v-else-if="!loading && (isItemsEmpty || (!currentChart && !items))"
       class="chart-card-holder__empty-container w-full text-center p-8 flex flex-col items-center gap-4"
     >
       <Message severity="info" :closable="false">{{ emptyMessage || 'No data available' }}</Message>
