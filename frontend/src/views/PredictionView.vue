@@ -10,6 +10,7 @@ import { isAuthenticated } from '@/utils/authUtils'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
 import Message from 'primevue/message'
+import axios from 'axios'
 
 const router = useRouter()
 const timezoneStore = useTimezoneStore()
@@ -38,7 +39,10 @@ const {
 // Computed property to check if any loading is happening
 const isAnyLoading = computed(
   () =>
-    isLoading || isInitializing || predictionsStore.loading.contest || !initialLoadComplete.value,
+    isLoading.value ||
+    isInitializing.value ||
+    predictionsStore.loading.contest ||
+    !initialLoadComplete.value,
 )
 
 // Track when initial load is complete

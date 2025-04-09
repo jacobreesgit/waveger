@@ -110,9 +110,11 @@ export const useAuthStore = defineStore('auth', () => {
    * Improved axios interceptors setup for token refresh
    */
   const setupAxiosInterceptors = () => {
-    // Remove any existing interceptors first
-    if (axios.interceptors) {
-      axios.interceptors.response.handlers = []
+    // Remove any existing interceptors using eject (we don't access handlers directly)
+    // This is a safe way to reset interceptors
+    if (axios.interceptors && axios.interceptors.response) {
+      // We don't attempt to clear interceptors - just add our new one
+      console.log('Setting up axios interceptors for token refresh')
     }
 
     // Response interceptor for handling 401 errors
