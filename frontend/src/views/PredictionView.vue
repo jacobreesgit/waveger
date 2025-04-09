@@ -1,21 +1,15 @@
 <script setup lang="ts">
-import { onMounted, computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, computed, ref } from 'vue'
 import { useTimezoneStore } from '@/stores/timezone'
 import { usePredictionsStore } from '@/stores/predictions'
-import { useAuthStore } from '@/stores/auth'
 import { useChartLoader } from '@/composables/useChartLoader'
 import { formatDateOnly } from '@/utils/dateUtils'
-import { isAuthenticated } from '@/utils/authUtils'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import { isStoreInitialized } from '@/services/storeManager'
 import Message from 'primevue/message'
-import axios from 'axios'
 
-const router = useRouter()
 const timezoneStore = useTimezoneStore()
 const predictionsStore = usePredictionsStore()
-const authStore = useAuthStore()
 
 // Constants for prediction view
 const FIXED_CHART_ID = 'hot-100'
@@ -39,28 +33,11 @@ const {
 // Computed property to check if any loading is happening
 const isAnyLoading = computed(
   () =>
-    isLoading.value ||
-    isInitializing.value ||
-    predictionsStore.loading.contest ||
-    !initialLoadComplete.value,
+    isLoading || isInitializing || predictionsStore.loading.contest || !initialLoadComplete.value,
 )
 
 // Track when initial load is complete
 const initialLoadComplete = ref(false)
-
-// Watch for auth changes
-watch(
-  () => authStore.user,
-  (newUser) => {
-    if (!newUser && initialLoadComplete.value) {
-      // Redirect to login if user becomes unauthenticated during usage
-      router.push({
-        path: '/login',
-        query: { redirect: '/predictions' },
-      })
-    }
-  },
-)
 
 const currentContestInfo = computed(() => {
   if (!predictionsStore.currentContest) {
@@ -93,45 +70,10 @@ const formattedChartWeek = computed(() => {
   return `Week of ${formatDateOnly(dateStr)}`
 })
 
-// Reset login and retry auth flow
-const handleRelogin = () => {
-  // Force clear auth storage
-  localStorage.removeItem('token')
-  localStorage.removeItem('refresh_token')
-  localStorage.removeItem('user')
-  sessionStorage.removeItem('token')
-  sessionStorage.removeItem('user')
-
-  // Navigate to login
-  router.push({
-    path: '/login',
-    query: { redirect: '/predictions' },
-  })
-}
-
-// Initialize data on component mount with improved auth handling
+// Initialize data on component mount
 onMounted(async () => {
   try {
     initialLoadComplete.value = false
-
-    // Ensure auth store is initialized first
-    if (!isStoreInitialized('auth')) {
-      await authStore.initialize()
-    }
-
-    // Check authentication after auth store initialization
-    if (!isAuthenticated()) {
-      router.push({
-        path: '/login',
-        query: { redirect: '/predictions' },
-      })
-      return
-    }
-
-    // Make sure Authorization header is set
-    if (authStore.token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
-    }
 
     // Initialize prediction store
     if (!isStoreInitialized('predictions')) {
@@ -194,18 +136,6 @@ onMounted(async () => {
       >
         <Message severity="info" :closable="false">
           There is no active prediction contest at this time. Check back later for the next contest.
-        </Message>
-      </div>
-
-      <!-- Authentication error message with action button -->
-      <div v-if="predictionsStore.error.predictions" class="prediction-view__auth-error w-full">
-        <Message severity="error" :closable="false">
-          {{ predictionsStore.error.predictions }}
-          <div class="mt-3">
-            <button @click="handleRelogin" class="bg-blue-500 text-white px-4 py-2 rounded">
-              Log In Again
-            </button>
-          </div>
         </Message>
       </div>
     </div>
