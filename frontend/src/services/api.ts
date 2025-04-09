@@ -91,12 +91,30 @@ export const submitPrediction = async (prediction: PredictionSubmission) => {
 /**
  * Get user's predictions
  */
+/**
+ * Get user's predictions with improved error handling
+ */
 export const getUserPredictions = async (params?: { contest_id?: number; chart_type?: string }) => {
   try {
+    // Check for auth token in headers and log debug info
+    const hasAuthHeader = !!axios.defaults.headers.common['Authorization']
+    console.log('Making authenticated request to /predictions/user', {
+      hasAuthHeader,
+      params,
+    })
+
     const response = await api.get<UserPredictionsResponse>('/predictions/user', { params })
     return response.data
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      // Enhanced error logging for authentication issues
+      if (error.response?.status === 401) {
+        console.error('Authentication error in getUserPredictions:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          hasAuthHeader: !!axios.defaults.headers.common['Authorization'],
+        })
+      }
       throw new Error(`Failed to get predictions: ${error.message}`)
     }
     throw error

@@ -20,6 +20,7 @@ import {
   markStoreInitializing,
   resetStoreState,
 } from '@/services/storeManager'
+import axios from 'axios'
 
 export const usePredictionsStore = defineStore('predictions', () => {
   // State
@@ -81,7 +82,7 @@ export const usePredictionsStore = defineStore('predictions', () => {
 
   /**
    * Initialize the predictions store
-   * Simplified version that only loads what's needed
+   * Improved version with better auth initialization sequence
    */
   const initialize = async (): Promise<void> => {
     // Skip if already initialized or initializing
@@ -92,17 +93,33 @@ export const usePredictionsStore = defineStore('predictions', () => {
     markStoreInitializing('predictions')
 
     try {
+      // IMPORTANT: Explicitly ensure auth store is initialized first
+      const authStore = useAuthStore()
+
+      // Wait for auth store initialization to complete before proceeding
+      if (!isStoreInitialized('auth')) {
+        console.log('Auth store not initialized. Initializing auth store first...')
+        await authStore.initialize()
+
+        // Double-check token is properly set in headers after initialization
+        if (authStore.token && !axios.defaults.headers.common['Authorization']) {
+          axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
+        }
+      }
+
       // Step 1: Always fetch the current contest (doesn't require auth)
       await fetchCurrentContest()
 
       // Step 2: Only fetch user-specific data if user is logged in
-      const authStore = useAuthStore()
       if (authStore.user) {
+        console.log('User is authenticated, fetching user predictions')
         if (currentContest.value) {
           await fetchUserPredictions({ contest_id: currentContest.value.id })
         } else {
           await fetchUserPredictions()
         }
+      } else {
+        console.log('User is not authenticated, skipping user predictions fetch')
       }
 
       markStoreInitialized('predictions')
@@ -150,12 +167,20 @@ export const usePredictionsStore = defineStore('predictions', () => {
 
   /**
    * Fetch user predictions with optional filtering
+   * Improved version with better auth handling and token refresh
    */
   const fetchUserPredictions = async (params?: { contest_id?: number; chart_type?: string }) => {
     const authStore = useAuthStore()
+
+    // Improved auth check with explicit header verification
     if (!authStore.user) {
       error.value.predictions = 'Authentication required'
       return
+    }
+
+    // Verify auth token is set in headers
+    if (!axios.defaults.headers.common['Authorization'] && authStore.token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
     }
 
     try {
@@ -165,8 +190,26 @@ export const usePredictionsStore = defineStore('predictions', () => {
       const response = await getUserPredictions(params)
       userPredictions.value = response.predictions
     } catch (e) {
-      console.error('Error fetching user predictions:', e)
-      error.value.predictions = e instanceof Error ? e.message : 'Failed to fetch predictions'
+      // Special handling for auth errors
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        try {
+          // Try to refresh the token
+          console.log('Authentication error, attempting to refresh token...')
+          await authStore.refreshAccessToken()
+
+          // Retry the request with the new token
+          const response = await getUserPredictions(params)
+          userPredictions.value = response.predictions
+          return
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError)
+          authStore.logout()
+          error.value.predictions = 'Your session has expired. Please log in again.'
+        }
+      } else {
+        console.error('Error fetching user predictions:', e)
+        error.value.predictions = e instanceof Error ? e.message : 'Failed to fetch predictions'
+      }
     } finally {
       loading.value.predictions = false
     }
@@ -196,12 +239,18 @@ export const usePredictionsStore = defineStore('predictions', () => {
 
   /**
    * Submit a new prediction
+   * Improved with better auth handling
    */
   const createPrediction = async (prediction: PredictionSubmission) => {
     const authStore = useAuthStore()
     if (!authStore.user) {
       error.value.submission = 'Authentication required'
       return null
+    }
+
+    // Ensure auth header is set
+    if (!axios.defaults.headers.common['Authorization'] && authStore.token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
     }
 
     try {
@@ -215,6 +264,23 @@ export const usePredictionsStore = defineStore('predictions', () => {
 
       return response
     } catch (e) {
+      // Handle auth errors specifically
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        try {
+          // Try to refresh token
+          await authStore.refreshAccessToken()
+
+          // Retry submission with fresh token
+          const response = await submitPrediction(prediction)
+          await fetchUserPredictions({ contest_id: prediction.contest_id })
+          return response
+        } catch (refreshError) {
+          authStore.logout()
+          error.value.submission = 'Your session has expired. Please log in again.'
+          return null
+        }
+      }
+
       console.error('Error submitting prediction:', e)
       error.value.submission = e instanceof Error ? e.message : 'Failed to submit prediction'
       return null

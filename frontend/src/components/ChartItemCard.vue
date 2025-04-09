@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { Song } from '@/types/api'
 import FavouriteButton from '@/components/FavouriteButton.vue'
+import Button from 'primevue/button'
 
 const props = defineProps<{
   song: Song
@@ -10,12 +11,21 @@ const props = defineProps<{
   showDetails?: boolean
   appleMusicData?: any
   compact?: boolean
+  enablePrediction?: boolean // New prop for prediction mode
+  isPredicted?: boolean // New prop to indicate if this is a user prediction
 }>()
 
-const emit = defineEmits(['click'])
+const emit = defineEmits(['click', 'replace']) // Added 'replace' event
 
 const handleClick = () => {
   emit('click', props.song)
+}
+
+// New handler for replace button click
+const handleReplace = (event: Event) => {
+  // Stop propagation to prevent card click
+  event.stopPropagation()
+  emit('replace', props.song)
 }
 
 const trendDirection = computed(() => {
@@ -52,15 +62,28 @@ const isArtistChart = computed(() => {
 
 <template>
   <div
-    class="chart-item-card flex flex-col w-full border border-gray-200 rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out h-full bg-white will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg"
+    class="chart-item-card flex flex-col w-full border rounded-lg overflow-hidden cursor-pointer transition-transform duration-300 ease-in-out h-full bg-white will-change-[transform,opacity] hover:-translate-y-1 hover:shadow-lg group"
+    :class="{
+      'border-blue-400 shadow-blue-100': isPredicted,
+      'border-gray-200': !isPredicted,
+    }"
     @click="handleClick"
   >
+    <!-- Prediction indicator banner -->
+    <div
+      v-if="isPredicted"
+      class="chart-item-card__prediction-indicator bg-blue-500 text-white text-xs text-center py-1 font-medium z-30"
+    >
+      Your Prediction
+    </div>
+
     <div class="chart-item-card__image-container relative w-full pb-[100%] overflow-hidden">
       <div
         class="chart-item-card__image-container__rank absolute top-2.5 left-2.5 bg-black bg-opacity-60 text-white text-lg font-bold px-2.5 py-1.5 rounded-sm z-2"
       >
         #{{ song.position }}
       </div>
+
       <img
         :src="
           appleMusicData?.attributes?.artwork?.url
@@ -70,6 +93,20 @@ const isArtistChart = computed(() => {
         :alt="song.name"
         class="chart-item-card__image-container__image !absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 ease-in-out"
       />
+
+      <!-- Replace button overlay - only shown when enablePrediction is true -->
+      <div
+        v-if="enablePrediction"
+        class="chart-item-card__image-container__prediction-overlay absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center opacity-0 transition-opacity duration-300 z-10 group-hover:opacity-100"
+      >
+        <Button
+          label="Replace"
+          icon="pi pi-refresh"
+          @click="handleReplace"
+          class="p-button-rounded p-button-outlined p-button-light"
+        />
+      </div>
+
       <FavouriteButton
         :song="song"
         :chart-id="chartId"
@@ -159,6 +196,14 @@ const isArtistChart = computed(() => {
     &:hover {
       &__image {
         transform: scale(1.05);
+      }
+    }
+
+    &__prediction-overlay {
+      // Ensure the overlay works with touch devices too
+      @media (hover: none) {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.4);
       }
     }
   }
