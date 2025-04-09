@@ -107,23 +107,38 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Setup axios interceptors for token refresh - simplified
+   * Improved axios interceptors setup for token refresh
    */
   const setupAxiosInterceptors = () => {
+    // Remove any existing interceptors first
+    if (axios.interceptors) {
+      axios.interceptors.response.handlers = []
+    }
+
     // Response interceptor for handling 401 errors
     axios.interceptors.response.use(
       (response) => response,
       async (error) => {
+        const originalRequest = error.config
+
         // Only handle 401 errors (unauthorized - token expired)
-        if (error.response?.status === 401 && !error.config._retry && refreshToken.value) {
-          error.config._retry = true
+        if (error.response?.status === 401 && !originalRequest._retry && refreshToken.value) {
+          console.log('Token expired, attempting refresh...')
+          originalRequest._retry = true
 
           try {
             const response = await refreshAccessToken()
-            error.config.headers['Authorization'] = `Bearer ${response.access_token}`
-            return axios(error.config)
+
+            // Update token in the current and future requests
+            const newToken = response.access_token
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+            axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+
+            // Retry the original request with the new token
+            return axios(originalRequest)
           } catch (refreshError) {
-            // If refresh fails, logout
+            // If refresh fails, logout and reject
+            console.error('Token refresh failed:', refreshError)
             logout()
             return Promise.reject(refreshError)
           }
@@ -296,20 +311,28 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   /**
-   * Refresh access token
+   * Improved refresh access token with better error handling
    */
   const refreshAccessToken = async (): Promise<AuthResponse> => {
     if (!refreshToken.value) {
+      console.error('No refresh token available for token refresh')
       throw new Error('No refresh token available')
     }
 
     try {
+      console.log('Attempting to refresh access token...')
       const response = await axios.post<AuthResponse>(`${BASE_URL}/refresh`, {
         refresh_token: refreshToken.value,
       })
 
       // Update token
       token.value = response.data.access_token
+      console.log('Token refreshed successfully')
+
+      // Update user data if included in response
+      if (response.data.user) {
+        user.value = response.data.user
+      }
 
       // Store token based on remember me setting
       if (rememberMe.value) {
@@ -323,6 +346,14 @@ export const useAuthStore = defineStore('auth', () => {
 
       return response.data
     } catch (e) {
+      console.error('Token refresh failed:', e)
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        // Token is invalid, clear auth state
+        logout()
+        throw new Error('Refresh token expired. Please log in again.')
+      }
+
+      // Other error
       logout()
       throw e
     }

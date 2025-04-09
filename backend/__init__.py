@@ -129,16 +129,19 @@ def ratelimit_handler(e):
         "message": "Rate limit exceeded. Please try again later."
     }), 429
 
-# Add rate limit headers to responses
+# Fixed: Update the rate limit headers function to use the current Flask-Limiter API
 @app.after_request
 def inject_rate_limit_headers(response):
     try:
-        if hasattr(limiter, 'current_limit'):
-            window_stats = limiter.get_window_stats(*limiter.current_limit)
-            if window_stats:
-                response.headers.add('X-RateLimit-Remaining', str(window_stats.remaining))
-                response.headers.add('X-RateLimit-Limit', str(window_stats.limit))
-                response.headers.add('X-RateLimit-Reset', str(window_stats.reset))
+        # Check if the current request was rate limited
+        current_limit = getattr(request, '_view_rate_limit', None)
+        if current_limit:
+            window_stats = getattr(current_limit, 'get_window_stats', None)
+            if window_stats and callable(window_stats):
+                stats = window_stats()
+                response.headers.add('X-RateLimit-Remaining', str(stats.remaining))
+                response.headers.add('X-RateLimit-Limit', str(stats.limit))
+                response.headers.add('X-RateLimit-Reset', str(stats.reset))
     except Exception as e:
         logging.error(f"Error injecting rate limit headers: {e}")
     

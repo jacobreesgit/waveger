@@ -89,6 +89,22 @@ const formattedChartWeek = computed(() => {
   return `Week of ${formatDateOnly(dateStr)}`
 })
 
+// Reset login and retry auth flow
+const handleRelogin = () => {
+  // Force clear auth storage
+  localStorage.removeItem('token')
+  localStorage.removeItem('refresh_token')
+  localStorage.removeItem('user')
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('user')
+
+  // Navigate to login
+  router.push({
+    path: '/login',
+    query: { redirect: '/predictions' },
+  })
+}
+
 // Initialize data on component mount with improved auth handling
 onMounted(async () => {
   try {
@@ -106,6 +122,11 @@ onMounted(async () => {
         query: { redirect: '/predictions' },
       })
       return
+    }
+
+    // Make sure Authorization header is set
+    if (authStore.token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${authStore.token}`
     }
 
     // Initialize prediction store
@@ -172,20 +193,15 @@ onMounted(async () => {
         </Message>
       </div>
 
-      <!-- Authentication error message -->
-      <div v-if="predictionsStore.error.predictions" class="prediction-view__auth-error">
+      <!-- Authentication error message with action button -->
+      <div v-if="predictionsStore.error.predictions" class="prediction-view__auth-error w-full">
         <Message severity="error" :closable="false">
           {{ predictionsStore.error.predictions }}
-          <template v-if="predictionsStore.error.predictions.includes('session')">
-            <div class="mt-3">
-              <button
-                @click="router.push('/login')"
-                class="bg-blue-500 text-white px-4 py-2 rounded"
-              >
-                Go to Login
-              </button>
-            </div>
-          </template>
+          <div class="mt-3">
+            <button @click="handleRelogin" class="bg-blue-500 text-white px-4 py-2 rounded">
+              Log In Again
+            </button>
+          </div>
         </Message>
       </div>
     </div>
