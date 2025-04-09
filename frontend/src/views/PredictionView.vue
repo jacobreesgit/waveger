@@ -173,7 +173,7 @@ onMounted(async () => {
       </div>
 
       <!-- Authentication error message -->
-      <div v-if="predictionsStore.error.predictions" class="prediction-view__auth-error w-full">
+      <div v-if="predictionsStore.error.predictions" class="prediction-view__auth-error">
         <Message severity="error" :closable="false">
           {{ predictionsStore.error.predictions }}
           <template v-if="predictionsStore.error.predictions.includes('session')">
