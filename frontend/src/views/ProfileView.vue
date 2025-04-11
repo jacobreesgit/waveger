@@ -230,11 +230,8 @@ watch(activeTabValue, async (newTab) => {
                 <span>Member for {{ accountAge }}</span>
               </div>
               <div class="flex items-center">
-                <i class="pi pi-clock mr-2 text-blue-500"></i>
-                <span
-                  >Last login:
-                  {{ formatDateOnly(authStore.user?.last_login, 'Not available') }}</span
-                >
+                <i class="pi pi-star-fill mr-2 text-amber-500"></i>
+                <span>{{ authStore.user?.total_points || 0 }} points earned</span>
               </div>
               <div class="flex items-center">
                 <i class="pi pi-chart-line mr-2 text-blue-500"></i>
