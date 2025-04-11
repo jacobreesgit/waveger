@@ -137,3 +137,7 @@
 .p-tab {
   padding-top: 0;
 }
+
+.small-icon {
+  font-size: 0.75rem !important;
+}

@@ -169,26 +169,26 @@ onBeforeUnmount(() => {
           />
           <div class="register-view__form__form-field__username_hint-container text-xs">
             <div
-              v-if="!formErrors.username && username"
+              v-if="username"
               class="register-view__form__form-field__username_availability-status"
             >
               <small
                 v-if="checkingUsername"
-                class="register-view__form__form-field__username_checking-status text-gray-600"
+                class="register-view__form__form-field__username_checking-status text-gray-600 flex items-center"
               >
-                Checking availability...
+                <i class="pi pi-spin pi-spinner mr-1 small-icon"></i> Checking availability...
               </small>
               <small
-                v-if="!checkingUsername && usernameAvailable"
-                class="register-view__form__form-field__username_checked-status text-green-600"
+                v-else-if="usernameAvailable === true"
+                class="register-view__form__form-field__username_checked-status text-green-600 flex items-center"
               >
-                Username is available
+                <i class="pi pi-check-circle mr-1 small-icon"></i> Username is available
               </small>
               <small
-                v-if="!checkingUsername && !usernameAvailable"
-                class="register-view__form__form-field__username_checked-status text-red-600"
+                v-else-if="usernameAvailable === false"
+                class="register-view__form__form-field__username_checked-status text-red-600 flex items-center"
               >
-                Username is already taken
+                <i class="pi pi-times-circle mr-1 small-icon"></i> Username is already taken
               </small>
             </div>
           </div>
@@ -214,27 +214,24 @@ onBeforeUnmount(() => {
             placeholder="Enter your email address"
           />
           <div class="register-view__form__form-field__email_hint-container text-xs">
-            <div
-              v-if="!formErrors.email && email"
-              class="register-view__form__form-field__email_availability-status"
-            >
+            <div v-if="email" class="register-view__form__form-field__email_availability-status">
               <small
                 v-if="checkingEmail"
-                class="register-view__form__form-field__email_checking-status text-gray-600"
+                class="register-view__form__form-field__email_checking-status text-gray-600 flex items-center"
               >
-                Checking availability...
+                <i class="pi pi-spin pi-spinner mr-1 small-icon"></i> Checking availability...
               </small>
               <small
-                v-if="!checkingEmail && emailAvailable"
-                class="register-view__form__form-field__email_checked-status text-green-600"
+                v-else-if="emailAvailable === true"
+                class="register-view__form__form-field__email_checked-status text-green-600 flex items-center"
               >
-                Email is available
+                <i class="pi pi-check-circle mr-1 small-icon"></i> Email is available
               </small>
               <small
-                v-if="!checkingEmail && !emailAvailable"
-                class="register-view__form__form-field__email_checked-status text-red-600"
+                v-else-if="emailAvailable === false"
+                class="register-view__form__form-field__email_checked-status text-red-600 flex items-center"
               >
-                Email is already taken
+                <i class="pi pi-times-circle mr-1 small-icon"></i> Email is already registered
               </small>
             </div>
           </div>
