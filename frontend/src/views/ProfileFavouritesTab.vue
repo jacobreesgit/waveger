@@ -159,8 +159,6 @@ onMounted(async () => {
             class="w-full"
           />
         </div>
-        {{ getSelectedChartFavourites }}<br />
-        {{ songData }}
       </div>
     </div>
   </div>
