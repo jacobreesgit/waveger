@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watchEffect } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
-import { useAuthStore } from '@/stores/auth'
 import { isAuthenticated } from '@/utils/authUtils'
 import Button from 'primevue/button'
 import type { Song } from '@/types/api'
@@ -13,7 +12,6 @@ const props = defineProps<{
 }>()
 
 const favouritesStore = useFavouritesStore()
-const authStore = useAuthStore()
 const isLoading = ref(false)
 
 // Use computed to track favourite status

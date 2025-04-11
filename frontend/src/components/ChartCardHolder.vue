@@ -5,7 +5,6 @@ import ChartItemCard from '@/components/ChartItemCard.vue'
 import SkeletonCard from '@/components/SkeletonCard.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
-import Button from 'primevue/button'
 import type { ChartData, Song } from '@/types/api'
 import type { AppleMusicData } from '@/types/appleMusic'
 import type { FavouriteSong } from '@/stores/favourites'
@@ -119,10 +118,6 @@ const leave = (el: Element, done: () => void) => {
     el.style.transform = 'translateY(-20px)'
   }, delay)
   setTimeout(done, 600 + delay)
-}
-
-const handleRetry = () => {
-  emit('retry')
 }
 
 onUnmounted(() => {
@@ -279,9 +274,6 @@ onUnmounted(() => {
       class="chart-card-holder__error-container w-full text-center p-8 flex flex-col items-center gap-4"
     >
       <Message severity="error" :closable="false">{{ error }}</Message>
-      <div class="chart-card-holder__error-container__message-action mt-4">
-        <Button label="Retry" @click="handleRetry" />
-      </div>
     </div>
 
     <div

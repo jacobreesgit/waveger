@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validatePassword, passwordsMatch } from '@/utils/validation'
 import Password from 'primevue/password'
@@ -9,7 +9,6 @@ import Message from 'primevue/message'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 
 const password = ref('')

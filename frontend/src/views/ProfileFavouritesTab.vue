@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
-import { useAuthStore } from '@/stores/auth'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
