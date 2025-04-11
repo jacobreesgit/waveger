@@ -122,7 +122,7 @@ watch(
 </script>
 
 <template>
-  <div class="profile-favourites-tab flex flex-col w-full gap-6">
+  <div class="profile-favourites-tab flex flex-col w-full gap-6 h-full">
     <!-- Loading state -->
     <LoadingSpinner
       v-if="favouritesStore.loading"
