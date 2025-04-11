@@ -3,20 +3,23 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
+import { useAuthStore } from '@/stores/auth'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import { isStoreInitialized } from '@/services/storeManager'
-import { isAuthenticated } from '@/utils/authUtils'
 
 // Stores
 const favouritesStore = useFavouritesStore()
 const chartsStore = useChartsStore()
 
-// Use the new composable
+// UI state
+const error = ref<string | null>(null)
+const isInitializing = ref(true)
+
+// Use the composable for Apple Music data
 const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoader({
   getItems: () => favouritesStore.favourites || [],
   getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
@@ -24,13 +27,6 @@ const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoade
   watchSource: () => favouritesStore.favourites,
   deepWatch: true,
 })
-
-// UI state
-const error = ref<string | null>(null)
-const isLoadingFavourites = ref(true)
-const selectedChartId = ref('')
-const statsVisible = ref(false)
-const animateStats = ref(false)
 
 // Get array of unique chart IDs from favorites
 const availableChartIds = computed(() => {
@@ -76,62 +72,16 @@ const getSelectedChartTitle = computed(() => {
 const rowsToFetch = 2
 const itemsPerPage = computed(() => 4 * rowsToFetch)
 
-// Function to retry loading favorites if there was an error
-const handleRetry = async () => {
-  error.value = null
-  isLoadingFavourites.value = true
-
+// Initialize component - simplified approach similar to ProfileView
+onMounted(async () => {
   try {
-    // Let the store handle authentication details
     await favouritesStore.loadFavourites()
-
-    // Explicitly load Apple Music data
     await loadAppleMusicData()
-
-    isLoadingFavourites.value = false
   } catch (e) {
     console.error('Error retrying load favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
-    isLoadingFavourites.value = false
-  }
-}
-
-// Initialize component
-onMounted(async () => {
-  try {
-    isLoadingFavourites.value = true
-
-    // Make sure we're authenticated
-    if (!isAuthenticated()) {
-      error.value = 'Authentication required to view favourites'
-      isLoadingFavourites.value = false
-      return
-    }
-
-    // Check if favourites store is initialized and has data
-    if (!isStoreInitialized('favourites') || favouritesStore.favourites.length === 0) {
-      console.log('Loading favourites from ProfileFavouritesTab...')
-      await favouritesStore.loadFavourites()
-    }
-
-    // Explicitly call loadAppleMusicData to handle initial load
-    await loadAppleMusicData()
-
-    isLoadingFavourites.value = false
-
-    // Short delay to ensure DOM is ready for animations
-    setTimeout(() => {
-      statsVisible.value = true
-    }, 50)
-
-    // Slightly longer delay for animation
-    setTimeout(() => {
-      animateStats.value = true
-    }, 150)
-  } catch (e) {
-    console.error('Error loading favourites:', e)
-    error.value = e instanceof Error ? e.message : 'Failed to load favourites'
-    isLoadingFavourites.value = false
+  } finally {
+    isInitializing.value = false
   }
 })
 
@@ -148,20 +98,12 @@ watch(
   <div class="profile-favourites-tab flex flex-col w-full gap-6 h-full">
     <!-- Loading state -->
     <LoadingSpinner
-      v-if="isLoadingFavourites || favouritesStore.loading"
+      v-if="isInitializing || favouritesStore.loading"
       label="Loading your favourites..."
       centerInContainer
       size="medium"
       class="w-full"
     />
-
-    <!-- Error state -->
-    <div v-else-if="error" class="w-full text-center p-8 flex flex-col items-center gap-4">
-      <Message severity="error" :closable="false">{{ error }}</Message>
-      <div class="mt-4">
-        <Button label="Retry" @click="handleRetry" />
-      </div>
-    </div>
 
     <!-- No favourites state -->
     <div
