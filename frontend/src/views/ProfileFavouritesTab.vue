@@ -10,6 +10,7 @@ import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import { isStoreInitialized } from '@/services/storeManager'
+import { isAuthenticated } from '@/utils/authUtils'
 
 // Stores
 const favouritesStore = useFavouritesStore()
@@ -26,6 +27,7 @@ const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoade
 
 // UI state
 const error = ref<string | null>(null)
+const isLoadingFavourites = ref(true)
 const selectedChartId = ref('')
 const statsVisible = ref(false)
 const animateStats = ref(false)
@@ -77,25 +79,45 @@ const itemsPerPage = computed(() => 4 * rowsToFetch)
 // Function to retry loading favorites if there was an error
 const handleRetry = async () => {
   error.value = null
+  isLoadingFavourites.value = true
+
   try {
+    // Let the store handle authentication details
     await favouritesStore.loadFavourites()
-    // Apple Music data will be loaded by the watcher
+
+    // Explicitly load Apple Music data
+    await loadAppleMusicData()
+
+    isLoadingFavourites.value = false
   } catch (e) {
     console.error('Error retrying load favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
+    isLoadingFavourites.value = false
   }
 }
 
 // Initialize component
 onMounted(async () => {
   try {
+    isLoadingFavourites.value = true
+
+    // Make sure we're authenticated
+    if (!isAuthenticated()) {
+      error.value = 'Authentication required to view favourites'
+      isLoadingFavourites.value = false
+      return
+    }
+
+    // Check if favourites store is initialized and has data
     if (!isStoreInitialized('favourites') || favouritesStore.favourites.length === 0) {
+      console.log('Loading favourites from ProfileFavouritesTab...')
       await favouritesStore.loadFavourites()
     }
 
-    // Apple Music data will be loaded by the watcher
-    // but call it explicitly to handle initial load
+    // Explicitly call loadAppleMusicData to handle initial load
     await loadAppleMusicData()
+
+    isLoadingFavourites.value = false
 
     // Short delay to ensure DOM is ready for animations
     setTimeout(() => {
@@ -109,6 +131,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('Error loading favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
+    isLoadingFavourites.value = false
   }
 })
 
@@ -125,7 +148,7 @@ watch(
   <div class="profile-favourites-tab flex flex-col w-full gap-6 h-full">
     <!-- Loading state -->
     <LoadingSpinner
-      v-if="favouritesStore.loading"
+      v-if="isLoadingFavourites || favouritesStore.loading"
       label="Loading your favourites..."
       centerInContainer
       size="medium"
@@ -184,14 +207,14 @@ watch(
         <!-- No favourites for selected chart -->
         <div
           v-if="getSelectedChartFavourites.length === 0"
-          class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg"
+          class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg mt-4"
         >
           <Message severity="info" :closable="false">
             No favorites found for {{ getSelectedChartTitle || 'this chart' }}.
           </Message>
         </div>
 
-        <div class="mt-4">
+        <div v-else class="mt-4">
           <ChartCardHolder
             :items="getSelectedChartFavourites"
             :loading="false"
