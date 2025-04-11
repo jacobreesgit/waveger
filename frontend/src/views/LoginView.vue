@@ -169,7 +169,7 @@ const handleLogin = async () => {
         <div class="flex items-center justify-between">
           <div
             class="login-view__form__form-field__actions__remember-me flex items-center gap-2 cursor-pointer"
-            @click="rememberMe = !rememberMe"
+            @click.stop.prevent="rememberMe = !rememberMe"
           >
             <Checkbox
               class="login-view__form__form-field__actions__remember-me__checkbox"
@@ -177,6 +177,7 @@ const handleLogin = async () => {
               v-model="rememberMe"
               :binary="true"
               :disabled="isSubmitting"
+              @click.stop
             />
             <label
               class="login-view__form__form-field__actions__remember-me__label text-sm text-gray-600 cursor-pointer"
