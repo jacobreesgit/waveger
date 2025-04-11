@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useChartsStore } from '@/stores/charts'
 import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
@@ -17,15 +17,6 @@ const chartsStore = useChartsStore()
 // UI state
 const error = ref<string | null>(null)
 const isInitializing = ref(true)
-
-// Use the composable for Apple Music data
-const { songData, isLoadingAppleMusic, loadAppleMusicData } = useAppleMusicLoader({
-  getItems: () => favouritesStore.favourites || [],
-  getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
-  getQuery: (fav) => `${fav.song_name} ${fav.artist}`,
-  watchSource: () => favouritesStore.favourites,
-  deepWatch: true,
-})
 
 // Get array of unique chart IDs from favorites
 const availableChartIds = computed(() => {
@@ -67,6 +58,14 @@ const getSelectedChartTitle = computed(() => {
   return chartsStore.currentChart?.title || ''
 })
 
+const { songData, isLoadingAppleMusic } = useAppleMusicLoader({
+  getItems: () => getSelectedChartFavourites.value || [], // Only get data for currently selected chart
+  getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
+  getQuery: (fav) => `${fav.song_name} ${fav.artist}`,
+  watchSource: () => getSelectedChartFavourites.value, // Watch the filtered favorites instead of all favorites
+  deepWatch: true,
+})
+
 // Always fetch 2 rows worth of data (matches ChartView.vue pattern)
 const rowsToFetch = 2
 const itemsPerPage = computed(() => 4 * rowsToFetch)
@@ -75,7 +74,6 @@ const itemsPerPage = computed(() => 4 * rowsToFetch)
 onMounted(async () => {
   try {
     await favouritesStore.loadFavourites()
-    await loadAppleMusicData()
   } catch (e) {
     console.error('Error retrying load favourites:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
@@ -161,6 +159,8 @@ onMounted(async () => {
             class="w-full"
           />
         </div>
+        {{ getSelectedChartFavourites }}<br />
+        {{ songData }}
       </div>
     </div>
   </div>
