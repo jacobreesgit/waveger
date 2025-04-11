@@ -34,7 +34,7 @@ def get_favourites():
         SELECT 
             id, song_name, artist, chart_id, chart_title, 
             position, image_url, peak_position, weeks_on_chart, 
-            added_at
+            last_week_position, added_at
         FROM 
             user_favourites
         WHERE 
@@ -59,7 +59,8 @@ def get_favourites():
                 "image_url": fav[6],
                 "peak_position": fav[7],
                 "weeks_on_chart": fav[8],
-                "added_at": fav[9].isoformat() if fav[9] else None
+                "last_week_position": fav[9],
+                "added_at": fav[10].isoformat() if fav[10] else None
             })
         
         # Group by song and artist to show multiple chart appearances
@@ -82,6 +83,7 @@ def get_favourites():
                 "position": item["position"],
                 "peak_position": item["peak_position"],
                 "weeks_on_chart": item["weeks_on_chart"],
+                "last_week_position": item["last_week_position"], 
                 "added_at": item["added_at"]
             })
         
@@ -134,12 +136,12 @@ def add_favourite():
                 "favourite_id": existing[0]
             }), 200
         
-        # Add to favourites
         cursor.execute(
             """
             INSERT INTO user_favourites
-            (user_id, song_name, artist, chart_id, chart_title, position, image_url, peak_position, weeks_on_chart)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (user_id, song_name, artist, chart_id, chart_title, position, image_url, peak_position, 
+             weeks_on_chart, last_week_position)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             (
@@ -151,7 +153,8 @@ def add_favourite():
                 data.get("position"),
                 data.get("image_url"),
                 data.get("peak_position"),
-                data.get("weeks_on_chart")
+                data.get("weeks_on_chart"),
+                data.get("last_week_position") 
             )
         )
         

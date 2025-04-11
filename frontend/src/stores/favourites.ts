@@ -24,6 +24,7 @@ export interface FavouriteSong {
     position: number
     peak_position: number
     weeks_on_chart: number
+    last_week_position?: number // Added last_week_position property
     added_at: string
   }[]
 }
@@ -152,6 +153,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
       // Set pending state for immediate UI feedback
       pendingFavouriteChanges.value[key] = true
 
+      // Send more complete data to the API
       const response = await axios.post('/favourites', {
         song_name: song.name,
         artist: song.artist,
@@ -161,6 +163,8 @@ export const useFavouritesStore = defineStore('favourites', () => {
         image_url: song.image,
         peak_position: song.peak_position,
         weeks_on_chart: song.weeks_on_chart,
+        last_week_position: song.last_week_position, // Store this additional field
+        url: song.url || '',
       })
 
       // After successful API call, update the favourites list

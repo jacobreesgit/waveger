@@ -222,8 +222,11 @@ onUnmounted(() => {
                             position: item.charts?.[0]?.position || 0,
                             peak_position: item.charts?.[0]?.peak_position || 0,
                             weeks_on_chart: item.charts?.[0]?.weeks_on_chart || 0,
+                            last_week_position:
+                              item.charts?.[0]?.last_week_position ||
+                              item.charts?.[0]?.peak_position ||
+                              0,
                             image: item.image_url,
-                            last_week_position: 0,
                             url: '',
                           }
                         : (item as Song)
