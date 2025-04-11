@@ -84,21 +84,13 @@ onMounted(async () => {
     isInitializing.value = false
   }
 })
-
-// Watch for chart selection changes
-watch(
-  () => chartsStore.selectedChartId,
-  (newChartId) => {
-    // console.log('Selected chart changed to:', newChartId)
-  },
-)
 </script>
 
 <template>
   <div class="profile-favourites-tab flex flex-col w-full gap-6 h-full">
     <!-- Loading state -->
     <LoadingSpinner
-      v-if="isInitializing || favouritesStore.loading"
+      v-if="isInitializing"
       label="Loading your favourites..."
       centerInContainer
       size="medium"
