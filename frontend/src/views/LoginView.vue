@@ -95,7 +95,7 @@ const handleLogin = async () => {
 
 <template>
   <div class="login-view flex flex-col items-center justify-center min-h-full bg-gray-50">
-    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 flex flex-col gap-6">
+    <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8 flex flex-col gap-6 items-center">
       <h1 class="login-view__title text-3xl font-bold text-center">Login</h1>
 
       <Message
@@ -107,7 +107,7 @@ const handleLogin = async () => {
         {{ formErrors.general }}
       </Message>
 
-      <form class="login-view__form flex flex-col gap-6" @submit.prevent="handleLogin">
+      <form class="login-view__form flex flex-col gap-6 w-full" @submit.prevent="handleLogin">
         <div class="login-view__form__form-field__username flex flex-col gap-2">
           <div class="flex items-center justify-between">
             <label
@@ -201,7 +201,7 @@ const handleLogin = async () => {
       </form>
 
       <div
-        class="login-view__form__form-field__actions flex flex-col items-center gap-4 pt-4 border-t border-gray-200"
+        class="login-view__form__form-field__actions flex flex-col items-center gap-4 pt-4 border-t border-gray-200 w-full"
       >
         <div
           class="login-view__form__form-field__actions__register flex items-center gap-2 text-sm text-gray-600"

@@ -10,9 +10,8 @@ const props = defineProps<{
   chartTitle: string
   showDetails?: boolean
   appleMusicData?: any
-  compact?: boolean
-  enablePrediction?: boolean // New prop for prediction mode
-  isPredicted?: boolean // New prop to indicate if this is a user prediction
+  enablePrediction?: boolean
+  isPredicted?: boolean
 }>()
 
 const emit = defineEmits(['click', 'replace']) // Added 'replace' event
@@ -146,16 +145,13 @@ const isArtistChart = computed(() => {
         </span>
       </div>
     </div>
-    <div
-      class="chart-item-card__stats flex justify-between text-gray-600 text-sm p-4"
-      v-if="!compact"
-    >
+    <div class="chart-item-card__stats flex justify-between text-gray-600 text-sm p-4">
       <div>Peak: #{{ song.peak_position }}</div>
       <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
     </div>
 
     <div
-      v-if="showDetails && appleMusicData?.attributes && !isArtistChart && !compact"
+      v-if="showDetails && appleMusicData?.attributes && !isArtistChart"
       class="chart-item-card__metadata p-4 text-sm flex flex-col gap-1"
     >
       <div class="chart-item-card__metadata__album-name">

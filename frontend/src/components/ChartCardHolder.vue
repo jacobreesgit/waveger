@@ -213,8 +213,6 @@ onUnmounted(() => {
                   :key="index"
                   class="chart-card-holder__chart-container__songs__skeleton-group__card-wrapper transition-all duration-[800ms] ease-in-out w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)] p-2 mb-4"
                 >
-                  <p>{{ item }}</p>
-                  <p>{{ songData }}</p>
                   <ChartItemCard
                     :song="
                       'song_name' in item
@@ -243,7 +241,7 @@ onUnmounted(() => {
                         ? songData.get(`${item.song_name}||${item.artist}`)
                         : null
                     "
-                    :compact="true"
+                    :show-details="true"
                     @click="() => {}"
                     class="chart-card-holder__chart-container__songs__skeleton-group__card-item h-full"
                   />

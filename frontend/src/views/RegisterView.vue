@@ -155,14 +155,6 @@ onBeforeUnmount(() => {
               for="username"
               >Username</label
             >
-            <Message
-              v-if="formErrors.username"
-              severity="error"
-              :closable="false"
-              class="register-view__form__form-field__username_error-message text-xs"
-            >
-              {{ formErrors.username }}
-            </Message>
           </div>
           <InputText
             class="register-view__form__form-field__username_input w-full"
@@ -186,22 +178,18 @@ onBeforeUnmount(() => {
               >
                 Checking availability...
               </small>
-              <Message
-                v-else-if="usernameAvailable === true"
-                severity="success"
-                :closable="false"
-                class="p-0"
+              <small
+                v-if="!checkingUsername && usernameAvailable"
+                class="register-view__form__form-field__username_checked-status text-green-600"
               >
                 Username is available
-              </Message>
-              <Message
-                v-else-if="usernameAvailable === false"
-                severity="error"
-                :closable="false"
-                class="p-0"
+              </small>
+              <small
+                v-if="!checkingUsername && !usernameAvailable"
+                class="register-view__form__form-field__username_checked-status text-red-600"
               >
                 Username is already taken
-              </Message>
+              </small>
             </div>
           </div>
         </div>
@@ -213,14 +201,6 @@ onBeforeUnmount(() => {
               for="email"
               >Email</label
             >
-            <Message
-              v-if="formErrors.email"
-              severity="error"
-              :closable="false"
-              class="register-view__form__form-field__email_error-message text-xs"
-            >
-              {{ formErrors.email }}
-            </Message>
           </div>
           <InputText
             class="register-view__form__form-field__email_input w-full"
@@ -244,22 +224,18 @@ onBeforeUnmount(() => {
               >
                 Checking availability...
               </small>
-              <Message
-                v-else-if="emailAvailable === true"
-                severity="success"
-                :closable="false"
-                class="p-0"
+              <small
+                v-if="!checkingEmail && emailAvailable"
+                class="register-view__form__form-field__email_checked-status text-green-600"
               >
                 Email is available
-              </Message>
-              <Message
-                v-else-if="emailAvailable === false"
-                severity="error"
-                :closable="false"
-                class="p-0"
+              </small>
+              <small
+                v-if="!checkingEmail && !emailAvailable"
+                class="register-view__form__form-field__email_checked-status text-red-600"
               >
-                Email is already registered
-              </Message>
+                Email is already taken
+              </small>
             </div>
           </div>
         </div>
@@ -271,14 +247,6 @@ onBeforeUnmount(() => {
               for="password"
               >Password</label
             >
-            <Message
-              v-if="formErrors.password"
-              severity="error"
-              :closable="false"
-              class="register-view__form__form-field__password_error-message text-xs"
-            >
-              {{ formErrors.password }}
-            </Message>
           </div>
           <Password
             id="password"
