@@ -2,7 +2,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { useChartsStore } from '@/stores/charts'
+import { useChartLoader } from '@/composables/useChartLoader'
 import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
+import { isStoreInitialized } from '@/services/storeManager'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
 import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
@@ -10,13 +12,12 @@ import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Dropdown from 'primevue/dropdown'
-import Tooltip from 'primevue/tooltip'
 
 // Stores
 const favouritesStore = useFavouritesStore()
 const chartsStore = useChartsStore()
 
-// UI state
+// UI state for favorites-specific elements
 const error = ref<string | null>(null)
 const isInitializing = ref(true)
 
@@ -32,6 +33,20 @@ const sortOptions = [
   { label: 'Chart Position (Highest)', value: 'position-asc', icon: 'chart-bar' },
   { label: 'Chart Position (Lowest)', value: 'position-desc', icon: 'chart-bar' },
 ]
+
+const {
+  songData,
+  isLoading,
+  isLoadingMore,
+  isWaitingForAppleMusic,
+  errorMessage,
+  itemsPerPage,
+  initialize,
+  chartsStore: chartLoaderStore,
+} = useChartLoader({
+  watchRouteChanges: false,
+  initialChartId: chartsStore.selectedChartId,
+})
 
 // Get array of unique chart IDs from favorites
 const availableChartIds = computed(() => {
@@ -114,34 +129,67 @@ const getSelectedChartTitle = computed(() => {
   return chartsStore.currentChart?.title || ''
 })
 
-const { songData, isLoadingAppleMusic } = useAppleMusicLoader({
-  getItems: () => sortedFavourites.value || [], // Use sorted favorites
+// For Apple Music data loading
+const { songData: favoriteSongData, isLoadingAppleMusic } = useAppleMusicLoader({
+  getItems: () => sortedFavourites.value || [],
   getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
   getQuery: (fav) => `${fav.song_name} ${fav.artist}`,
-  watchSource: () => sortedFavourites.value, // Watch the sorted favorites
+  watchSource: () => sortedFavourites.value,
   deepWatch: true,
 })
 
-// Always fetch 2 rows worth of data (matches ChartView.vue pattern)
-const rowsToFetch = 2
-const itemsPerPage = computed(() => 4 * rowsToFetch)
+// Computed property to show skeletons when either loader is waiting for data
+const showSkeletons = computed(() => {
+  return isWaitingForAppleMusic || isLoadingAppleMusic
+})
 
-// Initialize component - simplified approach similar to ProfileView
+// Combined song data from both loaders
+const combinedSongData = computed(() => {
+  const combined = new Map(songData.value)
+
+  // Add favorites-specific song data
+  for (const [key, value] of favoriteSongData.value.entries()) {
+    combined.set(key, value)
+  }
+
+  return combined
+})
+
+// Initialize component - approach similar to ChartView
 onMounted(async () => {
   try {
+    isInitializing.value = true
+
+    // Initialize chart loader first
+    if (!isStoreInitialized('charts')) {
+      await initialize()
+    }
+
+    // Then load favorites
     await favouritesStore.loadFavourites()
   } catch (e) {
-    console.error('Error retrying load favourites:', e)
+    console.error('Error loading favourites data:', e)
     error.value = e instanceof Error ? e.message : 'Failed to load favourites'
   } finally {
     isInitializing.value = false
   }
 })
+
+// Watch for chart selector changes to stay in sync
+watch(
+  () => chartsStore.selectedChartId,
+  (newChartId) => {
+    // Keep the chart loader store in sync with the main charts store
+    if (chartLoaderStore.selectedChartId !== newChartId) {
+      chartLoaderStore.selectedChartId = newChartId
+    }
+  },
+)
 </script>
 
 <template>
   <div class="profile-favourites-tab flex flex-col w-full gap-6 h-full">
-    <!-- Loading state -->
+    <!-- Loading state - initial loading -->
     <LoadingSpinner
       v-if="isInitializing"
       label="Loading your favourites..."
@@ -226,9 +274,9 @@ onMounted(async () => {
           </Dropdown>
         </div>
 
-        <!-- No favourites for selected chart -->
+        <!-- No favourites for selected chart - after filtering -->
         <div
-          v-if="sortedFavourites.length === 0"
+          v-if="sortedFavourites.length === 0 && !isLoading"
           class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg mt-4"
         >
           <Message severity="info" :closable="false">
@@ -236,14 +284,15 @@ onMounted(async () => {
           </Message>
         </div>
 
+        <!-- Favorites cards with skeletons while loading -->
         <div v-else class="mt-4">
           <ChartCardHolder
             :items="sortedFavourites"
-            :loading="false"
-            :error="null"
-            :song-data="songData"
+            :loading="isLoading"
+            :error="errorMessage || error"
+            :song-data="combinedSongData"
             :selected-chart-id="chartsStore.selectedChartId"
-            :show-skeletons="isLoadingAppleMusic"
+            :show-skeletons="showSkeletons.value"
             :skeleton-count="itemsPerPage"
             :is-for-favourites="true"
             empty-message="No favourites for this chart"
