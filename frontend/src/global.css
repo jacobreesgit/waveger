@@ -141,3 +141,8 @@
 .small-icon {
   font-size: 0.75rem !important;
 }
+
+.p-select-option span {
+  white-space: normal;
+  word-wrap: break-word;
+}

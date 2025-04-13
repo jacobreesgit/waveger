@@ -23,14 +23,14 @@ const isInitializing = ref(true)
 // Sorting options
 const sortMethod = ref('date-desc')
 const sortOptions = [
-  { label: 'Newest First', value: 'date-desc', icon: 'pi-calendar' },
-  { label: 'Oldest First', value: 'date-asc', icon: 'pi-calendar' },
-  { label: 'Song Name (A-Z)', value: 'song-asc', icon: 'pi-music' },
-  { label: 'Song Name (Z-A)', value: 'song-desc', icon: 'pi-music' },
-  { label: 'Artist (A-Z)', value: 'artist-asc', icon: 'pi-user' },
-  { label: 'Artist (Z-A)', value: 'artist-desc', icon: 'pi-user' },
-  { label: 'Chart Position (Highest)', value: 'position-asc', icon: 'pi-chart-bar' },
-  { label: 'Chart Position (Lowest)', value: 'position-desc', icon: 'pi-chart-bar' },
+  { label: 'Newest First', value: 'date-desc', icon: 'calendar' },
+  { label: 'Oldest First', value: 'date-asc', icon: 'calendar' },
+  { label: 'Song Name (A-Z)', value: 'song-asc', icon: 'sort-alpha-down' },
+  { label: 'Song Name (Z-A)', value: 'song-desc', icon: 'sort-alpha-up' },
+  { label: 'Artist (A-Z)', value: 'artist-asc', icon: 'user' },
+  { label: 'Artist (Z-A)', value: 'artist-desc', icon: 'user' },
+  { label: 'Chart Position (Highest)', value: 'position-asc', icon: 'chart-bar' },
+  { label: 'Chart Position (Lowest)', value: 'position-desc', icon: 'chart-bar' },
 ]
 
 // Get array of unique chart IDs from favorites
@@ -198,12 +198,18 @@ onMounted(async () => {
             optionLabel="label"
             optionValue="value"
             placeholder="Sort by"
-            class="w-full sm:w-auto flex-grow-0"
-            panelClass="sort-dropdown-panel"
+            class="w-full sm:w-48 flex-grow-0"
+            panelClass="sort-dropdown-panel w-full sm:w-48"
           >
             <template #value="slotProps">
               <div class="flex items-center">
-                <i class="pi pi-sort-alt mr-2"></i>
+                <i
+                  :class="[
+                    'mr-2',
+                    'pi',
+                    `pi-${sortOptions.find((opt) => opt.value === slotProps.value)?.icon || 'sort-alt'}`,
+                  ]"
+                ></i>
                 <span>{{
                   slotProps.value
                     ? sortOptions.find((opt) => opt.value === slotProps.value)?.label || 'Sort by'
@@ -213,18 +219,7 @@ onMounted(async () => {
             </template>
             <template #option="slotProps">
               <div class="flex items-center">
-                <i
-                  :class="[
-                    'mr-2',
-                    slotProps.option.value.includes('date')
-                      ? 'pi pi-calendar'
-                      : slotProps.option.value.includes('song')
-                        ? 'pi pi-music'
-                        : slotProps.option.value.includes('artist')
-                          ? 'pi pi-user'
-                          : 'pi pi-chart-bar',
-                  ]"
-                ></i>
+                <i :class="['mr-2', 'pi', `pi-${slotProps.option.icon}`]"></i>
                 <span>{{ slotProps.option.label }}</span>
               </div>
             </template>
