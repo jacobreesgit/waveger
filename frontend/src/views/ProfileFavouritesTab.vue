@@ -9,6 +9,8 @@ import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import Dropdown from 'primevue/dropdown'
+import Tooltip from 'primevue/tooltip'
 
 // Stores
 const favouritesStore = useFavouritesStore()
@@ -17,6 +19,19 @@ const chartsStore = useChartsStore()
 // UI state
 const error = ref<string | null>(null)
 const isInitializing = ref(true)
+
+// Sorting options
+const sortMethod = ref('date-desc')
+const sortOptions = [
+  { label: 'Newest First', value: 'date-desc', icon: 'pi-calendar' },
+  { label: 'Oldest First', value: 'date-asc', icon: 'pi-calendar' },
+  { label: 'Song Name (A-Z)', value: 'song-asc', icon: 'pi-music' },
+  { label: 'Song Name (Z-A)', value: 'song-desc', icon: 'pi-music' },
+  { label: 'Artist (A-Z)', value: 'artist-asc', icon: 'pi-user' },
+  { label: 'Artist (Z-A)', value: 'artist-desc', icon: 'pi-user' },
+  { label: 'Chart Position (Highest)', value: 'position-asc', icon: 'pi-chart-bar' },
+  { label: 'Chart Position (Lowest)', value: 'position-desc', icon: 'pi-chart-bar' },
+]
 
 // Get array of unique chart IDs from favorites
 const availableChartIds = computed(() => {
@@ -32,13 +47,54 @@ const availableChartIds = computed(() => {
 })
 
 // Get favorites for the currently selected chart
-const getSelectedChartFavourites = computed(() => {
+const filteredFavourites = computed(() => {
   const chartId = chartsStore.selectedChartId
   if (!chartId) return []
 
   return favouritesStore.favourites.filter((fav) =>
     fav.charts.some((chart) => chart.chart_id === chartId),
   )
+})
+
+// Get sorted favorites based on the selected sort method
+const sortedFavourites = computed(() => {
+  const favourites = [...filteredFavourites.value]
+  const chartId = chartsStore.selectedChartId
+
+  switch (sortMethod.value) {
+    case 'date-desc':
+      return favourites.sort(
+        (a, b) => new Date(b.first_added_at).getTime() - new Date(a.first_added_at).getTime(),
+      )
+    case 'date-asc':
+      return favourites.sort(
+        (a, b) => new Date(a.first_added_at).getTime() - new Date(b.first_added_at).getTime(),
+      )
+    case 'song-asc':
+      return favourites.sort((a, b) => a.song_name.localeCompare(b.song_name))
+    case 'song-desc':
+      return favourites.sort((a, b) => b.song_name.localeCompare(a.song_name))
+    case 'artist-asc':
+      return favourites.sort((a, b) => a.artist.localeCompare(b.artist))
+    case 'artist-desc':
+      return favourites.sort((a, b) => b.artist.localeCompare(a.artist))
+    case 'position-asc':
+      return favourites.sort((a, b) => {
+        // Find the position in the current chart
+        const posA = a.charts.find((chart) => chart.chart_id === chartId)?.position || 9999
+        const posB = b.charts.find((chart) => chart.chart_id === chartId)?.position || 9999
+        return posA - posB
+      })
+    case 'position-desc':
+      return favourites.sort((a, b) => {
+        // Find the position in the current chart
+        const posA = a.charts.find((chart) => chart.chart_id === chartId)?.position || 0
+        const posB = b.charts.find((chart) => chart.chart_id === chartId)?.position || 0
+        return posB - posA
+      })
+    default:
+      return favourites
+  }
 })
 
 // Get the title of the currently selected chart
@@ -59,10 +115,10 @@ const getSelectedChartTitle = computed(() => {
 })
 
 const { songData, isLoadingAppleMusic } = useAppleMusicLoader({
-  getItems: () => getSelectedChartFavourites.value || [], // Only get data for currently selected chart
+  getItems: () => sortedFavourites.value || [], // Use sorted favorites
   getItemKey: (fav) => `${fav.song_name}||${fav.artist}`,
   getQuery: (fav) => `${fav.song_name} ${fav.artist}`,
-  watchSource: () => getSelectedChartFavourites.value, // Watch the filtered favorites instead of all favorites
+  watchSource: () => sortedFavourites.value, // Watch the sorted favorites
   deepWatch: true,
 })
 
@@ -121,7 +177,7 @@ onMounted(async () => {
         <Divider align="left">
           <div class="inline-flex items-center">
             <i class="pi pi-filter mr-2 text-blue-500"></i>
-            <span class="text-xl font-bold">Filter By Chart</span>
+            <span class="text-xl font-bold">Your Favourites</span>
           </div>
         </Divider>
 
@@ -132,12 +188,52 @@ onMounted(async () => {
             :only-favourites="true"
             :available-chart-ids="availableChartIds"
             :preserve-current-path="true"
+            class="flex-grow"
           />
+
+          <Dropdown
+            id="sort-method"
+            v-model="sortMethod"
+            :options="sortOptions"
+            optionLabel="label"
+            optionValue="value"
+            placeholder="Sort by"
+            class="w-full sm:w-auto flex-grow-0"
+            panelClass="sort-dropdown-panel"
+          >
+            <template #value="slotProps">
+              <div class="flex items-center">
+                <i class="pi pi-sort-alt mr-2"></i>
+                <span>{{
+                  slotProps.value
+                    ? sortOptions.find((opt) => opt.value === slotProps.value)?.label || 'Sort by'
+                    : 'Sort by'
+                }}</span>
+              </div>
+            </template>
+            <template #option="slotProps">
+              <div class="flex items-center">
+                <i
+                  :class="[
+                    'mr-2',
+                    slotProps.option.value.includes('date')
+                      ? 'pi pi-calendar'
+                      : slotProps.option.value.includes('song')
+                        ? 'pi pi-music'
+                        : slotProps.option.value.includes('artist')
+                          ? 'pi pi-user'
+                          : 'pi pi-chart-bar',
+                  ]"
+                ></i>
+                <span>{{ slotProps.option.label }}</span>
+              </div>
+            </template>
+          </Dropdown>
         </div>
 
         <!-- No favourites for selected chart -->
         <div
-          v-if="getSelectedChartFavourites.length === 0"
+          v-if="sortedFavourites.length === 0"
           class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg mt-4"
         >
           <Message severity="info" :closable="false">
@@ -147,7 +243,7 @@ onMounted(async () => {
 
         <div v-else class="mt-4">
           <ChartCardHolder
-            :items="getSelectedChartFavourites"
+            :items="sortedFavourites"
             :loading="false"
             :error="null"
             :song-data="songData"
@@ -157,7 +253,13 @@ onMounted(async () => {
             :is-for-favourites="true"
             empty-message="No favourites for this chart"
             class="w-full"
-          />
+          >
+            <template v-slot:empty-action>
+              <router-link to="/charts">
+                <Button label="Browse Charts" icon="pi pi-chart-bar" class="mt-2" />
+              </router-link>
+            </template>
+          </ChartCardHolder>
         </div>
       </div>
     </div>
