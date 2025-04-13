@@ -6,6 +6,8 @@ import router from './router'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 
+import ToastService from 'primevue/toastservice'
+
 // Import global CSS
 import '@/global.css'
 
@@ -34,7 +36,8 @@ app.use(PrimeVue, {
   },
 })
 
+app.use(ToastService)
+
 app.mount('#app')
 
-// Export axios instance for global usage
 export { axios }

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useTimezoneStore } from '@/stores/timezone'
 import Nav from '@/components/Nav.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
+import Toast from 'primevue/toast'
 
 const isInitializing = ref(true)
 const authStore = useAuthStore()
@@ -28,6 +29,7 @@ onMounted(async () => {
 
 <template>
   <div class="app-container flex flex-col min-h-screen">
+    <Toast position="bottom-center" />
     <Nav />
     <main class="app-container__main-content flex flex-1 overflow-y-auto justify-center">
       <LoadingSpinner

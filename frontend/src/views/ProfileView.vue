@@ -242,7 +242,7 @@ watch(activeTabValue, async (newTab) => {
             <template v-else-if="activeTabValue === 'favourites'">
               <div class="flex items-center">
                 <i class="pi pi-heart-fill mr-2 text-red-500"></i>
-                <span>{{ favouritesStore.favouritesCount }} favourite songs</span>
+                <span>{{ favouritesStore.favouritesCount }} favourites</span>
               </div>
               <div class="flex items-center">
                 <i class="pi pi-chart-bar mr-2 text-blue-500"></i>

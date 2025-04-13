@@ -265,7 +265,7 @@ onUnmounted(() => {
             class="chart-card-holder__chart-container__songs__load-more-trigger__loading-spinner p-5"
             label="Loading more songs..."
             inline
-            size="small"
+            size="medium"
           />
           <div
             v-else

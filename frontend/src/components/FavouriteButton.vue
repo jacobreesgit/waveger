@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watchEffect } from 'vue'
 import { useFavouritesStore } from '@/stores/favourites'
 import { isAuthenticated } from '@/utils/authUtils'
 import Button from 'primevue/button'
+import { useToast } from 'primevue/usetoast'
 import type { Song } from '@/types/api'
 
 const props = defineProps<{
@@ -13,6 +14,7 @@ const props = defineProps<{
 
 const favouritesStore = useFavouritesStore()
 const isLoading = ref(false)
+const toast = useToast() // Initialize toast
 
 // Use computed to track favourite status
 const isFavourited = computed(() => {
@@ -25,17 +27,48 @@ const toggleFavourite = async (event: Event) => {
   event.stopPropagation()
 
   if (!isAuthenticated()) {
-    // If not logged in, redirect to login (or show a login modal, etc.)
-    alert('Please log in to add favourites')
+    // Show toast instead of alert
+    toast.add({
+      severity: 'warn',
+      summary: 'Authentication Required',
+      detail: 'Please log in to add favourites',
+      life: 3000,
+    })
     return
   }
 
   isLoading.value = true
 
   try {
+    // Store the current status to detect change after toggle
+    const wasAlreadyFavourited = isFavourited.value
+
     await favouritesStore.toggleFavourite(props.song, props.chartId, props.chartTitle)
+
+    // Show appropriate notification based on previous status
+    if (wasAlreadyFavourited) {
+      toast.add({
+        severity: 'info',
+        summary: 'Removed from Favourites',
+        detail: `${props.song.name} by ${props.song.artist} removed from favourites`,
+        life: 3000,
+      })
+    } else {
+      toast.add({
+        severity: 'success',
+        summary: 'Added to Favourites',
+        detail: `${props.song.name} by ${props.song.artist} added to favourites`,
+        life: 3000,
+      })
+    }
   } catch (error) {
     console.error('Error toggling favourite:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Failed to update favourites',
+      life: 3000,
+    })
   } finally {
     isLoading.value = false
   }
