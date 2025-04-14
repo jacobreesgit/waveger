@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
-import type { Song } from '@/types/api'
+import type { ChartItem, ChartAppearance } from '@/types/ChartItem'
 import { useAuthStore } from '@/stores/auth'
 import {
   isStoreInitialized,
@@ -11,22 +11,14 @@ import {
   resetStoreState,
 } from '@/services/storeManager'
 
-// Type for a favourite song with chart information
+// Unified interface for favourites data
 export interface FavouriteSong {
+  song_id: number
   song_name: string
   artist: string
   image_url: string
-  first_added_at: string
-  charts: {
-    id: number
-    chart_id: string
-    chart_title: string
-    position: number
-    peak_position: number
-    weeks_on_chart: number
-    last_week_position?: number // Added last_week_position property
-    added_at: string
-  }[]
+  added_at: string
+  charts: ChartAppearance[]
 }
 
 export const useFavouritesStore = defineStore('favourites', () => {
@@ -44,6 +36,11 @@ export const useFavouritesStore = defineStore('favourites', () => {
   const chartAppearancesCount = computed(() => {
     return favourites.value.reduce((total, song) => total + song.charts.length, 0)
   })
+
+  // Helper function to generate a cache key for a song/chart combination
+  const getFavouriteKey = (songName: string, artist: string, chartId: string): string => {
+    return `${songName}||${artist}||${chartId}`
+  }
 
   /**
    * Initialize the favourites store
@@ -72,7 +69,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
    */
   const isFavourited = (songName: string, artist: string, chartId: string): boolean => {
     // Create a unique key for this song+chart combination
-    const key = `${songName}||${artist}||${chartId}`
+    const key = getFavouriteKey(songName, artist, chartId)
 
     // First check pending changes (for immediate UI feedback)
     if (pendingFavouriteChanges.value[key] !== undefined) {
@@ -94,7 +91,7 @@ export const useFavouritesStore = defineStore('favourites', () => {
     if (!song) return null
 
     const chart = song.charts.find((c) => c.chart_id === chartId)
-    return chart ? chart.id : null
+    return chart?.favourite_id || null
   }
 
   /**
@@ -135,36 +132,33 @@ export const useFavouritesStore = defineStore('favourites', () => {
   }
 
   /**
-   * Add a song to favourites
+   * Toggle favourite status with unified ChartItem
    */
-  const addFavourite = async (
-    song: Song,
-    chartId: string,
-    chartTitle: string,
-  ): Promise<boolean> => {
+  const toggleFavourite = async (item: ChartItem): Promise<boolean> => {
     const authStore = useAuthStore()
     if (!authStore.user) {
       return false
     }
 
-    const key = `${song.name}||${song.artist}||${chartId}`
+    const key = getFavouriteKey(item.name, item.artist, item.chart_id)
 
     try {
       // Set pending state for immediate UI feedback
-      pendingFavouriteChanges.value[key] = true
+      const currentState = isFavourited(item.name, item.artist, item.chart_id)
+      pendingFavouriteChanges.value[key] = !currentState
 
       // Send more complete data to the API
       const response = await axios.post('/favourites', {
-        song_name: song.name,
-        artist: song.artist,
-        chart_id: chartId,
-        chart_title: chartTitle,
-        position: song.position,
-        image_url: song.image,
-        peak_position: song.peak_position,
-        weeks_on_chart: song.weeks_on_chart,
-        last_week_position: song.last_week_position, // Store this additional field
-        url: song.url || '',
+        song_name: item.name,
+        artist: item.artist,
+        chart_id: item.chart_id,
+        chart_title: item.chart_title,
+        position: item.position,
+        image_url: item.image,
+        peak_position: item.peak_position,
+        weeks_on_chart: item.weeks_on_chart,
+        last_week_position: item.last_week_position,
+        url: item.url || '',
       })
 
       // After successful API call, update the favourites list
@@ -172,71 +166,13 @@ export const useFavouritesStore = defineStore('favourites', () => {
 
       return true
     } catch (e) {
-      console.error('Error adding favourite:', e)
-      error.value = e instanceof Error ? e.message : 'Failed to add favourite'
+      console.error('Error toggling favourite:', e)
+      error.value = e instanceof Error ? e.message : 'Failed to toggle favourite'
 
       // Revert pending state
-      pendingFavouriteChanges.value[key] = false
+      delete pendingFavouriteChanges.value[key]
 
       return false
-    }
-  }
-
-  /**
-   * Remove a song from favourites
-   */
-  const removeFavourite = async (
-    songName: string,
-    artist: string,
-    chartId: string,
-  ): Promise<boolean> => {
-    const authStore = useAuthStore()
-    if (!authStore.user) {
-      return false
-    }
-
-    const favouriteId = getFavouriteId(songName, artist, chartId)
-    if (!favouriteId) {
-      return false
-    }
-
-    const key = `${songName}||${artist}||${chartId}`
-
-    try {
-      // Set pending state for immediate UI feedback
-      pendingFavouriteChanges.value[key] = false
-
-      await axios.delete(`/favourites/${favouriteId}`)
-
-      // After successful API call, update the favourites list
-      await loadFavourites()
-
-      return true
-    } catch (e) {
-      console.error('Error removing favourite:', e)
-      error.value = e instanceof Error ? e.message : 'Failed to remove favourite'
-
-      // Revert pending state
-      pendingFavouriteChanges.value[key] = true
-
-      return false
-    }
-  }
-
-  /**
-   * Toggle favourite status
-   */
-  const toggleFavourite = async (
-    song: Song,
-    chartId: string,
-    chartTitle: string,
-  ): Promise<boolean> => {
-    const isFav = isFavourited(song.name, song.artist, chartId)
-
-    if (isFav) {
-      return await removeFavourite(song.name, song.artist, chartId)
-    } else {
-      return await addFavourite(song, chartId, chartTitle)
     }
   }
 
@@ -290,10 +226,9 @@ export const useFavouritesStore = defineStore('favourites', () => {
     initialize,
     isFavourited,
     loadFavourites,
-    addFavourite,
-    removeFavourite,
     toggleFavourite,
     checkFavouriteStatus,
+    getFavouriteId,
     reset,
   }
 })

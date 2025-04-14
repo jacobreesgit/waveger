@@ -1,52 +1,37 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Song } from '@/types/api'
+import type { ChartItem } from '@/types/ChartItem'
+import { ChartItemAdapter } from '@/types/ChartItem'
 import FavouriteButton from '@/components/FavouriteButton.vue'
 import Button from 'primevue/button'
 
 const props = defineProps<{
-  song: Song
-  chartId: string
-  chartTitle: string
+  item: ChartItem
   showDetails?: boolean
   appleMusicData?: any
   enablePrediction?: boolean
   isPredicted?: boolean
 }>()
 
-const emit = defineEmits(['click', 'replace']) // Added 'replace' event
+const emit = defineEmits(['click', 'replace'])
 
 const handleClick = () => {
-  emit('click', props.song)
+  emit('click', props.item)
 }
 
-// New handler for replace button click
+// Handler for replace button click
 const handleReplace = (event: Event) => {
   // Stop propagation to prevent card click
   event.stopPropagation()
-  emit('replace', props.song)
+  emit('replace', props.item)
 }
 
 const trendDirection = computed(() => {
-  if (!props.song.last_week_position) return 'NEW'
-  if (props.song.position < props.song.last_week_position) return 'UP'
-  if (props.song.position > props.song.last_week_position) return 'DOWN'
-  return 'SAME'
+  return ChartItemAdapter.getTrendDirection(props.item)
 })
 
 const trendIcon = computed(() => {
-  switch (trendDirection.value) {
-    case 'UP':
-      return '↑'
-    case 'DOWN':
-      return '↓'
-    case 'SAME':
-      return '='
-    case 'NEW':
-      return '★'
-    default:
-      return 'NEW'
-  }
+  return ChartItemAdapter.getTrendIcon(props.item)
 })
 
 const getArtworkUrl = (url: string | undefined, width: number = 1000, height: number = 1000) => {
@@ -55,7 +40,7 @@ const getArtworkUrl = (url: string | undefined, width: number = 1000, height: nu
 }
 
 const isArtistChart = computed(() => {
-  return props.chartId.includes('artist')
+  return props.item.chart_id.includes('artist')
 })
 </script>
 
@@ -80,16 +65,16 @@ const isArtistChart = computed(() => {
       <div
         class="chart-item-card__image-container__rank absolute top-2.5 left-2.5 bg-black bg-opacity-60 text-white text-lg font-bold px-2.5 py-1.5 rounded-sm z-2"
       >
-        #{{ song.position }}
+        #{{ item.position }}
       </div>
 
       <img
         :src="
           appleMusicData?.attributes?.artwork?.url
             ? getArtworkUrl(appleMusicData.attributes.artwork.url)
-            : song.image
+            : item.image
         "
-        :alt="song.name"
+        :alt="item.name"
         class="chart-item-card__image-container__image !absolute top-0 left-0 w-full h-full object-cover transition-transform duration-300 ease-in-out"
       />
 
@@ -107,9 +92,7 @@ const isArtistChart = computed(() => {
       </div>
 
       <FavouriteButton
-        :song="song"
-        :chart-id="chartId"
-        :chart-title="chartTitle"
+        :item="item"
         class="chart-item-card__image-container__favourite-btn !absolute top-2.5 right-2.5 z-20"
         size="small"
       />
@@ -119,10 +102,10 @@ const isArtistChart = computed(() => {
       <div
         class="chart-item-card__item-info__title font-semibold text-lg whitespace-nowrap overflow-hidden overflow-ellipsis"
       >
-        {{ song.name }}
+        {{ item.name }}
       </div>
       <div class="chart-item-card__item-info__artist text-gray-600 whitespace-nowrap text-ellipsis">
-        {{ song.artist }}
+        {{ item.artist }}
       </div>
       <div class="chart-item-card__item-info__trend flex items-center gap-3 mt-1">
         <span
@@ -141,13 +124,13 @@ const isArtistChart = computed(() => {
           {{ trendIcon }}
         </span>
         <span class="chart-item-card__item-info__weeks-on-chart text-gray-600 text-[0.9rem]">
-          {{ song.weeks_on_chart }} week{{ song.weeks_on_chart !== 1 ? 's' : '' }}
+          {{ item.weeks_on_chart }} week{{ item.weeks_on_chart !== 1 ? 's' : '' }}
         </span>
       </div>
     </div>
     <div class="chart-item-card__stats flex justify-between text-gray-600 text-sm p-4">
-      <div>Peak: #{{ song.peak_position }}</div>
-      <div v-if="song.last_week_position">Last Week: #{{ song.last_week_position }}</div>
+      <div>Peak: #{{ item.peak_position }}</div>
+      <div v-if="item.last_week_position">Last Week: #{{ item.last_week_position }}</div>
     </div>
 
     <div

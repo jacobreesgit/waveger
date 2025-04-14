@@ -2,21 +2,18 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from __init__ import limiter, get_real_ip
 import logging
-import psycopg2
 import os
+from db_utils import (
+    get_db_connection,
+    get_user_favourites,
+    toggle_favourite,
+    check_favourite_status
+)
 
 favourites_bp = Blueprint("favourites", __name__)
 
-DATABASE_URL = os.getenv("DATABASE_URL")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def get_db_connection():
-    try:
-        return psycopg2.connect(DATABASE_URL)
-    except Exception as e:
-        logger.error(f"Database connection error: {e}")
-        raise
 
 @favourites_bp.route("/favourites", methods=["GET"])
 @jwt_required()
@@ -24,76 +21,13 @@ def get_db_connection():
 def get_favourites():
     """Get all favourites for the authenticated user."""
     user_id = get_jwt_identity()
+    chart_id = request.args.get('chart_id')
     
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Get favourites with chart data
+        favourites = get_user_favourites(user_id, chart_id)
         
-        # Get favourites with chart metadata
-        query = """
-        SELECT 
-            id, song_name, artist, chart_id, chart_title, 
-            position, image_url, peak_position, weeks_on_chart, 
-            last_week_position, added_at
-        FROM 
-            user_favourites
-        WHERE 
-            user_id = %s
-        ORDER BY 
-            added_at DESC
-        """
-        
-        cursor.execute(query, (user_id,))
-        favourites = cursor.fetchall()
-        
-        # Transform into a list of dictionaries
-        results = []
-        for fav in favourites:
-            results.append({
-                "id": fav[0],
-                "song_name": fav[1],
-                "artist": fav[2],
-                "chart_id": fav[3],
-                "chart_title": fav[4],
-                "position": fav[5],
-                "image_url": fav[6],
-                "peak_position": fav[7],
-                "weeks_on_chart": fav[8],
-                "last_week_position": fav[9],
-                "added_at": fav[10].isoformat() if fav[10] else None
-            })
-        
-        # Group by song and artist to show multiple chart appearances
-        grouped_results = {}
-        for item in results:
-            key = f"{item['song_name']}||{item['artist']}"
-            if key not in grouped_results:
-                grouped_results[key] = {
-                    "song_name": item["song_name"],
-                    "artist": item["artist"],
-                    "image_url": item["image_url"],
-                    "charts": [],
-                    "first_added_at": item["added_at"]
-                }
-            
-            grouped_results[key]["charts"].append({
-                "id": item["id"],
-                "chart_id": item["chart_id"],
-                "chart_title": item["chart_title"],
-                "position": item["position"],
-                "peak_position": item["peak_position"],
-                "weeks_on_chart": item["weeks_on_chart"],
-                "last_week_position": item["last_week_position"], 
-                "added_at": item["added_at"]
-            })
-        
-        # Convert back to list
-        final_results = list(grouped_results.values())
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({"favourites": final_results}), 200
+        return jsonify({"favourites": favourites}), 200
     
     except Exception as e:
         logger.error(f"Error getting favourites: {e}")
@@ -103,7 +37,7 @@ def get_favourites():
 @jwt_required()
 @limiter.limit("120 per minute", key_func=get_real_ip)
 def add_favourite():
-    """Add a song to favourites."""
+    """Add or update a song's favourite status."""
     user_id = get_jwt_identity()
     data = request.get_json()
     
@@ -113,65 +47,34 @@ def add_favourite():
             return jsonify({"error": f"Missing required field: {field}"}), 400
     
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Check if this song from this chart is already favourited
-        cursor.execute(
-            """
-            SELECT id FROM user_favourites
-            WHERE user_id = %s AND song_name = %s AND artist = %s AND chart_id = %s
-            """,
-            (user_id, data["song_name"], data["artist"], data["chart_id"])
+        # Toggle favourite status
+        result = toggle_favourite(
+            user_id=user_id,
+            song_name=data["song_name"],
+            artist=data["artist"],
+            chart_id=data["chart_id"],
+            chart_title=data["chart_title"],
+            image_url=data.get("image_url"),
+            position=data.get("position"),
+            peak_position=data.get("peak_position"),
+            weeks_on_chart=data.get("weeks_on_chart"),
+            last_week_position=data.get("last_week_position")
         )
         
-        existing = cursor.fetchone()
-        
-        if existing:
-            # Already favourited - return success but with a message
-            cursor.close()
-            conn.close()
+        if result["action"] == "added":
             return jsonify({
-                "message": "Song is already in favourites",
-                "favourite_id": existing[0]
+                "message": "Song added to favourites",
+                "favourite_id": result["favourite_id"]
+            }), 201
+        else:
+            return jsonify({
+                "message": "Song removed from favourites",
+                "favourite_id": result["favourite_id"]
             }), 200
-        
-        cursor.execute(
-            """
-            INSERT INTO user_favourites
-            (user_id, song_name, artist, chart_id, chart_title, position, image_url, peak_position, 
-             weeks_on_chart, last_week_position)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id
-            """,
-            (
-                user_id,
-                data["song_name"],
-                data["artist"],
-                data["chart_id"],
-                data["chart_title"],
-                data.get("position"),
-                data.get("image_url"),
-                data.get("peak_position"),
-                data.get("weeks_on_chart"),
-                data.get("last_week_position") 
-            )
-        )
-        
-        favourite_id = cursor.fetchone()[0]
-        conn.commit()
-        
-        cursor.close()
-        conn.close()
-        
-        return jsonify({
-            "message": "Song added to favourites",
-            "favourite_id": favourite_id
-        }), 201
     
     except Exception as e:
-        logger.error(f"Error adding favourite: {e}")
-        return jsonify({"error": "Failed to add song to favourites"}), 500
+        logger.error(f"Error toggling favourite: {e}")
+        return jsonify({"error": "Failed to update favourite status"}), 500
 
 @favourites_bp.route("/favourites/<int:favourite_id>", methods=["DELETE"])
 @jwt_required()
@@ -225,29 +128,17 @@ def check_favourite():
         return jsonify({"error": "Missing required parameters"}), 400
     
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        
-        # Check if favourited
-        cursor.execute(
-            """
-            SELECT id FROM user_favourites
-            WHERE user_id = %s AND song_name = %s AND artist = %s AND chart_id = %s
-            """,
-            (user_id, song_name, artist, chart_id)
+        # Check favourite status
+        result = check_favourite_status(
+            user_id=user_id,
+            song_name=song_name,
+            artist=artist,
+            chart_id=chart_id
         )
         
-        result = cursor.fetchone()
-        
-        cursor.close()
-        conn.close()
-        
-        is_favourited = bool(result)
-        favourite_id = result[0] if result else None
-        
         return jsonify({
-            "is_favourited": is_favourited,
-            "favourite_id": favourite_id
+            "is_favourited": result["is_favourited"],
+            "favourite_id": result["favourite_id"]
         }), 200
     
     except Exception as e:

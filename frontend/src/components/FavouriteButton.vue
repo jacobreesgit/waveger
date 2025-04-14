@@ -4,21 +4,26 @@ import { useFavouritesStore } from '@/stores/favourites'
 import { isAuthenticated } from '@/utils/authUtils'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
-import type { Song } from '@/types/api'
+import type { ChartItem } from '@/types/ChartItem'
 
 const props = defineProps<{
-  song: Song
-  chartId: string
-  chartTitle: string
+  item: ChartItem
+  size?: 'small' | 'medium' | 'large'
 }>()
 
 const favouritesStore = useFavouritesStore()
 const isLoading = ref(false)
-const toast = useToast() // Initialize toast
+const toast = useToast()
 
-// Use computed to track favourite status
+// Use computed to track favourite status directly from the item
 const isFavourited = computed(() => {
-  return favouritesStore.isFavourited(props.song.name, props.song.artist, props.chartId)
+  // First check if the item has its own favourite status
+  if (props.item.is_favourited !== undefined) {
+    return props.item.is_favourited
+  }
+
+  // Otherwise check the store
+  return favouritesStore.isFavourited(props.item.name, props.item.artist, props.item.chart_id)
 })
 
 // Toggle favourite status
@@ -43,21 +48,21 @@ const toggleFavourite = async (event: Event) => {
     // Store the current status to detect change after toggle
     const wasAlreadyFavourited = isFavourited.value
 
-    await favouritesStore.toggleFavourite(props.song, props.chartId, props.chartTitle)
+    await favouritesStore.toggleFavourite(props.item)
 
     // Show appropriate notification based on previous status
     if (wasAlreadyFavourited) {
       toast.add({
         severity: 'info',
         summary: 'Removed from Favourites',
-        detail: `${props.song.name} by ${props.song.artist} removed from favourites`,
+        detail: `${props.item.name} by ${props.item.artist} removed from favourites`,
         life: 3000,
       })
     } else {
       toast.add({
         severity: 'success',
         summary: 'Added to Favourites',
-        detail: `${props.song.name} by ${props.song.artist} added to favourites`,
+        detail: `${props.item.name} by ${props.item.artist} added to favourites`,
         life: 3000,
       })
     }
@@ -92,7 +97,13 @@ onMounted(async () => {
 <template>
   <Button
     @click="toggleFavourite"
-    :class="['p-button-rounded p-button-text p-button-danger']"
+    :class="[
+      'p-button-rounded p-button-text p-button-danger',
+      {
+        'p-button-sm': size === 'small',
+        'p-button-lg': size === 'large',
+      },
+    ]"
     :disabled="isLoading"
     :aria-label="isFavourited ? 'Remove from favourites' : 'Add to favourites'"
   >

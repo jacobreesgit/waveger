@@ -6,12 +6,15 @@ import { useChartLoader } from '@/composables/useChartLoader'
 import { useAppleMusicLoader } from '@/composables/useAppleMusicLoader'
 import { isStoreInitialized } from '@/services/storeManager'
 import ChartCardHolder from '@/components/ChartCardHolder.vue'
+import ChartItemCard from '@/components/ChartItemCard.vue'
 import ChartSelector from '@/components/ChartSelector.vue'
 import LoadingSpinner from '@/components/LoadingSpinner.vue'
 import Message from 'primevue/message'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
 import Dropdown from 'primevue/dropdown'
+import type { ChartItem } from '@/types/ChartItem'
+import { ChartItemAdapter } from '@/types/ChartItem'
 
 // Stores
 const favouritesStore = useFavouritesStore()
@@ -79,11 +82,11 @@ const sortedFavourites = computed(() => {
   switch (sortMethod.value) {
     case 'date-desc':
       return favourites.sort(
-        (a, b) => new Date(b.first_added_at).getTime() - new Date(a.first_added_at).getTime(),
+        (a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime(),
       )
     case 'date-asc':
       return favourites.sort(
-        (a, b) => new Date(a.first_added_at).getTime() - new Date(b.first_added_at).getTime(),
+        (a, b) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime(),
       )
     case 'song-asc':
       return favourites.sort((a, b) => a.song_name.localeCompare(b.song_name))
@@ -112,8 +115,32 @@ const sortedFavourites = computed(() => {
   }
 })
 
+// Transform FavouriteSong items to ChartItems for rendering
+const chartItems = computed((): ChartItem[] => {
+  return sortedFavourites.value.map((fav) => {
+    // Use the primary chart (first in the array)
+    const primaryChart = fav.charts[0] || {}
+
+    return {
+      id: fav.song_id,
+      name: fav.song_name,
+      artist: fav.artist,
+      position: primaryChart.position || 0,
+      peak_position: primaryChart.peak_position || 0,
+      weeks_on_chart: primaryChart.weeks_on_chart || 0,
+      last_week_position: primaryChart.last_week_position,
+      chart_id: primaryChart.chart_id || '',
+      chart_title: primaryChart.chart_title || '',
+      image: fav.image_url,
+      favourite_id: primaryChart.favourite_id,
+      is_favourited: true,
+      charts: fav.charts,
+    }
+  })
+})
+
 // Get the title of the currently selected chart
-const getSelectedChartTitle = computed(() => {
+const selectedChartTitle = computed(() => {
   const chartId = chartsStore.selectedChartId
   if (!chartId) return ''
 
@@ -276,34 +303,40 @@ watch(
 
         <!-- No favourites for selected chart - after filtering -->
         <div
-          v-if="sortedFavourites.length === 0 && !isLoading"
+          v-if="chartItems.length === 0 && !isLoading"
           class="w-full text-center p-8 bg-white border border-gray-200 rounded-lg mt-4"
         >
           <Message severity="info" :closable="false">
-            No favorites found for {{ getSelectedChartTitle || 'this chart' }}.
+            No favorites found for {{ selectedChartTitle || 'this chart' }}.
           </Message>
         </div>
 
-        <!-- Favorites cards with skeletons while loading -->
-        <div v-else class="mt-4">
-          <ChartCardHolder
-            :items="sortedFavourites"
-            :loading="isLoading"
-            :error="errorMessage || error"
-            :song-data="combinedSongData"
-            :selected-chart-id="chartsStore.selectedChartId"
-            :show-skeletons="showSkeletons.value"
-            :skeleton-count="itemsPerPage"
-            :is-for-favourites="true"
-            empty-message="No favourites for this chart"
-            class="w-full"
-          >
-            <template v-slot:empty-action>
-              <router-link to="/charts">
-                <Button label="Browse Charts" icon="pi pi-chart-bar" class="mt-2" />
-              </router-link>
-            </template>
-          </ChartCardHolder>
+        <!-- Favorites cards with new unified model -->
+        <div v-else-if="chartItems.length > 0" class="mt-4">
+          <div class="flex flex-wrap w-full justify-center">
+            <div
+              v-for="(item, index) in chartItems"
+              :key="index"
+              class="w-full sm:w-[calc(50%-1rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1rem)] xl:w-[calc(25%-1rem)] 2xl:w-[calc(25%-1rem)] p-2 mb-4"
+            >
+              <ChartItemCard
+                :item="item"
+                :apple-music-data="combinedSongData.get(`${item.name}||${item.artist}`)"
+                :show-details="true"
+                class="h-full"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading skeleton instead of a message -->
+        <div v-else-if="isLoading" class="mt-4">
+          <LoadingSpinner
+            label="Loading favourites..."
+            centerInContainer
+            size="medium"
+            class="p-8"
+          />
         </div>
       </div>
     </div>
